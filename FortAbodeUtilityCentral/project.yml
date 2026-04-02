@@ -21,8 +21,8 @@ targets:
       - path: Services
       - path: ViewModels
       - path: Views
-      - path: Resources
-        type: folder
+      - path: Resources/Assets.xcassets
+      - path: Resources/component-registry.json
         buildPhase: resources
     dependencies:
       - package: Sparkle

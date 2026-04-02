@@ -1,0 +1,66 @@
+name: FortAbodeUtilityCentral
+options:
+  bundleIdPrefix: com.kamstudios
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "16.0"
+  createIntermediateGroups: true
+
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle.git
+    from: "2.0.0"
+
+targets:
+  FortAbodeUtilityCentral:
+    type: application
+    platform: macOS
+    sources:
+      - path: App
+      - path: Models
+      - path: Services
+      - path: ViewModels
+      - path: Views
+      - path: Resources
+        type: folder
+        buildPhase: resources
+    dependencies:
+      - package: Sparkle
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        PRODUCT_BUNDLE_IDENTIFIER: com.kamstudios.fortabodeutilitycentral
+        PRODUCT_NAME: "Fort Abode Utility Central"
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: "Fort Abode Utility Central"
+        INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.utilities"
+        INFOPLIST_KEY_SUFeedURL: "https://raw.githubusercontent.com/kamrenkennedy/FortAbodeUtilityCentral/main/appcast.xml"
+        INFOPLIST_KEY_SUPublicEDKey: "y+SVlkS1Orgn/DOapgxZG39y29vhGl9BI/nGVSI5Tz0="
+        INFOPLIST_KEY_SUEnableAutomaticChecks: YES
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_APP_SANDBOX: NO
+        ENABLE_HARDENED_RUNTIME: YES
+        SWIFT_STRICT_CONCURRENCY: targeted
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+
+  FortAbodeUtilityCentralTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: FortAbodeUtilityCentral
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        PRODUCT_BUNDLE_IDENTIFIER: com.kamstudios.fortabodeutilitycentral.tests
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_IDENTITY: "-"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Fort Abode Utility Central.app/Contents/MacOS/Fort Abode Utility Central"
+        SWIFT_STRICT_CONCURRENCY: targeted

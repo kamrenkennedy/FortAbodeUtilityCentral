@@ -1,0 +1,583 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		06CB33690CC14595E2E99291 /* GitHubService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C827BD5D498E86D1F3BEC2D /* GitHubService.swift */; };
+		0C2AFE378C7F46B021BE15D4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 968811C1D0945F5BE9B6F0A8 /* ContentView.swift */; };
+		112863CDD6F3C554DAF8C3A9 /* UpdateExecutionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E343B9250E53EF5FE8057DAE /* UpdateExecutionService.swift */; };
+		156C48CEA34E68406BE574C7 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A1B1F334020349AF1BB567F /* AppSettings.swift */; };
+		24FDEC144817A4CB5E3EFB24 /* ComponentRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6938E7B668180CBA05772572 /* ComponentRowView.swift */; };
+		33743BBEA6592F741CB5A22B /* ComponentCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26113857AC506F0780BBEE4C /* ComponentCardView.swift */; };
+		386B5A369D88921474EC50B4 /* VersionComparisonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0AC8F02FED91F42FC4EB00 /* VersionComparisonTests.swift */; };
+		3B8CF00712BD137247649E22 /* VersionDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52A1E55BD560971A940F171A /* VersionDetectionService.swift */; };
+		49AFDBE9BAB4BDF2520332FF /* VersionDetectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE4CB53B5CB04DACA0FDC375 /* VersionDetectionTests.swift */; };
+		527E21E6BC0AA688C00FA4E9 /* GitHubServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ED7ECBE41703B1FC4EB0791 /* GitHubServiceTests.swift */; };
+		63DF7D1C11E3A188E94C469F /* ComponentRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 782EFED7B8F2AD1265BCF690 /* ComponentRegistry.swift */; };
+		64CA5B5EAAFCDA5C06236011 /* FortAbodeUtilityCentralApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F9DE0077075CA77D29FF77 /* FortAbodeUtilityCentralApp.swift */; };
+		84EF3894AB836BBA01A7FB6A /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA1C59FBAA6BF53EE5F93CE0 /* NotificationService.swift */; };
+		864D70FCF7B97D190269DDFF /* UpdateProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 782D8AD84007D35B5B0DB9CD /* UpdateProgressView.swift */; };
+		8C46F547DCED96736E019D49 /* ComponentRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB0B45EFBB7DD5A133107515 /* ComponentRegistryTests.swift */; };
+		A5D861B2D8E9BA0284E7ECF6 /* UpdateStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754EF798D1DADA467A6A6D84 /* UpdateStatus.swift */; };
+		A93579377388C25E0C9EB1A4 /* Resources in Resources */ = {isa = PBXBuildFile; fileRef = 2087A58E65E8EDE73D935C15 /* Resources */; };
+		ADE9797A2E5EE7EB3C461ED6 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D31AA9A8E09678D0693ACE38 /* SettingsView.swift */; };
+		B4F10EEE4625314A880D027D /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC40AFA45E29AF2DBF63CC15 /* SettingsViewModel.swift */; };
+		BFFC39B7F0DEE48815EB2481 /* BackgroundTaskService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE892C2183E7CF82B548E18D /* BackgroundTaskService.swift */; };
+		CA4CA8134B5255875DB1AF2A /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 8B75BAAFED90C32A32CA2420 /* Sparkle */; };
+		E39F0B6F301568824A772E71 /* Component.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7E990CE834E05B52EAF553 /* Component.swift */; };
+		ED44975C50A6C6A64F4954DE /* CheckForUpdatesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E67AB0BE82AA7AE5E6F418 /* CheckForUpdatesView.swift */; };
+		F37E0647A0A8D347473AA752 /* ComponentListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC09EC9C57BA66F1650B44A0 /* ComponentListViewModel.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		97898CB52379AF67AB44B272 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 672C6D2DFA922074863F8947 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5AB5DAACD8D2527E08316FE7;
+			remoteInfo = FortAbodeUtilityCentral;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		0C827BD5D498E86D1F3BEC2D /* GitHubService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubService.swift; sourceTree = "<group>"; };
+		2087A58E65E8EDE73D935C15 /* Resources */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources; sourceTree = SOURCE_ROOT; };
+		26113857AC506F0780BBEE4C /* ComponentCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentCardView.swift; sourceTree = "<group>"; };
+		52A1E55BD560971A940F171A /* VersionDetectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionDetectionService.swift; sourceTree = "<group>"; };
+		5914439D10E470294A91A039 /* FortAbodeUtilityCentral.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FortAbodeUtilityCentral.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6938E7B668180CBA05772572 /* ComponentRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentRowView.swift; sourceTree = "<group>"; };
+		69E67AB0BE82AA7AE5E6F418 /* CheckForUpdatesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckForUpdatesView.swift; sourceTree = "<group>"; };
+		6F7E990CE834E05B52EAF553 /* Component.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Component.swift; sourceTree = "<group>"; };
+		754EF798D1DADA467A6A6D84 /* UpdateStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateStatus.swift; sourceTree = "<group>"; };
+		782D8AD84007D35B5B0DB9CD /* UpdateProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateProgressView.swift; sourceTree = "<group>"; };
+		782EFED7B8F2AD1265BCF690 /* ComponentRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentRegistry.swift; sourceTree = "<group>"; };
+		8ED7ECBE41703B1FC4EB0791 /* GitHubServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubServiceTests.swift; sourceTree = "<group>"; };
+		968811C1D0945F5BE9B6F0A8 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		9A1B1F334020349AF1BB567F /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
+		A100840E6248DECFE28C4DBF /* FortAbodeUtilityCentralTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FortAbodeUtilityCentralTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		BA1C59FBAA6BF53EE5F93CE0 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		BC40AFA45E29AF2DBF63CC15 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
+		C8F9DE0077075CA77D29FF77 /* FortAbodeUtilityCentralApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FortAbodeUtilityCentralApp.swift; sourceTree = "<group>"; };
+		CB0B45EFBB7DD5A133107515 /* ComponentRegistryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentRegistryTests.swift; sourceTree = "<group>"; };
+		D31AA9A8E09678D0693ACE38 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		DE0AC8F02FED91F42FC4EB00 /* VersionComparisonTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionComparisonTests.swift; sourceTree = "<group>"; };
+		E343B9250E53EF5FE8057DAE /* UpdateExecutionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateExecutionService.swift; sourceTree = "<group>"; };
+		EC09EC9C57BA66F1650B44A0 /* ComponentListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentListViewModel.swift; sourceTree = "<group>"; };
+		EE892C2183E7CF82B548E18D /* BackgroundTaskService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundTaskService.swift; sourceTree = "<group>"; };
+		FE4CB53B5CB04DACA0FDC375 /* VersionDetectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionDetectionTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		DB6C849ABD047945A86F0698 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CA4CA8134B5255875DB1AF2A /* Sparkle in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		15E77D64ABA66073AF28090E /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				EE892C2183E7CF82B548E18D /* BackgroundTaskService.swift */,
+				0C827BD5D498E86D1F3BEC2D /* GitHubService.swift */,
+				BA1C59FBAA6BF53EE5F93CE0 /* NotificationService.swift */,
+				E343B9250E53EF5FE8057DAE /* UpdateExecutionService.swift */,
+				52A1E55BD560971A940F171A /* VersionDetectionService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		2B7E777056D86D2A12C04C6D /* App */ = {
+			isa = PBXGroup;
+			children = (
+				C8F9DE0077075CA77D29FF77 /* FortAbodeUtilityCentralApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		5334E12F30C8D8C06E31F58F /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				69E67AB0BE82AA7AE5E6F418 /* CheckForUpdatesView.swift */,
+				26113857AC506F0780BBEE4C /* ComponentCardView.swift */,
+				6938E7B668180CBA05772572 /* ComponentRowView.swift */,
+				968811C1D0945F5BE9B6F0A8 /* ContentView.swift */,
+				D31AA9A8E09678D0693ACE38 /* SettingsView.swift */,
+				782D8AD84007D35B5B0DB9CD /* UpdateProgressView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		5D479E04ACFEEEA687B5462E = {
+			isa = PBXGroup;
+			children = (
+				2087A58E65E8EDE73D935C15 /* Resources */,
+				2B7E777056D86D2A12C04C6D /* App */,
+				A1581729D85D6A0D2DD33C27 /* Models */,
+				15E77D64ABA66073AF28090E /* Services */,
+				AC76D68796CD55ABBC7527DD /* Tests */,
+				FCCA5454EB829458B8F5B7EA /* ViewModels */,
+				5334E12F30C8D8C06E31F58F /* Views */,
+				E9A2CE9F8D9A16777B2182EF /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A1581729D85D6A0D2DD33C27 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				9A1B1F334020349AF1BB567F /* AppSettings.swift */,
+				6F7E990CE834E05B52EAF553 /* Component.swift */,
+				782EFED7B8F2AD1265BCF690 /* ComponentRegistry.swift */,
+				754EF798D1DADA467A6A6D84 /* UpdateStatus.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		AC76D68796CD55ABBC7527DD /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				CB0B45EFBB7DD5A133107515 /* ComponentRegistryTests.swift */,
+				8ED7ECBE41703B1FC4EB0791 /* GitHubServiceTests.swift */,
+				DE0AC8F02FED91F42FC4EB00 /* VersionComparisonTests.swift */,
+				FE4CB53B5CB04DACA0FDC375 /* VersionDetectionTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		E9A2CE9F8D9A16777B2182EF /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5914439D10E470294A91A039 /* FortAbodeUtilityCentral.app */,
+				A100840E6248DECFE28C4DBF /* FortAbodeUtilityCentralTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		FCCA5454EB829458B8F5B7EA /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				EC09EC9C57BA66F1650B44A0 /* ComponentListViewModel.swift */,
+				BC40AFA45E29AF2DBF63CC15 /* SettingsViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		259834D58F25C5FD01D98AB6 /* FortAbodeUtilityCentralTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3B7083FB93BFD0956C9770D7 /* Build configuration list for PBXNativeTarget "FortAbodeUtilityCentralTests" */;
+			buildPhases = (
+				C502865F18D5CFA7CE961DC2 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				52752C4EFA1E754339409190 /* PBXTargetDependency */,
+			);
+			name = FortAbodeUtilityCentralTests;
+			packageProductDependencies = (
+			);
+			productName = FortAbodeUtilityCentralTests;
+			productReference = A100840E6248DECFE28C4DBF /* FortAbodeUtilityCentralTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		5AB5DAACD8D2527E08316FE7 /* FortAbodeUtilityCentral */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 37F2B67BA6E1E93855191E6A /* Build configuration list for PBXNativeTarget "FortAbodeUtilityCentral" */;
+			buildPhases = (
+				EC5E3EBE102B6DAD05E85332 /* Sources */,
+				0248D8ADC3F72DE8079F9095 /* Resources */,
+				DB6C849ABD047945A86F0698 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FortAbodeUtilityCentral;
+			packageProductDependencies = (
+				8B75BAAFED90C32A32CA2420 /* Sparkle */,
+			);
+			productName = FortAbodeUtilityCentral;
+			productReference = 5914439D10E470294A91A039 /* FortAbodeUtilityCentral.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		672C6D2DFA922074863F8947 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					5AB5DAACD8D2527E08316FE7 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 9987FBE5AB6ADC7122EC1A22 /* Build configuration list for PBXProject "FortAbodeUtilityCentral" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 5D479E04ACFEEEA687B5462E;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C8572B4E1F6FCAC099FE243E /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = E9A2CE9F8D9A16777B2182EF /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5AB5DAACD8D2527E08316FE7 /* FortAbodeUtilityCentral */,
+				259834D58F25C5FD01D98AB6 /* FortAbodeUtilityCentralTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		0248D8ADC3F72DE8079F9095 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A93579377388C25E0C9EB1A4 /* Resources in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C502865F18D5CFA7CE961DC2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8C46F547DCED96736E019D49 /* ComponentRegistryTests.swift in Sources */,
+				527E21E6BC0AA688C00FA4E9 /* GitHubServiceTests.swift in Sources */,
+				386B5A369D88921474EC50B4 /* VersionComparisonTests.swift in Sources */,
+				49AFDBE9BAB4BDF2520332FF /* VersionDetectionTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EC5E3EBE102B6DAD05E85332 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				156C48CEA34E68406BE574C7 /* AppSettings.swift in Sources */,
+				BFFC39B7F0DEE48815EB2481 /* BackgroundTaskService.swift in Sources */,
+				ED44975C50A6C6A64F4954DE /* CheckForUpdatesView.swift in Sources */,
+				E39F0B6F301568824A772E71 /* Component.swift in Sources */,
+				33743BBEA6592F741CB5A22B /* ComponentCardView.swift in Sources */,
+				F37E0647A0A8D347473AA752 /* ComponentListViewModel.swift in Sources */,
+				63DF7D1C11E3A188E94C469F /* ComponentRegistry.swift in Sources */,
+				24FDEC144817A4CB5E3EFB24 /* ComponentRowView.swift in Sources */,
+				0C2AFE378C7F46B021BE15D4 /* ContentView.swift in Sources */,
+				64CA5B5EAAFCDA5C06236011 /* FortAbodeUtilityCentralApp.swift in Sources */,
+				06CB33690CC14595E2E99291 /* GitHubService.swift in Sources */,
+				84EF3894AB836BBA01A7FB6A /* NotificationService.swift in Sources */,
+				ADE9797A2E5EE7EB3C461ED6 /* SettingsView.swift in Sources */,
+				B4F10EEE4625314A880D027D /* SettingsViewModel.swift in Sources */,
+				112863CDD6F3C554DAF8C3A9 /* UpdateExecutionService.swift in Sources */,
+				864D70FCF7B97D190269DDFF /* UpdateProgressView.swift in Sources */,
+				A5D861B2D8E9BA0284E7ECF6 /* UpdateStatus.swift in Sources */,
+				3B8CF00712BD137247649E22 /* VersionDetectionService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		52752C4EFA1E754339409190 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5AB5DAACD8D2527E08316FE7 /* FortAbodeUtilityCentral */;
+			targetProxy = 97898CB52379AF67AB44B272 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0575981C75F5EB9137C13C88 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Fort Abode Utility Central";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_SUEnableAutomaticChecks = YES;
+				INFOPLIST_KEY_SUFeedURL = "https://raw.githubusercontent.com/kamrenkennedy/FortAbodeUtilityCentral/main/appcast.xml";
+				INFOPLIST_KEY_SUPublicEDKey = "y+SVlkS1Orgn/DOapgxZG39y29vhGl9BI/nGVSI5Tz0=";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kamstudios.fortabodeutilitycentral;
+				PRODUCT_NAME = "Fort Abode Utility Central";
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		0DDCD009F4A6BA1A03686A5D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		1F86534CA54FF3946F258607 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Fort Abode Utility Central";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_SUEnableAutomaticChecks = YES;
+				INFOPLIST_KEY_SUFeedURL = "https://raw.githubusercontent.com/kamrenkennedy/FortAbodeUtilityCentral/main/appcast.xml";
+				INFOPLIST_KEY_SUPublicEDKey = "y+SVlkS1Orgn/DOapgxZG39y29vhGl9BI/nGVSI5Tz0=";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kamstudios.fortabodeutilitycentral;
+				PRODUCT_NAME = "Fort Abode Utility Central";
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		35A8950F175B1FFDC235A498 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kamstudios.fortabodeutilitycentral.tests;
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Fort Abode Utility Central.app/Contents/MacOS/Fort Abode Utility Central";
+			};
+			name = Release;
+		};
+		528AD82406A07CB8A6B3B1EF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		F959DBD1344E7D87C4A53C59 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kamstudios.fortabodeutilitycentral.tests;
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Fort Abode Utility Central.app/Contents/MacOS/Fort Abode Utility Central";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		37F2B67BA6E1E93855191E6A /* Build configuration list for PBXNativeTarget "FortAbodeUtilityCentral" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0575981C75F5EB9137C13C88 /* Debug */,
+				1F86534CA54FF3946F258607 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		3B7083FB93BFD0956C9770D7 /* Build configuration list for PBXNativeTarget "FortAbodeUtilityCentralTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F959DBD1344E7D87C4A53C59 /* Debug */,
+				35A8950F175B1FFDC235A498 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		9987FBE5AB6ADC7122EC1A22 /* Build configuration list for PBXProject "FortAbodeUtilityCentral" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0DDCD009F4A6BA1A03686A5D /* Debug */,
+				528AD82406A07CB8A6B3B1EF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C8572B4E1F6FCAC099FE243E /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		8B75BAAFED90C32A32CA2420 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C8572B4E1F6FCAC099FE243E /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 672C6D2DFA922074863F8947 /* Project object */;
+}

@@ -1,0 +1,98 @@
+[
+  {
+    "id": "setup-claude-memory",
+    "display_name": "Kam Memory",
+    "description": "Core installer and setup CLI for Claude memory infrastructure",
+    "type": "npmPackage",
+    "icon": "brain",
+    "version_source": {
+      "npx_cache": {
+        "package_name": "setup-claude-memory"
+      }
+    },
+    "update_source": {
+      "github_release": {
+        "owner": "kamrenkennedy",
+        "repo": "setup-claude-memory"
+      }
+    },
+    "update_command": {
+      "npx_install": {
+        "package_name": "setup-claude-memory"
+      }
+    }
+  },
+  {
+    "id": "mcp-knowledge-graph",
+    "display_name": "Knowledge Graph",
+    "description": "Structured facts and entity relationships",
+    "type": "mcpServer",
+    "icon": "point.3.connected.trianglepath.dotted",
+    "version_source": {
+      "npx_cache": {
+        "package_name": "mcp-knowledge-graph"
+      }
+    },
+    "update_source": {
+      "npm_registry": {
+        "package_name": "mcp-knowledge-graph"
+      }
+    },
+    "update_command": {
+      "parent_package": {
+        "parent_id": "setup-claude-memory"
+      }
+    }
+  },
+  {
+    "id": "aim-deep-context",
+    "display_name": "Deep Context",
+    "description": "Long-form session summaries and narratives",
+    "type": "mcpServer",
+    "icon": "archivebox.fill",
+    "version_source": {
+      "npx_cache": {
+        "package_name": "setup-claude-memory"
+      }
+    },
+    "update_source": {
+      "github_release": {
+        "owner": "kamrenkennedy",
+        "repo": "setup-claude-memory"
+      }
+    },
+    "update_command": {
+      "parent_package": {
+        "parent_id": "setup-claude-memory"
+      }
+    }
+  },
+  {
+    "id": "apple-reminders-mcp",
+    "display_name": "Reminders",
+    "description": "Apple Reminders integration",
+    "type": "localMCPServer",
+    "icon": "checklist",
+    "version_source": {
+      "local_directory": {
+        "name": "apple-reminders"
+      }
+    },
+    "update_source": "none",
+    "update_command": "none"
+  },
+  {
+    "id": "imessage-mcp",
+    "display_name": "iMessage",
+    "description": "iMessage integration",
+    "type": "localMCPServer",
+    "icon": "message.fill",
+    "version_source": {
+      "local_directory": {
+        "name": "imessage"
+      }
+    },
+    "update_source": "none",
+    "update_command": "none"
+  }
+]

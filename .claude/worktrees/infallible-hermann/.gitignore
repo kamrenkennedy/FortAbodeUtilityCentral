@@ -1,0 +1,28 @@
+# Xcode
+*.xcodeproj/
+xcuserdata/
+*.xcworkspace/
+DerivedData/
+build/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xccheckout
+*.moved-aside
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Sparkle private key (NEVER commit)
+*.private-key
+
+# Dropbox
+.dropbox
+.dropbox.attr
+.dropbox.cache
+
+# Reference docs (large files, not needed in repo)
+Reference/

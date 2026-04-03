@@ -25,7 +25,7 @@
   {
     "id": "mcp-knowledge-graph",
     "display_name": "Knowledge Graph",
-    "description": "Structured facts and entity relationships (Kam-Memory MCP)",
+    "description": "Structured facts and entity relationships",
     "type": "mcpServer",
     "icon": "point.3.connected.trianglepath.dotted",
     "version_source": {
@@ -47,7 +47,7 @@
   {
     "id": "aim-deep-context",
     "display_name": "Deep Context",
-    "description": "Long-form session summaries and narratives (Kam-Deep-Context MCP)",
+    "description": "Long-form session summaries and narratives",
     "type": "mcpServer",
     "icon": "archivebox.fill",
     "version_source": {
@@ -74,8 +74,8 @@
     "type": "localMCPServer",
     "icon": "checklist",
     "version_source": {
-      "claude_desktop_config": {
-        "server_key": "apple-reminders"
+      "local_directory": {
+        "name": "apple-reminders"
       }
     },
     "update_source": "none",
@@ -88,8 +88,8 @@
     "type": "localMCPServer",
     "icon": "message.fill",
     "version_source": {
-      "claude_desktop_config": {
-        "server_key": "imessage"
+      "local_directory": {
+        "name": "imessage"
       }
     },
     "update_source": "none",

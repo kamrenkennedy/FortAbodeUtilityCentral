@@ -3,6 +3,14 @@
     <channel>
         <title>Fort Abode Utility Central</title>
         <item>
+            <title>1.1.0</title>
+            <pubDate>Thu, 02 Apr 2026 23:13:18 -0500</pubDate>
+            <sparkle:version>2</sparkle:version>
+            <sparkle:shortVersionString>1.1.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <enclosure url="FortAbodeUtilityCentral-1.1.0.zip" length="5603754" type="application/octet-stream"/>
+        </item>
+        <item>
             <title>1.0.0</title>
             <pubDate>Thu, 02 Apr 2026 16:26:15 -0500</pubDate>
             <sparkle:version>1</sparkle:version>

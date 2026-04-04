@@ -36,13 +36,26 @@ final class ComponentRegistry {
         components.first { $0.id == id }
     }
 
-    /// Components that can be independently updated (not children of a parent)
-    var updatableComponents: [Component] {
-        components.filter { $0.isIndependentlyUpdatable }
+    /// Components that are installed (status is not .notInstalled or .unknown)
+    func installedComponents(statuses: [String: UpdateStatus]) -> [Component] {
+        components.filter { component in
+            guard let status = statuses[component.id] else { return false }
+            switch status {
+            case .notInstalled, .unknown:
+                return false
+            default:
+                return true
+            }
+        }
     }
 
-    /// Child components of a given parent
-    func children(of parentId: String) -> [Component] {
-        components.filter { $0.parentId == parentId }
+    /// Components available in the marketplace (not installed and marketplace=true)
+    func marketplaceComponents(statuses: [String: UpdateStatus]) -> [Component] {
+        components.filter { component in
+            guard component.showInMarketplace else { return false }
+            guard let status = statuses[component.id] else { return true }
+            if case .notInstalled = status { return true }
+            return false
+        }
     }
 }

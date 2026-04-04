@@ -18,6 +18,13 @@ enum ComponentType: String, Codable, CaseIterable {
     }
 }
 
+// MARK: - Included Server (MCP servers provided by a package)
+
+struct IncludedServer: Codable, Hashable {
+    let name: String
+    let description: String
+}
+
 // MARK: - Version Source (how to find installed version)
 
 enum VersionSource: Hashable {
@@ -121,17 +128,15 @@ extension UpdateSource: Codable {
 enum UpdateCommand: Hashable {
     case npxInstall(packageName: String)
     case shellCommand(command: String, args: [String])
-    case parentPackage(parentId: String)
     case none
 }
 
 extension UpdateCommand: Codable {
     private struct NpxPayload: Codable { let packageName: String }
     private struct ShellPayload: Codable { let command: String; let args: [String] }
-    private struct ParentPayload: Codable { let parentId: String }
 
     private enum CodingKeys: String, CodingKey {
-        case npxInstall, shellCommand, parentPackage
+        case npxInstall, shellCommand
     }
 
     init(from decoder: Decoder) throws {
@@ -147,8 +152,6 @@ extension UpdateCommand: Codable {
             self = .npxInstall(packageName: payload.packageName)
         } else if let payload = try container.decodeIfPresent(ShellPayload.self, forKey: .shellCommand) {
             self = .shellCommand(command: payload.command, args: payload.args)
-        } else if let payload = try container.decodeIfPresent(ParentPayload.self, forKey: .parentPackage) {
-            self = .parentPackage(parentId: payload.parentId)
         } else {
             self = .none
         }
@@ -162,9 +165,6 @@ extension UpdateCommand: Codable {
         case .shellCommand(let command, let args):
             var container = encoder.container(keyedBy: CodingKeys.self)
             try container.encode(ShellPayload(command: command, args: args), forKey: .shellCommand)
-        case .parentPackage(let parentId):
-            var container = encoder.container(keyedBy: CodingKeys.self)
-            try container.encode(ParentPayload(parentId: parentId), forKey: .parentPackage)
         case .none:
             var container = encoder.singleValueContainer()
             try container.encode("none")
@@ -178,11 +178,15 @@ struct Component: Identifiable, Codable, Hashable {
     let id: String
     let displayName: String
     let description: String
+    let userDescription: String?
+    let usageInstructions: String?
     let type: ComponentType
     let icon: String?
+    let includedServers: [IncludedServer]?
     let versionSource: VersionSource
     let updateSource: UpdateSource
     let updateCommand: UpdateCommand
+    let marketplace: Bool?
 
     /// SF Symbol name — uses the explicit icon if provided, otherwise falls back by type
     var iconName: String {
@@ -195,18 +199,14 @@ struct Component: Identifiable, Codable, Hashable {
         }
     }
 
-    /// If this component's update is handled by a parent, return that parent's ID
-    var parentId: String? {
-        if case .parentPackage(let parentId) = updateCommand {
-            return parentId
-        }
-        return nil
-    }
-
-    /// Whether this component can be independently updated
-    var isIndependentlyUpdatable: Bool {
-        if case .parentPackage = updateCommand { return false }
+    /// Whether this component can be updated
+    var isUpdatable: Bool {
         if case .none = updateCommand { return false }
         return true
+    }
+
+    /// Whether this component should appear in the marketplace when not installed
+    var showInMarketplace: Bool {
+        marketplace ?? false
     }
 }

@@ -22,19 +22,13 @@ actor UpdateExecutionService {
         case .shellCommand(let command, let args):
             return await runShellCommand(command, args: args)
 
-        case .parentPackage:
-            // Should be handled by the ViewModel routing to the parent
-            return UpdateResult(success: false, output: "", errorOutput: "Routed to parent")
-
         case .none:
-            return UpdateResult(success: false, output: "", errorOutput: "No update command")
+            return UpdateResult(success: false, output: "", errorOutput: "No update command configured")
         }
     }
 
     // MARK: - npx Cache Update
 
-    /// Professional update flow: clear old npx cache, then pre-fetch the latest version.
-    /// This is what happens when Claude Desktop restarts — npx downloads the newest version.
     private func clearAndRefreshNpxCache(packageName: String) async -> UpdateResult {
         let homeDir = FileManager.default.homeDirectoryForCurrentUser
         let npxCacheDir = homeDir.appendingPathComponent(".npm/_npx")
@@ -61,22 +55,33 @@ actor UpdateExecutionService {
             }
         }
 
-        // Step 2: Pre-fetch the latest version by running npx with --yes
-        // This downloads the package to the npx cache so it's ready when Claude starts
-        let nodePath = findNodePath()
-        let npxPath = nodePath.replacingOccurrences(of: "/node", with: "/npx")
+        // Step 2: Find node/npx
+        guard let nodePath = findNodePath() else {
+            let errorMsg = "Node.js not found on this machine. Please install Node.js."
+            await ErrorLogger.shared.log(
+                componentId: "system",
+                displayName: "System",
+                error: errorMsg,
+                installedVersion: nil
+            )
+            return UpdateResult(success: false, output: "", errorOutput: errorMsg)
+        }
 
+        let npxPath = (nodePath as NSString).deletingLastPathComponent + "/npx"
+
+        // Step 3: Pre-fetch the latest version
         let process = Process()
         process.executableURL = URL(fileURLWithPath: npxPath)
         process.arguments = ["-y", "\(packageName)@latest", "--version"]
 
-        // Set up environment with PATH so node can find its dependencies
+        // Set up environment with comprehensive PATH
         var env = ProcessInfo.processInfo.environment
         let binDir = (nodePath as NSString).deletingLastPathComponent
+        let extraPaths = "/usr/local/bin:/opt/homebrew/bin"
         if let existingPath = env["PATH"] {
-            env["PATH"] = "\(binDir):\(existingPath)"
+            env["PATH"] = "\(binDir):\(extraPaths):\(existingPath)"
         } else {
-            env["PATH"] = binDir
+            env["PATH"] = "\(binDir):\(extraPaths):/usr/bin:/bin"
         }
         process.environment = env
 
@@ -104,7 +109,7 @@ actor UpdateExecutionService {
             return UpdateResult(
                 success: false,
                 output: "Cleared \(removedCount) old cache entries.",
-                errorOutput: "Failed to pre-fetch: \(error.localizedDescription)"
+                errorOutput: "Failed to run npx: \(error.localizedDescription)"
             )
         }
     }
@@ -142,20 +147,71 @@ actor UpdateExecutionService {
         }
     }
 
-    // MARK: - Helpers
+    // MARK: - Node.js Discovery
 
-    /// Find the node binary path — checks common locations
-    private func findNodePath() -> String {
+    /// Find node binary using login shell (handles nvm, fnm, Homebrew on both Intel and Apple Silicon)
+    private func findNodePath() -> String? {
+        // Method 1: Use login shell to find node (handles nvm, fnm, custom PATHs)
+        if let path = runWhichNode() {
+            return path
+        }
+
+        // Method 2: Check common static locations
         let candidates = [
-            "/opt/homebrew/bin/node",
-            "/usr/local/bin/node",
-            "/usr/bin/node"
+            "/opt/homebrew/bin/node",       // Apple Silicon Homebrew
+            "/usr/local/bin/node",          // Intel Homebrew / manual install
+            "/usr/bin/node"                 // System
         ]
         for path in candidates {
             if FileManager.default.fileExists(atPath: path) {
                 return path
             }
         }
-        return "/opt/homebrew/bin/node"
+
+        // Method 3: Check nvm default location
+        let homeDir = FileManager.default.homeDirectoryForCurrentUser.path
+        let nvmDir = "\(homeDir)/.nvm/versions/node"
+        if let versions = try? FileManager.default.contentsOfDirectory(atPath: nvmDir) {
+            // Use the most recent version
+            let sorted = versions.sorted().reversed()
+            for version in sorted {
+                let nodePath = "\(nvmDir)/\(version)/bin/node"
+                if FileManager.default.fileExists(atPath: nodePath) {
+                    return nodePath
+                }
+            }
+        }
+
+        print("[UpdateExecution] Node.js not found anywhere")
+        return nil
+    }
+
+    /// Run `which node` in a login shell to get the full PATH (including nvm/fnm)
+    private func runWhichNode() -> String? {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/zsh")
+        process.arguments = ["-l", "-c", "which node"]
+
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = Pipe()
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+
+            guard process.terminationStatus == 0 else { return nil }
+
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let path = String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            guard let path, !path.isEmpty,
+                  FileManager.default.fileExists(atPath: path) else { return nil }
+
+            return path
+        } catch {
+            return nil
+        }
     }
 }

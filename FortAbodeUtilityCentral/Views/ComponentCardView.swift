@@ -14,7 +14,6 @@ struct ComponentCardView: View {
         VStack(spacing: 8) {
             // Icon
             ZStack {
-                // Glass card background
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .fill(.ultraThinMaterial)
                     .overlay {
@@ -27,13 +26,12 @@ struct ComponentCardView: View {
                     }
                     .shadow(color: shadowColor, radius: isHovering ? 12 : 6, y: isHovering ? 4 : 2)
 
-                // SF Symbol
                 Image(systemName: component.iconName)
                     .font(.system(size: 32, weight: .light))
                     .foregroundStyle(iconForeground)
                     .symbolEffect(.pulse, isActive: status == .checking || status == .updating)
 
-                // Update badge
+                // Update available badge (orange dot)
                 if status.isUpdateAvailable {
                     Circle()
                         .fill(.orange)
@@ -46,6 +44,19 @@ struct ComponentCardView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                         .padding(6)
                 }
+
+                // "Updated" badge (blue capsule) — shown after a successful update until user views detail
+                if viewModel.badgeTracker.hasBadge(component.id) && !status.isUpdateAvailable {
+                    Text("Updated")
+                        .font(.system(size: 7, weight: .bold))
+                        .textCase(.uppercase)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(Capsule().fill(.blue))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                        .padding(4)
+                }
             }
             .frame(width: 80, height: 80)
             .scaleEffect(isHovering ? 1.06 : 1.0)
@@ -54,37 +65,17 @@ struct ComponentCardView: View {
                 isHovering = hovering
             }
 
-            // Name
             Text(component.displayName)
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
 
-            // Version or status
             Text(versionLabel)
                 .font(.system(size: 9, weight: .regular, design: .monospaced))
                 .foregroundStyle(versionColor)
                 .lineLimit(1)
         }
         .frame(width: 110)
-        .onTapGesture {
-            handleTap()
-        }
-        .contextMenu {
-            Button("Check for Updates") {
-                Task { await viewModel.checkSingleComponent(component.id) }
-            }
-
-            if status.isUpdateAvailable {
-                Button("Update") {
-                    Task { await viewModel.updateComponent(component.id) }
-                }
-            }
-
-            Divider()
-
-            Text(component.description)
-        }
     }
 
     // MARK: - Styling
@@ -95,32 +86,28 @@ struct ComponentCardView: View {
             return AnyShapeStyle(
                 LinearGradient(
                     colors: [.orange.opacity(0.12), .orange.opacity(0.04)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
+                    startPoint: .topLeading, endPoint: .bottomTrailing
                 )
             )
         case .upToDate, .updateComplete:
             return AnyShapeStyle(
                 LinearGradient(
                     colors: [.green.opacity(0.08), .green.opacity(0.02)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
+                    startPoint: .topLeading, endPoint: .bottomTrailing
                 )
             )
         case .error:
             return AnyShapeStyle(
                 LinearGradient(
                     colors: [.red.opacity(0.1), .red.opacity(0.03)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
+                    startPoint: .topLeading, endPoint: .bottomTrailing
                 )
             )
         case .checkFailed:
             return AnyShapeStyle(
                 LinearGradient(
                     colors: [.yellow.opacity(0.08), .yellow.opacity(0.02)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
+                    startPoint: .topLeading, endPoint: .bottomTrailing
                 )
             )
         default:
@@ -158,11 +145,11 @@ struct ComponentCardView: View {
     private var versionLabel: String {
         switch status {
         case .upToDate(let version), .updateComplete(let version):
-            return Self.formatVersion(version)
+            return VersionFormatter.format(version)
         case .updateAvailable(let installed, let latest):
-            return "\(Self.formatVersion(installed)) \u{2192} \(Self.formatVersion(latest))"
+            return "\(VersionFormatter.format(installed)) \u{2192} \(VersionFormatter.format(latest))"
         case .checkFailed(let version):
-            return "\(Self.formatVersion(version)) \u{2022} offline"
+            return "\(VersionFormatter.format(version)) \u{2022} offline"
         case .checking:
             return "checking..."
         case .updating:
@@ -176,15 +163,6 @@ struct ComponentCardView: View {
         }
     }
 
-    /// Format a version string — prepend "v" only for semver strings, not words like "configured"
-    private static func formatVersion(_ version: String) -> String {
-        let cleaned = version.hasPrefix("v") ? String(version.dropFirst()) : version
-        if let first = cleaned.first, first.isNumber {
-            return "v\(cleaned)"
-        }
-        return cleaned
-    }
-
     private var versionColor: Color {
         switch status {
         case .upToDate, .updateComplete: return .green.opacity(0.8)
@@ -192,16 +170,6 @@ struct ComponentCardView: View {
         case .checkFailed: return .yellow.opacity(0.7)
         case .error: return .red.opacity(0.8)
         default: return .secondary
-        }
-    }
-
-    // MARK: - Actions
-
-    private func handleTap() {
-        if status.isUpdateAvailable {
-            Task { await viewModel.updateComponent(component.id) }
-        } else {
-            Task { await viewModel.checkSingleComponent(component.id) }
         }
     }
 }

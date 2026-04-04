@@ -15,8 +15,9 @@ final class ComponentListViewModel {
 
     // MARK: - Dependencies
 
-    private let registry: ComponentRegistry
-    private let gitHubService = GitHubService()
+    let registry: ComponentRegistry
+    let badgeTracker: BadgeTracker
+    let gitHubService = GitHubService()
     private let versionDetectionService = VersionDetectionService()
     private let updateExecutionService = UpdateExecutionService()
 
@@ -24,9 +25,19 @@ final class ComponentListViewModel {
         registry.components
     }
 
-    init(registry: ComponentRegistry) {
+    /// Only components that are installed (for the main grid)
+    var installedComponents: [Component] {
+        registry.installedComponents(statuses: statuses)
+    }
+
+    /// Components available in the marketplace (not installed)
+    var marketplaceItems: [Component] {
+        registry.marketplaceComponents(statuses: statuses)
+    }
+
+    init(registry: ComponentRegistry, badgeTracker: BadgeTracker = BadgeTracker()) {
         self.registry = registry
-        // Initialize all statuses to unknown
+        self.badgeTracker = badgeTracker
         for component in registry.components {
             statuses[component.id] = .unknown
         }
@@ -55,12 +66,10 @@ final class ComponentListViewModel {
     func checkAll() async {
         isCheckingAll = true
 
-        // Set all to checking
         for component in components {
             statuses[component.id] = .checking
         }
 
-        // Check each component concurrently
         await withTaskGroup(of: (String, UpdateStatus).self) { group in
             for component in components {
                 group.addTask { [self] in
@@ -86,47 +95,41 @@ final class ComponentListViewModel {
         statuses[id] = await checkComponent(component)
     }
 
-    /// Update a component (routes to parent if needed)
+    /// Update a component
     func updateComponent(_ id: String) async {
         guard let component = registry.component(withId: id) else { return }
 
-        // If this is a child component, update the parent instead
-        let targetComponent: Component
-        if let parentId = component.parentId,
-           let parent = registry.component(withId: parentId) {
-            targetComponent = parent
-        } else {
-            targetComponent = component
-        }
+        statuses[id] = .updating
 
-        statuses[targetComponent.id] = .updating
-
-        // Also mark children as updating
-        for child in registry.children(of: targetComponent.id) {
-            statuses[child.id] = .updating
-        }
-
-        let result = await updateExecutionService.executeUpdate(for: targetComponent)
+        let result = await updateExecutionService.executeUpdate(for: component)
 
         if result.success {
-            // Re-check versions after successful update
-            statuses[targetComponent.id] = .checking
-            for child in registry.children(of: targetComponent.id) {
-                statuses[child.id] = .checking
-            }
-
-            // Brief pause to let filesystem settle
+            statuses[id] = .checking
             try? await Task.sleep(for: .seconds(1))
 
-            // Re-check the target and its children
-            statuses[targetComponent.id] = await checkComponent(targetComponent)
-            for child in registry.children(of: targetComponent.id) {
-                statuses[child.id] = await checkComponent(child)
+            let newStatus = await checkComponent(component)
+            statuses[id] = newStatus
+
+            // Mark as updated if version changed — triggers the badge
+            if let version = newStatus.installedVersion {
+                badgeTracker.markUpdated(componentId: id, version: version)
             }
         } else {
-            let message = result.errorOutput.isEmpty ? "Update failed" : result.errorOutput.prefix(80).description
-            statuses[targetComponent.id] = .error(message: message)
+            let message = result.errorOutput.isEmpty ? "Update failed" : String(result.errorOutput.prefix(80))
+            statuses[id] = .error(message: message)
+
+            await ErrorLogger.shared.log(
+                componentId: id,
+                displayName: component.displayName,
+                error: result.errorOutput,
+                installedVersion: statuses[id]?.installedVersion
+            )
         }
+    }
+
+    /// Install a component from the marketplace
+    func installComponent(_ id: String) async {
+        await updateComponent(id)
     }
 
     /// Update all components that have available updates
@@ -135,14 +138,7 @@ final class ComponentListViewModel {
             .filter { $0.value.isUpdateAvailable }
             .map { $0.key }
 
-        var rootIdsToUpdate = Set<String>()
         for id in updatableIds {
-            if let component = registry.component(withId: id) {
-                rootIdsToUpdate.insert(component.parentId ?? component.id)
-            }
-        }
-
-        for id in rootIdsToUpdate {
             await updateComponent(id)
         }
     }
@@ -156,15 +152,7 @@ final class ComponentListViewModel {
             return .notInstalled
         }
 
-        // Local-only components (Reminders, iMessage) — no remote to check
-        if installed == "installed" || installed == "configured" {
-            // If there's no update source, it's a local-only component
-            if case .none = component.updateSource {
-                return .upToDate(version: installed)
-            }
-        }
-
-        // For components with a remote update source, fetch the latest version
+        // For components with no remote update source, just show installed status
         if case .none = component.updateSource {
             return .upToDate(version: installed)
         }
@@ -172,7 +160,6 @@ final class ComponentListViewModel {
         let latest = await gitHubService.fetchLatestVersion(for: component.updateSource)
 
         guard let latest else {
-            // Couldn't reach remote — show that we couldn't check, not "up to date"
             return .checkFailed(version: installed)
         }
 

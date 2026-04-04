@@ -1,10 +1,22 @@
 [
   {
     "id": "setup-claude-memory",
-    "display_name": "Kam Memory",
-    "description": "Core installer and setup CLI for Claude memory infrastructure",
+    "display_name": "Memory",
+    "description": "Claude persistent memory via iCloud — knowledge graph + deep context archive",
+    "user_description": "Gives Claude a persistent memory so it remembers your preferences, projects, and past conversations across sessions and devices.",
+    "usage_instructions": "Memory works automatically once installed. Claude will remember things you tell it between conversations — your preferences, project details, and important context. You don't need to do anything special. If you want Claude to remember something specific, just say \"remember this\" in conversation.",
     "type": "npmPackage",
     "icon": "brain",
+    "included_servers": [
+      {
+        "name": "Knowledge Graph",
+        "description": "Stores structured facts, people, projects, and relationships as quick-access memory"
+      },
+      {
+        "name": "Deep Context",
+        "description": "Stores long-form session summaries, creative briefs, and decision logs"
+      }
+    ],
     "version_source": {
       "npx_cache": {
         "package_name": "setup-claude-memory"
@@ -19,78 +31,57 @@
       "npx_install": {
         "package_name": "setup-claude-memory"
       }
-    }
-  },
-  {
-    "id": "mcp-knowledge-graph",
-    "display_name": "Knowledge Graph",
-    "description": "Structured facts and entity relationships (Kam-Memory MCP)",
-    "type": "mcpServer",
-    "icon": "point.3.connected.trianglepath.dotted",
-    "version_source": {
-      "npx_cache": {
-        "package_name": "mcp-knowledge-graph"
-      }
     },
-    "update_source": {
-      "npm_registry": {
-        "package_name": "mcp-knowledge-graph"
-      }
-    },
-    "update_command": {
-      "parent_package": {
-        "parent_id": "setup-claude-memory"
-      }
-    }
-  },
-  {
-    "id": "aim-deep-context",
-    "display_name": "Deep Context",
-    "description": "Long-form session summaries and narratives (Kam-Deep-Context MCP)",
-    "type": "mcpServer",
-    "icon": "archivebox.fill",
-    "version_source": {
-      "npx_cache": {
-        "package_name": "setup-claude-memory"
-      }
-    },
-    "update_source": {
-      "npm_registry": {
-        "package_name": "setup-claude-memory"
-      }
-    },
-    "update_command": {
-      "parent_package": {
-        "parent_id": "setup-claude-memory"
-      }
-    }
+    "marketplace": true
   },
   {
     "id": "apple-reminders-mcp",
     "display_name": "Reminders",
-    "description": "Apple Reminders integration",
-    "type": "localMCPServer",
+    "description": "Apple Reminders integration via AppleScript",
+    "user_description": "Lets Claude read, create, and manage your Apple Reminders. Claude can add tasks to your lists, check off completed items, and help you stay organized.",
+    "usage_instructions": "Just ask Claude about your reminders naturally — \"What's on my grocery list?\", \"Add milk to my shopping list\", or \"Mark the dentist appointment as done.\" Claude can see all your Reminders lists and manage them for you.",
+    "type": "mcpServer",
     "icon": "checklist",
     "version_source": {
-      "claude_desktop_config": {
-        "server_key": "apple-reminders"
+      "npx_cache": {
+        "package_name": "@kamk95/apple-reminders-mcp"
       }
     },
-    "update_source": "none",
-    "update_command": "none"
+    "update_source": {
+      "npm_registry": {
+        "package_name": "@kamk95/apple-reminders-mcp"
+      }
+    },
+    "update_command": {
+      "npx_install": {
+        "package_name": "@kamk95/apple-reminders-mcp"
+      }
+    },
+    "marketplace": true
   },
   {
     "id": "imessage-mcp",
     "display_name": "iMessage",
-    "description": "iMessage integration",
-    "type": "localMCPServer",
+    "description": "iMessage read/send integration via SQLite + AppleScript",
+    "user_description": "Lets Claude read and send iMessages on your behalf. Claude can check your recent messages, search conversations, and send texts to your contacts.",
+    "usage_instructions": "Ask Claude things like \"What did Mom text me?\", \"Send a message to John saying I'll be late\", or \"Search my messages for the restaurant name.\" Claude can read your message history and send new messages through iMessage.",
+    "type": "mcpServer",
     "icon": "message.fill",
     "version_source": {
-      "claude_desktop_config": {
-        "server_key": "imessage"
+      "npx_cache": {
+        "package_name": "@kamk95/imessage-mcp"
       }
     },
-    "update_source": "none",
-    "update_command": "none"
+    "update_source": {
+      "npm_registry": {
+        "package_name": "@kamk95/imessage-mcp"
+      }
+    },
+    "update_command": {
+      "npx_install": {
+        "package_name": "@kamk95/imessage-mcp"
+      }
+    },
+    "marketplace": true
   }
 ]

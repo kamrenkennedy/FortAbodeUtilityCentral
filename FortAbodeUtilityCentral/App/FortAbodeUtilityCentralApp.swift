@@ -22,8 +22,18 @@ struct FortAbodeUtilityCentralApp: App {
         WindowGroup {
             Group {
                 if let viewModel {
-                    ContentView()
-                        .environment(viewModel)
+                    NavigationStack {
+                        ContentView()
+                            .navigationDestination(for: AppDestination.self) { destination in
+                                switch destination {
+                                case .componentDetail(let id):
+                                    ComponentDetailView(componentId: id)
+                                case .marketplace:
+                                    MarketplaceView()
+                                }
+                            }
+                    }
+                    .environment(viewModel)
                 } else {
                     ProgressView("Loading...")
                         .frame(minWidth: 500, minHeight: 400)

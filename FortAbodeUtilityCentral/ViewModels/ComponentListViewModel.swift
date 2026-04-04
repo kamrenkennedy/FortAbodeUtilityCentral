@@ -106,15 +106,26 @@ final class ComponentListViewModel {
             statuses[child.id] = .updating
         }
 
-        let success = await updateExecutionService.executeUpdate(for: targetComponent)
+        let result = await updateExecutionService.executeUpdate(for: targetComponent)
 
-        if success {
-            statuses[targetComponent.id] = .unknown
+        if result.success {
+            // Re-check versions after successful update
+            statuses[targetComponent.id] = .checking
             for child in registry.children(of: targetComponent.id) {
-                statuses[child.id] = .unknown
+                statuses[child.id] = .checking
+            }
+
+            // Brief pause to let filesystem settle
+            try? await Task.sleep(for: .seconds(1))
+
+            // Re-check the target and its children
+            statuses[targetComponent.id] = await checkComponent(targetComponent)
+            for child in registry.children(of: targetComponent.id) {
+                statuses[child.id] = await checkComponent(child)
             }
         } else {
-            statuses[targetComponent.id] = .error(message: "Update failed to start")
+            let message = result.errorOutput.isEmpty ? "Update failed" : result.errorOutput.prefix(80).description
+            statuses[targetComponent.id] = .error(message: message)
         }
     }
 
@@ -145,14 +156,24 @@ final class ComponentListViewModel {
             return .notInstalled
         }
 
+        // Local-only components (Reminders, iMessage) — no remote to check
         if installed == "installed" || installed == "configured" {
+            // If there's no update source, it's a local-only component
+            if case .none = component.updateSource {
+                return .upToDate(version: installed)
+            }
+        }
+
+        // For components with a remote update source, fetch the latest version
+        if case .none = component.updateSource {
             return .upToDate(version: installed)
         }
 
         let latest = await gitHubService.fetchLatestVersion(for: component.updateSource)
 
         guard let latest else {
-            return .upToDate(version: installed)
+            // Couldn't reach remote — show that we couldn't check, not "up to date"
+            return .checkFailed(version: installed)
         }
 
         if SemverComparison.isNewer(latest, than: installed) {

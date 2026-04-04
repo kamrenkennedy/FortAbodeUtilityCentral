@@ -115,6 +115,14 @@ struct ComponentCardView: View {
                     endPoint: .bottomTrailing
                 )
             )
+        case .checkFailed:
+            return AnyShapeStyle(
+                LinearGradient(
+                    colors: [.yellow.opacity(0.08), .yellow.opacity(0.02)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
         default:
             return AnyShapeStyle(Color.clear)
         }
@@ -128,6 +136,8 @@ struct ComponentCardView: View {
             return AnyShapeStyle(.orange)
         case .error:
             return AnyShapeStyle(.red.opacity(0.8))
+        case .checkFailed:
+            return AnyShapeStyle(.yellow.opacity(0.7))
         case .checking, .updating:
             return AnyShapeStyle(.white.opacity(0.5))
         default:
@@ -139,6 +149,7 @@ struct ComponentCardView: View {
         switch status {
         case .updateAvailable: return .orange.opacity(0.2)
         case .upToDate, .updateComplete: return .green.opacity(0.1)
+        case .checkFailed: return .yellow.opacity(0.1)
         case .error: return .red.opacity(0.15)
         default: return .black.opacity(0.15)
         }
@@ -147,9 +158,11 @@ struct ComponentCardView: View {
     private var versionLabel: String {
         switch status {
         case .upToDate(let version), .updateComplete(let version):
-            return "v\(version)"
+            return Self.formatVersion(version)
         case .updateAvailable(let installed, let latest):
-            return "v\(installed) \u{2192} v\(latest)"
+            return "\(Self.formatVersion(installed)) \u{2192} \(Self.formatVersion(latest))"
+        case .checkFailed(let version):
+            return "\(Self.formatVersion(version)) \u{2022} offline"
         case .checking:
             return "checking..."
         case .updating:
@@ -163,10 +176,20 @@ struct ComponentCardView: View {
         }
     }
 
+    /// Format a version string — prepend "v" only for semver strings, not words like "configured"
+    private static func formatVersion(_ version: String) -> String {
+        let cleaned = version.hasPrefix("v") ? String(version.dropFirst()) : version
+        if let first = cleaned.first, first.isNumber {
+            return "v\(cleaned)"
+        }
+        return cleaned
+    }
+
     private var versionColor: Color {
         switch status {
         case .upToDate, .updateComplete: return .green.opacity(0.8)
         case .updateAvailable: return .orange
+        case .checkFailed: return .yellow.opacity(0.7)
         case .error: return .red.opacity(0.8)
         default: return .secondary
         }

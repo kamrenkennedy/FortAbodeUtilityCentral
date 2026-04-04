@@ -11,9 +11,8 @@
       }
     },
     "update_source": {
-      "github_release": {
-        "owner": "kamrenkennedy",
-        "repo": "setup-claude-memory"
+      "npm_registry": {
+        "package_name": "setup-claude-memory"
       }
     },
     "update_command": {
@@ -56,9 +55,8 @@
       }
     },
     "update_source": {
-      "github_release": {
-        "owner": "kamrenkennedy",
-        "repo": "setup-claude-memory"
+      "npm_registry": {
+        "package_name": "setup-claude-memory"
       }
     },
     "update_command": {

@@ -10,6 +10,7 @@ enum UpdateStatus: Equatable {
     case notInstalled
     case updating
     case updateComplete(version: String)
+    case checkFailed(version: String)   // installed but couldn't reach remote
     case error(message: String)
 
     // MARK: - Display Properties
@@ -26,6 +27,8 @@ enum UpdateStatus: Equatable {
             return .secondary
         case .updating:
             return .blue
+        case .checkFailed:
+            return .yellow
         case .error:
             return .red
         }
@@ -47,6 +50,8 @@ enum UpdateStatus: Equatable {
             return "arrow.down.circle.fill"
         case .updateComplete:
             return "checkmark.circle.fill"
+        case .checkFailed:
+            return "wifi.exclamationmark"
         case .error:
             return "exclamationmark.triangle.fill"
         }
@@ -68,6 +73,8 @@ enum UpdateStatus: Equatable {
             return "Updating..."
         case .updateComplete(let version):
             return "Updated to \(version)"
+        case .checkFailed(let version):
+            return "\(version) installed — couldn't check for updates"
         case .error(let message):
             return "Error: \(message)"
         }
@@ -75,7 +82,7 @@ enum UpdateStatus: Equatable {
 
     var installedVersion: String? {
         switch self {
-        case .upToDate(let version), .updateComplete(let version):
+        case .upToDate(let version), .updateComplete(let version), .checkFailed(let version):
             return version
         case .updateAvailable(let installed, _):
             return installed
@@ -87,6 +94,17 @@ enum UpdateStatus: Equatable {
     var isUpdateAvailable: Bool {
         if case .updateAvailable = self { return true }
         return false
+    }
+
+    /// Whether this status represents a version that doesn't need remote checking
+    /// (local-only components like Reminders/iMessage)
+    var isLocalOnly: Bool {
+        switch self {
+        case .upToDate(let version):
+            return version == "configured" || version == "installed"
+        default:
+            return false
+        }
     }
 }
 

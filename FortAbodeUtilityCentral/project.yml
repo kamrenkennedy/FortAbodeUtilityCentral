@@ -34,12 +34,7 @@ targets:
         PRODUCT_NAME: "Fort Abode Utility Central"
         MARKETING_VERSION: "2.0.0"
         CURRENT_PROJECT_VERSION: "6"
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: "Fort Abode Utility Central"
-        INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.utilities"
-        INFOPLIST_KEY_SUFeedURL: "https://raw.githubusercontent.com/kamrenkennedy/FortAbodeUtilityCentral/main/appcast.xml"
-        INFOPLIST_KEY_SUPublicEDKey: "y+SVlkS1Orgn/DOapgxZG39y29vhGl9BI/nGVSI5Tz0="
-        INFOPLIST_KEY_SUEnableAutomaticChecks: YES
+        INFOPLIST_FILE: Resources/Info.plist
         CODE_SIGN_IDENTITY: "Developer ID Application"
         CODE_SIGN_STYLE: Manual
         DEVELOPMENT_TEAM: X6LBF9H7M5

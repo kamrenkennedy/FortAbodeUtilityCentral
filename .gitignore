@@ -1,7 +1,5 @@
-# Xcode
-*.xcodeproj/
+# Xcode user data (keep .xcodeproj and .xcworkspace tracked)
 xcuserdata/
-*.xcworkspace/
 DerivedData/
 build/
 *.pbxuser

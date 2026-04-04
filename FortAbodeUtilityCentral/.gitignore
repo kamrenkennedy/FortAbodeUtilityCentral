@@ -1,0 +1,20 @@
+# Xcode
+DerivedData/
+build/
+xcuserdata/
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# Claude Code
+.claude/worktrees/
+
+# Sparkle
+*.dmg
+*.zip
+
+# Swift Package Manager
+.build/
+Packages/

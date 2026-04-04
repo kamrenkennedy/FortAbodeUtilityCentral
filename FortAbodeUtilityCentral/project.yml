@@ -32,8 +32,8 @@ targets:
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         PRODUCT_BUNDLE_IDENTIFIER: com.kamstudios.fortabodeutilitycentral
         PRODUCT_NAME: "Fort Abode Utility Central"
-        MARKETING_VERSION: "1.2.0"
-        CURRENT_PROJECT_VERSION: "3"
+        MARKETING_VERSION: "1.2.1"
+        CURRENT_PROJECT_VERSION: "4"
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: "Fort Abode Utility Central"
         INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.utilities"

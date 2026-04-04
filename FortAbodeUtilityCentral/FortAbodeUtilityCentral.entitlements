@@ -4,13 +4,5 @@
 <dict>
     <key>com.apple.security.network.client</key>
     <true/>
-    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
-    <true/>
-    <key>com.apple.security.temporary-exception.files.home-relative-path.read-only</key>
-    <array>
-        <string>/Library/Application Support/Claude/</string>
-        <string>/.npm/_npx/</string>
-        <string>/mcp-servers/</string>
-    </array>
 </dict>
 </plist>

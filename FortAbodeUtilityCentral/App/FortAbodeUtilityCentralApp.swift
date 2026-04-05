@@ -6,6 +6,7 @@ struct FortAbodeUtilityCentralApp: App {
 
     @State private var registry = ComponentRegistry()
     @State private var viewModel: ComponentListViewModel?
+    @State private var isActivated = KeychainService.isActivated
 
     // Sparkle updater controller — starts checking for updates automatically
     private let updaterController: SPUStandardUpdaterController
@@ -21,7 +22,11 @@ struct FortAbodeUtilityCentralApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if let viewModel {
+                if !isActivated {
+                    ActivationView {
+                        isActivated = true
+                    }
+                } else if let viewModel {
                     NavigationStack {
                         ContentView()
                             .navigationDestination(for: AppDestination.self) { destination in
@@ -41,6 +46,14 @@ struct FortAbodeUtilityCentralApp: App {
             }
             .frame(minWidth: 500, minHeight: 400)
             .onAppear {
+                guard isActivated else { return }
+                if viewModel == nil {
+                    viewModel = ComponentListViewModel(registry: registry)
+                }
+                handleLaunchMode()
+            }
+            .onChange(of: isActivated) { _, activated in
+                guard activated else { return }
                 if viewModel == nil {
                     viewModel = ComponentListViewModel(registry: registry)
                 }

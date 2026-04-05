@@ -1,9 +1,64 @@
-<?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
-  <channel>
-    <title>Fort Abode Utility Central</title>
-    <description>Updates for Fort Abode Utility Central</description>
-    <language>en</language>
-    <!-- Items will be added here by generate_appcast when you cut a release -->
-  </channel>
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Fort Abode Utility Central</title>
+        <item>
+            <title>2.1.0</title>
+            <pubDate>Fri, 04 Apr 2026 19:30:00 -0500</pubDate>
+            <sparkle:version>7</sparkle:version>
+            <sparkle:shortVersionString>2.1.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <sparkle:releaseNotesLink>https://github.com/kamrenkennedy/FortAbodeUtilityCentral/releases/tag/v2.1.0</sparkle:releaseNotesLink>
+            <enclosure url="https://github.com/kamrenkennedy/FortAbodeUtilityCentral/releases/download/v2.1.0/FortAbodeUtilityCentral-v2.1.0.zip" sparkle:edSignature="bilMhWdyHR00pS8JxIMvvQLtR/MuFK1Y6nrCJE/BxL2jt2xUcef841xTEkpIgZaUYuMYrhEqykYfI48Bdb7hCQ==" length="3790310" type="application/octet-stream"/>
+        </item>
+        <item>
+            <title>2.0.0</title>
+            <pubDate>Fri, 04 Apr 2026 12:00:00 -0500</pubDate>
+            <sparkle:version>6</sparkle:version>
+            <sparkle:shortVersionString>2.0.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <sparkle:releaseNotesLink>https://github.com/kamrenkennedy/FortAbodeUtilityCentral/releases/tag/v2.0.0</sparkle:releaseNotesLink>
+            <enclosure url="https://github.com/kamrenkennedy/FortAbodeUtilityCentral/releases/download/v2.0.0/FortAbodeUtilityCentral-v2.0.0.zip" sparkle:edSignature="uDBUPwgtTkPpUXXP/X/Oonvf9Xvqp1oys8DOv0zN9D04XLc4c6+M4h1xh6oLFg7svxzphNCsRikok9xe+NB1Dg==" length="3754399" type="application/octet-stream"/>
+        </item>
+        <item>
+            <title>1.3.0</title>
+            <pubDate>Sat, 04 Apr 2026 10:14:12 -0500</pubDate>
+            <sparkle:version>5</sparkle:version>
+            <sparkle:shortVersionString>1.3.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/kamrenkennedy/FortAbodeUtilityCentral/releases/download/v1.3.0/FortAbodeUtilityCentral-v1.3.0.zip" sparkle:edSignature="4JAOWu8T57TnevJFGMdeNqMdApjz8cqr6CEtzsgdF0x9spd5zsic9GcrYqgFN58Tq46LZp5OBH1pypKr9E2tCQ==" length="3633135" type="application/octet-stream"/>
+        </item>
+        <item>
+            <title>1.2.1</title>
+            <pubDate>Sat, 04 Apr 2026 09:37:48 -0500</pubDate>
+            <sparkle:version>4</sparkle:version>
+            <sparkle:shortVersionString>1.2.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/kamrenkennedy/FortAbodeUtilityCentral/releases/download/v1.2.1/FortAbodeUtilityCentral-v1.2.1.zip" sparkle:edSignature="ZgM9Eq8lYD7tmlisSloyctwgjWpnTs52crCg4XIrv7yyeaRNjAiKKXzfVl+bnT/axP0pyJznG4rSCAYI6VyLAw==" length="3615470" type="application/octet-stream"/>
+        </item>
+        <item>
+            <title>1.2.0</title>
+            <pubDate>Fri, 03 Apr 2026 15:39:53 -0500</pubDate>
+            <sparkle:version>3</sparkle:version>
+            <sparkle:shortVersionString>1.2.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <enclosure url="FortAbodeUtilityCentral-1.2.0.zip" length="5604131" type="application/octet-stream"/>
+        </item>
+        <item>
+            <title>1.1.0</title>
+            <pubDate>Thu, 02 Apr 2026 23:13:18 -0500</pubDate>
+            <sparkle:version>2</sparkle:version>
+            <sparkle:shortVersionString>1.1.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <enclosure url="FortAbodeUtilityCentral-1.1.0.zip" length="5603754" type="application/octet-stream"/>
+        </item>
+        <item>
+            <title>1.0.0</title>
+            <pubDate>Thu, 02 Apr 2026 16:26:15 -0500</pubDate>
+            <sparkle:version>1</sparkle:version>
+            <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <enclosure url="FortAbodeUtilityCentral-1.0.0.zip" length="5603697" type="application/octet-stream"/>
+        </item>
+    </channel>
 </rss>

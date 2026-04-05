@@ -66,9 +66,17 @@ final class ComponentListViewModel {
 
     // MARK: - Actions
 
-    /// Check all components for updates
+    /// Check all components for updates (also refreshes the marketplace from GitHub)
     func checkAll() async {
         isCheckingAll = true
+
+        // Refresh registry from GitHub — picks up new marketplace items
+        await registry.refresh()
+
+        // Initialize statuses for any new components that appeared from the remote registry
+        for component in components where statuses[component.id] == nil {
+            statuses[component.id] = .unknown
+        }
 
         for component in components {
             statuses[component.id] = .checking

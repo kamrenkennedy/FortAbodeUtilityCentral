@@ -20,6 +20,10 @@ final class ComponentListViewModel {
     let gitHubService = GitHubService()
     private let versionDetectionService = VersionDetectionService()
     private let updateExecutionService = UpdateExecutionService()
+    private let claudeConfigService = ClaudeDesktopConfigService()
+
+    /// Set after install/uninstall to prompt user to restart Claude
+    var showRestartHint = false
 
     var components: [Component] {
         registry.components
@@ -104,6 +108,12 @@ final class ComponentListViewModel {
         let result = await updateExecutionService.executeUpdate(for: component)
 
         if result.success {
+            // Re-apply config entries (idempotent — ensures config stays in sync)
+            if let configEntries = component.claudeConfig, !configEntries.isEmpty {
+                let memoryPath = resolveMemoryPath()
+                try? await claudeConfigService.addServerEntries(configEntries, memoryPath: memoryPath)
+            }
+
             statuses[id] = .checking
             try? await Task.sleep(for: .seconds(1))
 
@@ -127,9 +137,68 @@ final class ComponentListViewModel {
         }
     }
 
-    /// Install a component from the marketplace
+    /// Install a component from the marketplace — runs npm install + writes claude_desktop_config.json
     func installComponent(_ id: String) async {
-        await updateComponent(id)
+        guard let component = registry.component(withId: id) else { return }
+
+        statuses[id] = .updating
+
+        // Step 1: Run npm install (cache the package)
+        let result = await updateExecutionService.executeUpdate(for: component)
+
+        guard result.success else {
+            let message = result.errorOutput.isEmpty ? "Install failed" : String(result.errorOutput.prefix(80))
+            statuses[id] = .error(message: message)
+            await ErrorLogger.shared.log(
+                componentId: id,
+                displayName: component.displayName,
+                error: result.errorOutput,
+                installedVersion: nil
+            )
+            return
+        }
+
+        // Step 2: Write config entries to claude_desktop_config.json
+        if let configEntries = component.claudeConfig, !configEntries.isEmpty {
+            do {
+                let memoryPath = resolveMemoryPath()
+                try await claudeConfigService.addServerEntries(configEntries, memoryPath: memoryPath)
+                showRestartHint = true
+            } catch {
+                statuses[id] = .error(message: "Installed but failed to configure Claude: \(error.localizedDescription)")
+                await ErrorLogger.shared.log(
+                    componentId: id,
+                    displayName: component.displayName,
+                    error: "Config write failed: \(error.localizedDescription)",
+                    installedVersion: nil
+                )
+                return
+            }
+        }
+
+        // Step 3: Verify — re-check the version
+        try? await Task.sleep(for: .seconds(1))
+        let newStatus = await checkComponent(component)
+        statuses[id] = newStatus
+
+        if let version = newStatus.installedVersion {
+            badgeTracker.markUpdated(componentId: id, version: version)
+        }
+    }
+
+    /// Uninstall a component — removes config entries from claude_desktop_config.json
+    func uninstallComponent(_ id: String) async {
+        guard let component = registry.component(withId: id) else { return }
+        guard let configEntries = component.claudeConfig, !configEntries.isEmpty else { return }
+
+        let keys = configEntries.map(\.key)
+        do {
+            try await claudeConfigService.removeServerEntries(keys: keys)
+            statuses[id] = .notInstalled
+            showRestartHint = true
+        } catch {
+            statuses[id] = .error(message: "Uninstall failed: \(error.localizedDescription)")
+        }
     }
 
     /// Update all components that have available updates
@@ -148,7 +217,30 @@ final class ComponentListViewModel {
     private func checkComponent(_ component: Component) async -> UpdateStatus {
         let installed = await versionDetectionService.detectInstalledVersion(for: component.versionSource)
 
+        // Self-heal: if package is installed (npx cache hit) but config entries are missing, auto-add them
+        if installed != nil, let configEntries = component.claudeConfig, !configEntries.isEmpty {
+            let keys = configEntries.map(\.key)
+            let allPresent = await claudeConfigService.hasEntries(keys: keys)
+            if !allPresent {
+                let memoryPath = resolveMemoryPath()
+                try? await claudeConfigService.addServerEntries(configEntries, memoryPath: memoryPath)
+                showRestartHint = true
+            }
+        }
+
+        // Dual detection: also check if config entries exist (manual installs)
+        let configPresent: Bool
+        if let configEntries = component.claudeConfig, !configEntries.isEmpty {
+            configPresent = await claudeConfigService.hasEntries(keys: configEntries.map(\.key))
+        } else {
+            configPresent = false
+        }
+
+        // If no npx cache version but config IS present, treat as "configured"
         guard let installed else {
+            if configPresent {
+                return .upToDate(version: "configured")
+            }
             return .notInstalled
         }
 
@@ -168,5 +260,12 @@ final class ComponentListViewModel {
         } else {
             return .upToDate(version: installed)
         }
+    }
+
+    // MARK: - Helpers
+
+    private func resolveMemoryPath() -> String {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        return "\(home)/Library/Mobile Documents/com~apple~CloudDocs/Claude Memory"
     }
 }

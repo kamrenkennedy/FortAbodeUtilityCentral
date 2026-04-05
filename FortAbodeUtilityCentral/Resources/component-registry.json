@@ -32,6 +32,18 @@
         "package_name": "setup-claude-memory"
       }
     },
+    "claude_config": [
+      {
+        "key": "Kam-Memory",
+        "command": "npx",
+        "args": ["-y", "mcp-knowledge-graph", "--memory-path", "{{MEMORY_PATH}}"]
+      },
+      {
+        "key": "Kam-Deep-Context",
+        "command": "npx",
+        "args": ["-y", "--package=setup-claude-memory", "aim-deep-context-server", "--memory-path", "{{MEMORY_PATH}}"]
+      }
+    ],
     "marketplace": true
   },
   {
@@ -57,6 +69,13 @@
         "package_name": "@kamk95/apple-reminders-mcp"
       }
     },
+    "claude_config": [
+      {
+        "key": "apple-reminders",
+        "command": "npx",
+        "args": ["-y", "@kamk95/apple-reminders-mcp"]
+      }
+    ],
     "marketplace": true
   },
   {
@@ -82,6 +101,13 @@
         "package_name": "@kamk95/imessage-mcp"
       }
     },
+    "claude_config": [
+      {
+        "key": "imessage",
+        "command": "npx",
+        "args": ["-y", "@kamk95/imessage-mcp"]
+      }
+    ],
     "marketplace": true
   }
 ]

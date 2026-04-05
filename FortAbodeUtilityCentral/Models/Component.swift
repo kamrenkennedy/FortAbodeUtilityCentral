@@ -172,6 +172,14 @@ extension UpdateCommand: Codable {
     }
 }
 
+// MARK: - Claude Desktop Config Entry
+
+struct ClaudeConfigEntry: Codable, Hashable {
+    let key: String
+    let command: String
+    let args: [String]
+}
+
 // MARK: - Component
 
 struct Component: Identifiable, Codable, Hashable {
@@ -183,6 +191,7 @@ struct Component: Identifiable, Codable, Hashable {
     let type: ComponentType
     let icon: String?
     let includedServers: [IncludedServer]?
+    let claudeConfig: [ClaudeConfigEntry]?
     let versionSource: VersionSource
     let updateSource: UpdateSource
     let updateCommand: UpdateCommand

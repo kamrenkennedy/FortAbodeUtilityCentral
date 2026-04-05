@@ -52,6 +52,24 @@ struct ContentView: View {
                 Divider()
                     .opacity(0.3)
 
+                if viewModel.showRestartHint {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.clockwise.circle.fill")
+                            .foregroundStyle(.blue)
+                        Text("Restart Claude Desktop to activate new MCPs.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Dismiss") { viewModel.showRestartHint = false }
+                            .font(.caption)
+                            .buttonStyle(.plain)
+                            .foregroundStyle(.blue)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 6)
+                    .background(.blue.opacity(0.1))
+                }
+
                 HStack {
                     Text(viewModel.lastCheckedText)
                         .font(.caption)

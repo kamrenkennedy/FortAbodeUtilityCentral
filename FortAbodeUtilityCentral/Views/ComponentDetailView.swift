@@ -170,6 +170,31 @@ struct ComponentDetailView: View {
                     .foregroundStyle(.red)
                     .lineLimit(2)
             }
+
+            Spacer()
+
+            // Uninstall button — only for marketplace components that are installed
+            if component.showInMarketplace, status.installedVersion != nil {
+                Button(role: .destructive) {
+                    Task { await viewModel.uninstallComponent(componentId) }
+                } label: {
+                    Label("Uninstall", systemImage: "trash")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.regular)
+            }
+        }
+
+        // Restart hint after install/uninstall
+        if viewModel.showRestartHint {
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.clockwise.circle.fill")
+                    .foregroundStyle(.blue)
+                Text("Restart Claude Desktop to activate changes.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.top, 4)
         }
     }
 

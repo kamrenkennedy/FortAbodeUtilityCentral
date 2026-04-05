@@ -24,6 +24,7 @@
 		864D70FCF7B97D190269DDFF /* UpdateProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 782D8AD84007D35B5B0DB9CD /* UpdateProgressView.swift */; };
 		8C46F547DCED96736E019D49 /* ComponentRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB0B45EFBB7DD5A133107515 /* ComponentRegistryTests.swift */; };
 		8FEB14627351680D4959D1BF /* MarketplaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FB63D56853D1FFB0742D448 /* MarketplaceView.swift */; };
+		91D50E1EB920B8C40D6B33FB /* ClaudeDesktopConfigService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A49ABEA06B33CB1666AD17A0 /* ClaudeDesktopConfigService.swift */; };
 		A57EFCA453010BE0DB621F72 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 48EB2A999B000B9AC11BB0DD /* Assets.xcassets */; };
 		A5D861B2D8E9BA0284E7ECF6 /* UpdateStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754EF798D1DADA467A6A6D84 /* UpdateStatus.swift */; };
 		A7D447D032884F15F3EA762E /* BadgeTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32B9115221657AAE3B2B132 /* BadgeTracker.swift */; };
@@ -69,6 +70,7 @@
 		968811C1D0945F5BE9B6F0A8 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		9A1B1F334020349AF1BB567F /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		A100840E6248DECFE28C4DBF /* FortAbodeUtilityCentralTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FortAbodeUtilityCentralTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A49ABEA06B33CB1666AD17A0 /* ClaudeDesktopConfigService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeDesktopConfigService.swift; sourceTree = "<group>"; };
 		BA1C59FBAA6BF53EE5F93CE0 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		BC40AFA45E29AF2DBF63CC15 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		C32B9115221657AAE3B2B132 /* BadgeTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgeTracker.swift; sourceTree = "<group>"; };
@@ -101,6 +103,7 @@
 			isa = PBXGroup;
 			children = (
 				EE892C2183E7CF82B548E18D /* BackgroundTaskService.swift */,
+				A49ABEA06B33CB1666AD17A0 /* ClaudeDesktopConfigService.swift */,
 				1EB57DA95F7124E0519B2C86 /* ErrorLogger.swift */,
 				0C827BD5D498E86D1F3BEC2D /* GitHubService.swift */,
 				BA1C59FBAA6BF53EE5F93CE0 /* NotificationService.swift */,
@@ -312,6 +315,7 @@
 				A7D447D032884F15F3EA762E /* BadgeTracker.swift in Sources */,
 				DF4E9A21418662B5D610866B /* ChangelogEntry.swift in Sources */,
 				ED44975C50A6C6A64F4954DE /* CheckForUpdatesView.swift in Sources */,
+				91D50E1EB920B8C40D6B33FB /* ClaudeDesktopConfigService.swift in Sources */,
 				E39F0B6F301568824A772E71 /* Component.swift in Sources */,
 				33743BBEA6592F741CB5A22B /* ComponentCardView.swift in Sources */,
 				EB1961D3A6B1297856EF3C69 /* ComponentDetailView.swift in Sources */,
@@ -352,7 +356,7 @@
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = X6LBF9H7M5;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -362,7 +366,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.0.0;
+				MARKETING_VERSION = 2.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kamstudios.fortabodeutilitycentral;
 				PRODUCT_NAME = "Fort Abode Utility Central";
 				SDKROOT = macosx;
@@ -442,7 +446,7 @@
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = X6LBF9H7M5;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -452,7 +456,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.0.0;
+				MARKETING_VERSION = 2.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kamstudios.fortabodeutilitycentral;
 				PRODUCT_NAME = "Fort Abode Utility Central";
 				SDKROOT = macosx;

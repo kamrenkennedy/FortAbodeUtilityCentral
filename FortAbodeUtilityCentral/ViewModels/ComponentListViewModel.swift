@@ -21,6 +21,7 @@ final class ComponentListViewModel {
     private let versionDetectionService = VersionDetectionService()
     private let updateExecutionService = UpdateExecutionService()
     private let claudeConfigService = ClaudeDesktopConfigService()
+    private let filePinningService = FilePinningService()
 
     /// Set after install/uninstall to prompt user to restart Claude
     var showRestartHint = false
@@ -166,6 +167,11 @@ final class ComponentListViewModel {
             return
         }
 
+        // Step 1.5: Pin iCloud folders if this is the memory component
+        if component.id == "setup-claude-memory" {
+            await filePinningService.pinClaudeMemoryFolder()
+        }
+
         // Step 2: Write config entries to claude_desktop_config.json
         if let configEntries = component.claudeConfig, !configEntries.isEmpty {
             do {
@@ -233,6 +239,11 @@ final class ComponentListViewModel {
                 let memoryPath = resolveMemoryPath()
                 try? await claudeConfigService.addServerEntries(configEntries, memoryPath: memoryPath)
                 showRestartHint = true
+            }
+
+            // Pin iCloud folders for memory component — ensures folder is downloaded locally
+            if component.id == "setup-claude-memory" {
+                await filePinningService.pinClaudeMemoryFolder()
             }
         }
 

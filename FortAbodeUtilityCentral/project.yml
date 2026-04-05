@@ -26,6 +26,22 @@ targets:
         buildPhase: resources
     dependencies:
       - package: Sparkle
+    postCompileScripts:
+      - script: |
+          SPARKLE_BIN="${BUILD_DIR%Build/*}SourcePackages/artifacts/sparkle/Sparkle/bin"
+          EXPECTED_KEY=$("${SPARKLE_BIN}/generate_keys" -p 2>/dev/null | grep "^[A-Za-z0-9+/=]" | head -1)
+          if [ -z "$EXPECTED_KEY" ]; then
+            echo "warning: Could not extract EdDSA public key from Keychain — skipping validation"
+            exit 0
+          fi
+          PLIST_KEY=$(/usr/libexec/PlistBuddy -c "Print :SUPublicEDKey" "${TARGET_BUILD_DIR}/${INFOPLIST_PATH}")
+          if [ "$EXPECTED_KEY" != "$PLIST_KEY" ]; then
+            echo "error: SUPublicEDKey mismatch! Info.plist has '${PLIST_KEY}' but Keychain has '${EXPECTED_KEY}'"
+            exit 1
+          fi
+          echo "EdDSA public key validated successfully."
+        name: Validate SUPublicEDKey
+        basedOnDependencyAnalysis: false
     settings:
       base:
         SWIFT_VERSION: "6.0"

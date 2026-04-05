@@ -29,7 +29,7 @@
     <key>SUFeedURL</key>
     <string>https://raw.githubusercontent.com/kamrenkennedy/FortAbodeUtilityCentral/main/appcast.xml</string>
     <key>SUPublicEDKey</key>
-    <string>y+SVlkS1Orgn/DOapgxZG39y29vhGl9BI/nGVSI5Tz0=</string>
+    <string>y+SVlkSIOrgn/DOapgxZG39y29vhGl9BI/nGVSI5Tz0=</string>
     <key>SUEnableAutomaticChecks</key>
     <true/>
 </dict>

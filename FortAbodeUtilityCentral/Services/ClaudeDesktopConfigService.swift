@@ -68,6 +68,15 @@ actor ClaudeDesktopConfigService {
         return removed
     }
 
+    /// List all mcpServer keys matching a prefix (e.g. "notion-" returns ["notion-Tiera", "notion-Work"]).
+    func entriesMatching(prefix: String) -> [String] {
+        guard let root = try? readConfig(),
+              let servers = root["mcpServers"] as? [String: Any] else {
+            return []
+        }
+        return servers.keys.filter { $0.hasPrefix(prefix) }.sorted()
+    }
+
     /// Check if all specified keys exist in the mcpServers dictionary.
     func hasEntries(keys: [String]) -> Bool {
         guard let root = try? readConfig(),

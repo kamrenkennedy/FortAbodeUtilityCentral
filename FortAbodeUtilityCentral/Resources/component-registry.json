@@ -153,9 +153,9 @@
         {
           "id": "open-integrations",
           "type": "instruction",
-          "title": "Open Notion Integrations",
-          "body": "First, we need to create a connection between Notion and Claude. Click the button below to open Notion's integrations page in your browser.",
-          "illustration": { "type": "sf_symbol", "name": "globe.badge.chevron.backward" },
+          "title": "Sign In to the Right Account",
+          "body": "Important: Log into the Notion account that owns the workspace you want to connect — not your own account (unless it's your workspace). Then click the button below to open the integrations page.",
+          "illustration": { "type": "sf_symbol", "name": "person.crop.circle.badge.questionmark" },
           "action_label": "Next",
           "external_url": "https://www.notion.so/profile/integrations"
         },
@@ -163,15 +163,15 @@
           "id": "create-integration",
           "type": "instruction",
           "title": "Create New Integration",
-          "body": "Click 'New integration', name it 'Claude Access', select the workspace you want to connect, and click Submit.",
+          "body": "Click 'New integration', name it 'Claude Access', select the workspace, and click Submit. If the workspace owner already created a 'Claude Access' integration, skip this step and use that one.",
           "illustration": { "type": "sf_symbol", "name": "plus.app" },
           "action_label": "I've Created It"
         },
         {
           "id": "copy-token",
           "type": "secure_input",
-          "title": "Paste Your Token",
-          "body": "On the integration page, click 'Show' next to Internal Integration Secret, then copy and paste it below.",
+          "title": "Paste the Token",
+          "body": "On the integration page, click 'Show' next to Internal Integration Secret, then copy and paste it below. This token comes from the workspace owner's account.",
           "illustration": { "type": "sf_symbol", "name": "key.fill" },
           "action_label": "Next",
           "input_config": {
@@ -185,7 +185,7 @@
           "id": "share-pages",
           "type": "instruction",
           "title": "Share Pages with Claude",
-          "body": "In Notion, open each page or database you want Claude to access. Click \u2022\u2022\u2022 \u2192 Add connections \u2192 select 'Claude Access'. Without this step, Claude can't see anything.",
+          "body": "Still in the workspace owner's Notion, open each page or database you want Claude to access. Click \u2022\u2022\u2022 \u2192 Add connections \u2192 select 'Claude Access'. Without this step, Claude can't see anything.",
           "illustration": { "type": "sf_symbol", "name": "person.2.badge.gearshape" },
           "action_label": "I've Shared My Pages"
         },

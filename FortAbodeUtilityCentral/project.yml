@@ -28,6 +28,10 @@ targets:
       - package: Sparkle
     postCompileScripts:
       - script: |
+          if [ "$CONFIGURATION" = "Debug" ]; then
+            echo "Skipping EdDSA key validation in Debug builds."
+            exit 0
+          fi
           SPARKLE_BIN="${BUILD_DIR%Build/*}SourcePackages/artifacts/sparkle/Sparkle/bin"
           EXPECTED_KEY=$("${SPARKLE_BIN}/generate_keys" -p 2>/dev/null | grep "^[A-Za-z0-9+/=]" | head -1)
           if [ -z "$EXPECTED_KEY" ]; then

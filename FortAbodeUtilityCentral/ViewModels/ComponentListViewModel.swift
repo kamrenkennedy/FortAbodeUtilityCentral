@@ -281,6 +281,49 @@ final class ComponentListViewModel {
         }
     }
 
+    /// List installed instances for a multi-instance component.
+    /// For a component with config key "notion-{{user_input:WORKSPACE_NAME}}",
+    /// finds all matching keys like "notion-Tiera", "notion-Work" and returns the display names.
+    func installedInstances(for component: Component) async -> [String] {
+        guard component.multiInstance == true,
+              let configEntries = component.claudeConfig,
+              let firstEntry = configEntries.first else { return [] }
+
+        // Extract the prefix before the placeholder (e.g. "notion-")
+        let key = firstEntry.key
+        guard let range = key.range(of: "{{user_input:") else { return [] }
+        let prefix = String(key[key.startIndex..<range.lowerBound])
+
+        let matchingKeys = await claudeConfigService.entriesMatching(prefix: prefix)
+        return matchingKeys.map { String($0.dropFirst(prefix.count)) }
+    }
+
+    /// Remove a single instance of a multi-instance component by workspace name.
+    func removeInstance(componentId: String, instanceName: String) async {
+        guard let component = registry.component(withId: componentId),
+              let configEntries = component.claudeConfig,
+              let firstEntry = configEntries.first else { return }
+
+        let key = firstEntry.key
+        guard let range = key.range(of: "{{user_input:") else { return }
+        let prefix = String(key[key.startIndex..<range.lowerBound])
+        let configKey = "\(prefix)\(instanceName)"
+
+        do {
+            try await claudeConfigService.removeServerEntries(keys: [configKey])
+            SecureInputStorage.deleteAll(componentId: "\(componentId).\(instanceName)")
+            showRestartHint = true
+
+            // If no instances remain, mark as not installed
+            let remaining = await claudeConfigService.entriesMatching(prefix: prefix)
+            if remaining.isEmpty {
+                statuses[componentId] = .notInstalled
+            }
+        } catch {
+            statuses[componentId] = .error(message: "Failed to remove \(instanceName): \(error.localizedDescription)")
+        }
+    }
+
     /// Update all components that have available updates
     func updateAll() async {
         let updatableIds = statuses

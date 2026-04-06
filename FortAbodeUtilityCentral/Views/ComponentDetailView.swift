@@ -10,6 +10,7 @@ struct ComponentDetailView: View {
     @State private var changelog: [ChangelogEntry] = []
     @State private var isLoadingChangelog = false
     @State private var showWizard = false
+    @State private var instances: [String] = []
 
     private var component: Component? {
         viewModel.registry.component(withId: componentId)
@@ -59,6 +60,12 @@ struct ComponentDetailView: View {
                             }
                         }
 
+                        // Connected Accounts (multi-instance)
+                        if component.multiInstance == true, !instances.isEmpty {
+                            Divider().opacity(0.3)
+                            instancesSection(component)
+                        }
+
                         // Actions
                         Divider().opacity(0.3)
                         actionsSection(component)
@@ -83,15 +90,20 @@ struct ComponentDetailView: View {
         .task {
             // Clear the "Updated" badge when user views detail
             viewModel.badgeTracker.clearBadge(componentId: componentId)
-            // Fetch changelog
-            await loadChangelog()
+            // Load instances and changelog in parallel
+            async let changelogTask: () = loadChangelog()
+            async let instancesTask: () = loadInstances()
+            _ = await (changelogTask, instancesTask)
         }
         .sheet(isPresented: $showWizard) {
             if let component {
                 SetupWizardView(
                     viewModel: SetupWizardViewModel(component: component),
                     onComplete: { inputs in
-                        Task { await viewModel.installComponentWithInputs(component.id, inputs: inputs) }
+                        Task {
+                            await viewModel.installComponentWithInputs(component.id, inputs: inputs)
+                            await loadInstances()
+                        }
                     }
                 )
             }
@@ -182,17 +194,6 @@ struct ComponentDetailView: View {
                     .lineLimit(2)
             }
 
-            // Add Another — for multi-instance components with setup wizard
-            if component.multiInstance == true, component.requiresSetup, status.installedVersion != nil {
-                Button {
-                    showWizard = true
-                } label: {
-                    Label("Add Another", systemImage: "plus.circle")
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
-            }
-
             Spacer()
 
             // Uninstall button — only for marketplace components that are installed
@@ -263,6 +264,61 @@ struct ComponentDetailView: View {
         }
     }
 
+    // MARK: - Connected Accounts
+
+    @ViewBuilder
+    private func instancesSection(_ component: Component) -> some View {
+        HStack {
+            sectionHeader("Connected Accounts")
+            Spacer()
+            Button {
+                showWizard = true
+            } label: {
+                Label("Add Account", systemImage: "plus")
+                    .font(.caption)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+
+        VStack(spacing: 0) {
+            ForEach(instances, id: \.self) { name in
+                HStack(spacing: 12) {
+                    Image(systemName: "person.crop.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(.green)
+
+                    Text(name)
+                        .font(.body)
+
+                    Spacer()
+
+                    Button(role: .destructive) {
+                        Task {
+                            await viewModel.removeInstance(componentId: componentId, instanceName: name)
+                            await loadInstances()
+                        }
+                    } label: {
+                        Image(systemName: "minus.circle")
+                            .foregroundStyle(.red.opacity(0.7))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Remove \(name)")
+                }
+                .padding(.vertical, 10)
+                .padding(.horizontal, 12)
+
+                if name != instances.last {
+                    Divider().opacity(0.2)
+                }
+            }
+        }
+        .background {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(.ultraThinMaterial)
+        }
+    }
+
     // MARK: - Helpers
 
     @ViewBuilder
@@ -276,6 +332,11 @@ struct ComponentDetailView: View {
 
     private func markdownBody(_ body: String) -> AttributedString {
         (try? AttributedString(markdown: body)) ?? AttributedString(body)
+    }
+
+    private func loadInstances() async {
+        guard let component, component.multiInstance == true else { return }
+        instances = await viewModel.installedInstances(for: component)
     }
 
     private func loadChangelog() async {

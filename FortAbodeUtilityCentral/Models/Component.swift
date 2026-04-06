@@ -201,6 +201,7 @@ struct RunConfig: Codable, Hashable {
     let env: [String: String]?
     let successMessage: String
     let globalInstall: String?
+    let openInTerminal: Bool?
 }
 
 enum SetupStepType: String, Codable, Hashable {

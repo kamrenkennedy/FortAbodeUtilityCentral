@@ -271,14 +271,15 @@
           "id": "auth-login",
           "type": "run_command",
           "title": "Sign In to Google",
-          "body": "Sign into the Google account you want to connect. A browser window will open — log in and grant access to Gmail, Calendar, and Drive.",
+          "body": "Terminal will open and your browser will launch for Google sign-in. Log into the Google account you want to connect and grant access. Come back here when you see 'Authentication successful' in Terminal.",
           "illustration": { "type": "sf_symbol", "name": "person.badge.key.fill" },
-          "action_label": "Next",
+          "action_label": "I've Signed In",
           "run_config": {
             "command": "npx",
             "args": ["-y", "@googleworkspace/cli", "auth", "login"],
             "env": { "GOOGLE_WORKSPACE_CLI_CONFIG_DIR": "{{resolved:CONFIG_DIR}}" },
-            "success_message": "Signed in to Google"
+            "success_message": "Signed in to Google",
+            "open_in_terminal": true
           }
         },
         {

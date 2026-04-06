@@ -175,6 +175,14 @@ final class SetupWizardViewModel {
 
         let fullCommand = shellParts.joined(separator: " && ")
 
+        // If the command needs browser access, open it in Terminal.app
+        if config.openInTerminal == true {
+            openCommandInTerminal(fullCommand)
+            commandState = .success
+            commandOutput = config.successMessage
+            return
+        }
+
         let result = await runShellCommand(fullCommand)
 
         if result.success {
@@ -239,6 +247,26 @@ final class SetupWizardViewModel {
             resolved = resolved.replacingOccurrences(of: "{{resolved:CONFIG_DIR}}", with: configDir)
         }
         return resolved
+    }
+
+    // MARK: - Terminal
+
+    /// Open a command in Terminal.app for commands that need browser/interactive access
+    private func openCommandInTerminal(_ command: String) {
+        let escapedCommand = command.replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+
+        let script = """
+        tell application "Terminal"
+            activate
+            do script "\(escapedCommand)"
+        end tell
+        """
+
+        if let appleScript = NSAppleScript(source: script) {
+            var error: NSDictionary?
+            appleScript.executeAndReturnError(&error)
+        }
     }
 
     // MARK: - Google Credentials

@@ -276,7 +276,7 @@
           "action_label": "I've Signed In",
           "run_config": {
             "command": "npx",
-            "args": ["-y", "@googleworkspace/cli", "auth", "login"],
+            "args": ["-y", "@googleworkspace/cli", "auth", "login", "-s", "gmail,calendar,drive"],
             "env": { "GOOGLE_WORKSPACE_CLI_CONFIG_DIR": "{{resolved:CONFIG_DIR}}" },
             "success_message": "Signed in to Google",
             "open_in_terminal": true

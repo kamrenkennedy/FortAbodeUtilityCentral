@@ -175,11 +175,15 @@ final class SetupWizardViewModel {
 
         let fullCommand = shellParts.joined(separator: " && ")
 
-        // If the command needs browser access, open it in Terminal.app
+        // If the command needs browser access, run it and auto-open the OAuth URL
         if config.openInTerminal == true {
-            openCommandInTerminal(fullCommand)
-            commandState = .success
-            commandOutput = config.successMessage
+            let result = await runCommandAndOpenURL(fullCommand)
+            if result.success {
+                commandState = .success
+                commandOutput = config.successMessage
+            } else {
+                commandState = .error(message: result.output.isEmpty ? "Authentication failed" : String(result.output.prefix(200)))
+            }
             return
         }
 
@@ -251,27 +255,73 @@ final class SetupWizardViewModel {
 
     // MARK: - Terminal
 
-    /// Open a command in Terminal.app for commands that need browser/interactive access.
-    /// Wraps the command to auto-detect and open OAuth URLs in the browser.
-    private func openCommandInTerminal(_ command: String) {
-        // Wrap the command to capture output and auto-open any OAuth URL
-        let wrappedCommand = """
-        \(command) 2>&1 | while IFS= read -r line; do echo "$line"; URL=$(echo "$line" | grep -o 'https://accounts.google.com[^ ]*'); if [ -n "$URL" ]; then open "$URL"; fi; done
-        """
+    /// Run a command that outputs an OAuth URL, capture it, open in browser, and wait for completion.
+    private func runCommandAndOpenURL(_ command: String) async -> ProcessResult {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                let process = Process()
+                let stdoutPipe = Pipe()
+                let stderrPipe = Pipe()
 
-        let escapedCommand = wrappedCommand.replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "\"", with: "\\\"")
+                process.executableURL = URL(fileURLWithPath: "/bin/zsh")
+                process.arguments = ["-l", "-c", command]
+                process.standardOutput = stdoutPipe
+                process.standardError = stderrPipe
 
-        let script = """
-        tell application "Terminal"
-            activate
-            do script "\(escapedCommand)"
-        end tell
-        """
+                let urlOpenedBox = UnsafeMutablePointer<Bool>.allocate(capacity: 1)
+                urlOpenedBox.initialize(to: false)
+                let lock = NSLock()
 
-        if let appleScript = NSAppleScript(source: script) {
-            var error: NSDictionary?
-            appleScript.executeAndReturnError(&error)
+                // Watch stdout for the OAuth URL and open it immediately
+                stdoutPipe.fileHandleForReading.readabilityHandler = { handle in
+                    let data = handle.availableData
+                    guard !data.isEmpty else { return }
+                    let chunk = String(data: data, encoding: .utf8) ?? ""
+
+                    lock.lock()
+                    let alreadyOpened = urlOpenedBox.pointee
+                    lock.unlock()
+
+                    if !alreadyOpened {
+                        for line in chunk.components(separatedBy: .newlines) {
+                            let trimmed = line.trimmingCharacters(in: .whitespaces)
+                            if trimmed.hasPrefix("https://accounts.google.com") {
+                                lock.lock()
+                                urlOpenedBox.pointee = true
+                                lock.unlock()
+                                if let url = URL(string: trimmed) {
+                                    DispatchQueue.main.async {
+                                        NSWorkspace.shared.open(url)
+                                    }
+                                }
+                                break
+                            }
+                        }
+                    }
+                }
+
+                do {
+                    try process.run()
+                    process.waitUntilExit()
+
+                    stdoutPipe.fileHandleForReading.readabilityHandler = nil
+
+                    lock.lock()
+                    let opened = urlOpenedBox.pointee
+                    lock.unlock()
+                    urlOpenedBox.deallocate()
+
+                    continuation.resume(returning: ProcessResult(
+                        success: process.terminationStatus == 0,
+                        output: opened ? "Authentication complete" : "No OAuth URL found"
+                    ))
+                } catch {
+                    continuation.resume(returning: ProcessResult(
+                        success: false,
+                        output: error.localizedDescription
+                    ))
+                }
+            }
         }
     }
 

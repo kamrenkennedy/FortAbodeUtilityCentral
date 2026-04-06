@@ -36,6 +36,7 @@
 		A7D447D032884F15F3EA762E /* BadgeTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32B9115221657AAE3B2B132 /* BadgeTracker.swift */; };
 		A97EBD40591158370B2039CC /* StepIllustrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED50D447877CF3DECD42F54F /* StepIllustrationView.swift */; };
 		ADE9797A2E5EE7EB3C461ED6 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D31AA9A8E09678D0693ACE38 /* SettingsView.swift */; };
+		B30AFA9528E558568F1FC9C0 /* gws-client-secret.json in Resources */ = {isa = PBXBuildFile; fileRef = B34078A97122C23C4D2D35E0 /* gws-client-secret.json */; };
 		B4F10EEE4625314A880D027D /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC40AFA45E29AF2DBF63CC15 /* SettingsViewModel.swift */; };
 		BCC20DC3968DB7047C53917E /* SetupWizardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00E7AF22AE310DA57B354CDA /* SetupWizardView.swift */; };
 		BE31F2E9C53C3C01AF59B9E0 /* AppNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C939E66D6E0DCFD3C6E6B28F /* AppNavigation.swift */; };
@@ -88,6 +89,7 @@
 		A100840E6248DECFE28C4DBF /* FortAbodeUtilityCentralTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FortAbodeUtilityCentralTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A49ABEA06B33CB1666AD17A0 /* ClaudeDesktopConfigService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeDesktopConfigService.swift; sourceTree = "<group>"; };
 		A88614DCA2B0E6155C755D3C /* SecureInputStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureInputStorage.swift; sourceTree = "<group>"; };
+		B34078A97122C23C4D2D35E0 /* gws-client-secret.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "gws-client-secret.json"; sourceTree = "<group>"; };
 		BA1C59FBAA6BF53EE5F93CE0 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		BC40AFA45E29AF2DBF63CC15 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		C32B9115221657AAE3B2B132 /* BadgeTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgeTracker.swift; sourceTree = "<group>"; };
@@ -158,6 +160,7 @@
 			children = (
 				48EB2A999B000B9AC11BB0DD /* Assets.xcassets */,
 				CB45A8A63D1E4873C3D739AA /* component-registry.json */,
+				B34078A97122C23C4D2D35E0 /* gws-client-secret.json */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -324,6 +327,7 @@
 			files = (
 				A57EFCA453010BE0DB621F72 /* Assets.xcassets in Resources */,
 				F2EA15F87DAAF9BDF02FDFAE /* component-registry.json in Resources */,
+				B30AFA9528E558568F1FC9C0 /* gws-client-secret.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

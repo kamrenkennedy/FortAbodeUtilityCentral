@@ -24,6 +24,8 @@ targets:
       - path: Resources/Assets.xcassets
       - path: Resources/component-registry.json
         buildPhase: resources
+      - path: Resources/gws-client-secret.json
+        buildPhase: resources
     dependencies:
       - package: Sparkle
     postCompileScripts:

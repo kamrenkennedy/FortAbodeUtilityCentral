@@ -147,6 +147,12 @@ final class SetupWizardViewModel {
         commandState = .running
         commandOutput = ""
 
+        // Copy bundled OAuth credentials if this component uses them
+        if let configDir = config.env?["GOOGLE_WORKSPACE_CLI_CONFIG_DIR"] {
+            let resolvedDir = resolvePlaceholders(in: configDir)
+            copyBundledGoogleCredentials(to: resolvedDir)
+        }
+
         // Resolve placeholders in args and env
         let resolvedArgs = config.args.map { resolvePlaceholders(in: $0) }
         let resolvedEnv = config.env?.mapValues { resolvePlaceholders(in: $0) }
@@ -233,6 +239,34 @@ final class SetupWizardViewModel {
             resolved = resolved.replacingOccurrences(of: "{{resolved:CONFIG_DIR}}", with: configDir)
         }
         return resolved
+    }
+
+    // MARK: - Google Credentials
+
+    /// Copy bundled OAuth client_secret.json to the per-account config directory
+    /// so `gws auth login` can use it without requiring `gws auth setup`.
+    private func copyBundledGoogleCredentials(to configDir: String) {
+        let fm = FileManager.default
+        let destDir = URL(fileURLWithPath: configDir)
+        let destFile = destDir.appendingPathComponent("client_secret.json")
+
+        // Skip if already exists (e.g., re-running wizard)
+        guard !fm.fileExists(atPath: destFile.path) else { return }
+
+        guard let bundledURL = Bundle.main.url(forResource: "gws-client-secret", withExtension: "json") else {
+            print("[SetupWizard] gws-client-secret.json not found in app bundle")
+            return
+        }
+
+        do {
+            try fm.createDirectory(at: destDir, withIntermediateDirectories: true)
+            try fm.copyItem(at: bundledURL, to: destFile)
+
+            // Set restrictive permissions (600)
+            try fm.setAttributes([.posixPermissions: 0o600], ofItemAtPath: destFile.path)
+        } catch {
+            print("[SetupWizard] Failed to copy Google credentials: \(error)")
+        }
     }
 
     // MARK: - Process Execution

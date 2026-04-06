@@ -263,10 +263,20 @@ final class SetupWizardViewModel {
                 let stdoutPipe = Pipe()
                 let stderrPipe = Pipe()
 
+                let stdinPipe = Pipe()
+
                 process.executableURL = URL(fileURLWithPath: "/bin/zsh")
                 process.arguments = ["-l", "-c", command]
                 process.standardOutput = stdoutPipe
                 process.standardError = stderrPipe
+                process.standardInput = stdinPipe
+
+                // Auto-confirm the scope picker by sending Enter after a delay
+                DispatchQueue.global().asyncAfter(deadline: .now() + 5) {
+                    if let data = "\n".data(using: .utf8) {
+                        stdinPipe.fileHandleForWriting.write(data)
+                    }
+                }
 
                 let urlOpenedBox = UnsafeMutablePointer<Bool>.allocate(capacity: 1)
                 urlOpenedBox.initialize(to: false)
@@ -300,11 +310,40 @@ final class SetupWizardViewModel {
                     }
                 }
 
+                // Also watch stderr for the URL
+                stderrPipe.fileHandleForReading.readabilityHandler = { handle in
+                    let data = handle.availableData
+                    guard !data.isEmpty else { return }
+                    let chunk = String(data: data, encoding: .utf8) ?? ""
+
+                    lock.lock()
+                    let alreadyOpened = urlOpenedBox.pointee
+                    lock.unlock()
+
+                    if !alreadyOpened {
+                        for line in chunk.components(separatedBy: .newlines) {
+                            let trimmed = line.trimmingCharacters(in: .whitespaces)
+                            if trimmed.hasPrefix("https://accounts.google.com") {
+                                lock.lock()
+                                urlOpenedBox.pointee = true
+                                lock.unlock()
+                                if let url = URL(string: trimmed) {
+                                    DispatchQueue.main.async {
+                                        NSWorkspace.shared.open(url)
+                                    }
+                                }
+                                break
+                            }
+                        }
+                    }
+                }
+
                 do {
                     try process.run()
                     process.waitUntilExit()
 
                     stdoutPipe.fileHandleForReading.readabilityHandler = nil
+                    stderrPipe.fileHandleForReading.readabilityHandler = nil
 
                     lock.lock()
                     let opened = urlOpenedBox.pointee

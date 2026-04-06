@@ -249,17 +249,26 @@ final class SetupWizardViewModel {
                 let process = Process()
                 let pipe = Pipe()
 
+                // Disable interactive TUI features
+                var env = ProcessInfo.processInfo.environment
+                env["TERM"] = "dumb"
+                env["NO_COLOR"] = "1"
+
                 process.executableURL = URL(fileURLWithPath: "/bin/zsh")
                 process.arguments = ["-l", "-c", command]
                 process.standardOutput = pipe
                 process.standardError = pipe
+                process.environment = env
 
                 do {
                     try process.run()
                     process.waitUntilExit()
 
                     let data = pipe.fileHandleForReading.readDataToEndOfFile()
-                    let output = String(data: data, encoding: .utf8) ?? ""
+                    var output = String(data: data, encoding: .utf8) ?? ""
+
+                    // Strip ANSI escape codes
+                    output = Self.stripAnsiCodes(output)
 
                     continuation.resume(returning: ProcessResult(
                         success: process.terminationStatus == 0,
@@ -273,5 +282,13 @@ final class SetupWizardViewModel {
                 }
             }
         }
+    }
+
+    private static func stripAnsiCodes(_ text: String) -> String {
+        text.replacingOccurrences(
+            of: "\\x1B\\[[0-9;]*[a-zA-Z]|\\x1B\\[\\?[0-9]*[a-zA-Z]",
+            with: "",
+            options: .regularExpression
+        )
     }
 }

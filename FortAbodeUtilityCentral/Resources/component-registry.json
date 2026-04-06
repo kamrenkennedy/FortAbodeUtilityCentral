@@ -269,17 +269,11 @@
         },
         {
           "id": "auth-setup",
-          "type": "run_command",
+          "type": "instruction",
           "title": "Set Up Google Cloud Project",
-          "body": "This creates a Google Cloud project for authenticating with your Google account. Follow the prompts in your browser. If you've already done this before, click Next to skip.",
-          "illustration": { "type": "sf_symbol", "name": "cloud.fill" },
-          "action_label": "Next",
-          "run_config": {
-            "command": "npx",
-            "args": ["-y", "@googleworkspace/cli", "auth", "setup"],
-            "env": { "GOOGLE_WORKSPACE_CLI_CONFIG_DIR": "{{resolved:CONFIG_DIR}}" },
-            "success_message": "Google Cloud project configured"
-          }
+          "body": "Open Terminal and run the command below. It will walk you through creating a Google Cloud project (one-time setup). If you've already done this before, click Next to skip.\n\nnpx -y @googleworkspace/cli auth setup",
+          "illustration": { "type": "sf_symbol", "name": "terminal.fill" },
+          "action_label": "I've Done This"
         },
         {
           "id": "auth-login",

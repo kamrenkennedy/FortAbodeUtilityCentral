@@ -3,22 +3,46 @@ import Sparkle
 
 // MARK: - App Delegate
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
-    /// Keep the app alive when the last window closes — reactivate from Spotlight or dock
+final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+
+    /// Keep the app alive when the last window closes
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
     }
 
-    /// Reopen the main window when the dock icon is clicked
+    /// Reopen the main window when the dock icon is clicked or Spotlight-launched
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         if !flag {
-            // Find and show the existing window, or create a new one
-            if let window = NSApp.windows.first {
-                window.makeKeyAndOrderFront(nil)
-            }
-            NSApp.activate(ignoringOtherApps: true)
+            showApp()
         }
         return true
+    }
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // Watch for window close to hide from dock
+        if let window = NSApp.windows.first(where: { $0.className != "NSStatusBarWindow" }) {
+            window.delegate = self
+        }
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        // Hide dock icon when window closes — app stays alive in background
+        DispatchQueue.main.async {
+            NSApp.setActivationPolicy(.accessory)
+        }
+    }
+
+    /// Show the app: restore dock icon and bring window forward
+    static func showApp() {
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        if let window = NSApp.windows.first(where: { $0.className != "NSStatusBarWindow" }) {
+            window.makeKeyAndOrderFront(nil)
+        }
+    }
+
+    private func showApp() {
+        AppDelegate.showApp()
     }
 }
 
@@ -126,10 +150,7 @@ struct FortAbodeUtilityCentralApp: App {
                     }
 
                     // Open the app window so the user can see and act on updates
-                    NSApp.activate(ignoringOtherApps: true)
-                    if let window = NSApp.windows.first {
-                        window.makeKeyAndOrderFront(nil)
-                    }
+                    AppDelegate.showApp()
                 }
 
                 // Detect new marketplace items
@@ -146,10 +167,7 @@ struct FortAbodeUtilityCentralApp: App {
                         }
                     }
                     // Open the app so user can see the new marketplace item
-                    NSApp.activate(ignoringOtherApps: true)
-                    if let window = NSApp.windows.first {
-                        window.makeKeyAndOrderFront(nil)
-                    }
+                    AppDelegate.showApp()
                 }
 
                 // Save current marketplace IDs so we only notify once per new item

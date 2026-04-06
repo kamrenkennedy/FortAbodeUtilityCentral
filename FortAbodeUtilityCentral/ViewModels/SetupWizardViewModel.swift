@@ -140,37 +140,36 @@ final class SetupWizardViewModel {
     }
 
     /// Run the shell command defined in the current step's runConfig.
+    /// All commands run through a login shell to inherit PATH (nvm, Homebrew, etc.)
     func runCurrentCommand() async {
         guard let config = currentStep.runConfig else { return }
 
         commandState = .running
         commandOutput = ""
 
-        // If globalInstall is specified, install it first
-        if let package = config.globalInstall {
-            let installResult = await runProcess(
-                command: "/usr/bin/env",
-                args: ["npm", "install", "-g", package],
-                env: nil
-            )
-            if !installResult.success {
-                commandState = .error(message: "Failed to install \(package): \(installResult.output)")
-                return
-            }
-        }
-
         // Resolve placeholders in args and env
         let resolvedArgs = config.args.map { resolvePlaceholders(in: $0) }
         let resolvedEnv = config.env?.mapValues { resolvePlaceholders(in: $0) }
 
-        // Find the command path
-        let commandPath = await findCommandPath(config.command)
+        // Build the full shell command string
+        var shellParts: [String] = []
 
-        let result = await runProcess(
-            command: commandPath ?? config.command,
-            args: resolvedArgs,
-            env: resolvedEnv
-        )
+        // Prepend env vars
+        if let env = resolvedEnv {
+            for (key, value) in env {
+                shellParts.append("export \(key)='\(value)'")
+            }
+        }
+
+        // Build command with args
+        let cmdString = ([config.command] + resolvedArgs)
+            .map { $0.contains(" ") ? "'\($0)'" : $0 }
+            .joined(separator: " ")
+        shellParts.append(cmdString)
+
+        let fullCommand = shellParts.joined(separator: " && ")
+
+        let result = await runShellCommand(fullCommand)
 
         if result.success {
             commandState = .success
@@ -243,25 +242,17 @@ final class SetupWizardViewModel {
         let output: String
     }
 
-    private func runProcess(command: String, args: [String], env: [String: String]?) async -> ProcessResult {
+    /// Run a command string through a login shell to inherit PATH (nvm, Homebrew, etc.)
+    private func runShellCommand(_ command: String) async -> ProcessResult {
         await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
                 let process = Process()
                 let pipe = Pipe()
 
-                process.executableURL = URL(fileURLWithPath: command)
-                process.arguments = args
+                process.executableURL = URL(fileURLWithPath: "/bin/zsh")
+                process.arguments = ["-l", "-c", command]
                 process.standardOutput = pipe
                 process.standardError = pipe
-
-                // Inherit PATH from login shell and add custom env
-                var environment = ProcessInfo.processInfo.environment
-                if let env {
-                    for (key, value) in env {
-                        environment[key] = value
-                    }
-                }
-                process.environment = environment
 
                 do {
                     try process.run()
@@ -282,14 +273,5 @@ final class SetupWizardViewModel {
                 }
             }
         }
-    }
-
-    private func findCommandPath(_ command: String) async -> String? {
-        let result = await runProcess(
-            command: "/bin/zsh",
-            args: ["-l", "-c", "which \(command)"],
-            env: nil
-        )
-        return result.success ? result.output : nil
     }
 }

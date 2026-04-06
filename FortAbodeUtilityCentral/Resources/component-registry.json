@@ -250,12 +250,12 @@
           "id": "name-account",
           "type": "text_input",
           "title": "Name This Account",
-          "body": "Give this Google account a short name so you can tell Claude which one to use (e.g., 'Kam' or 'Tiera').",
+          "body": "Give this Google account a short name so you can tell Claude which one to use (e.g., 'Personal' or 'Work').",
           "illustration": { "type": "sf_symbol", "name": "tag.fill" },
           "action_label": "Next",
           "input_config": {
             "field_name": "ACCOUNT_NAME",
-            "placeholder": "Kam",
+            "placeholder": "Personal",
             "validation": { "type": "regex", "pattern": "^[a-zA-Z0-9\\-_]+$", "error_message": "Letters, numbers, and dashes only — no spaces" }
           }
         },

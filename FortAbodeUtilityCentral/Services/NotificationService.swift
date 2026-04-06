@@ -45,6 +45,26 @@ final class NotificationService: NSObject, @unchecked Sendable, UNUserNotificati
         }
     }
 
+    /// Post a notification about a new component available in the marketplace
+    func postNewComponentNotification(componentName: String) async {
+        let content = UNMutableNotificationContent()
+        content.title = "New in Fort Abode"
+        content.body = "\(componentName) is now available in the Marketplace."
+        content.sound = .default
+
+        let request = UNNotificationRequest(
+            identifier: "new-\(componentName)",
+            content: content,
+            trigger: nil
+        )
+
+        do {
+            try await UNUserNotificationCenter.current().add(request)
+        } catch {
+            print("[NotificationService] Failed to post new component notification: \(error)")
+        }
+    }
+
     /// Post a summary notification when multiple updates are available
     func postSummaryNotification(count: Int) async {
         let content = UNMutableNotificationContent()

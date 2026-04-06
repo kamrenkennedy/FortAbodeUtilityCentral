@@ -214,5 +214,103 @@
       ]
     },
     "marketplace": true
+  },
+  {
+    "id": "google-workspace",
+    "display_name": "Google Workspace",
+    "description": "Connect Gmail, Calendar, and Drive to Claude via Google's official CLI",
+    "user_description": "Lets Claude read and send Gmail, manage Google Calendar events, and access Google Drive files. Add multiple accounts — one for each person.",
+    "usage_instructions": "Tell Claude which account to use by name. Example: 'Check Tiera's Gmail for new messages' or 'Add a meeting to my calendar for Friday.'",
+    "type": "mcpServer",
+    "icon": "envelope.fill",
+    "multi_instance": true,
+    "version_source": {
+      "claude_desktop_config": {
+        "server_key": "google-"
+      }
+    },
+    "update_source": "none",
+    "update_command": "none",
+    "claude_config": [
+      {
+        "key": "google-{{user_input:ACCOUNT_NAME}}",
+        "command": "gws",
+        "args": ["mcp", "-s", "gmail,calendar,drive"],
+        "env": {
+          "GOOGLE_WORKSPACE_CLI_CONFIG_DIR": "{{resolved:CONFIG_DIR}}"
+        }
+      }
+    ],
+    "setup_flow": {
+      "id": "google-workspace-setup",
+      "title": "Add Google Account",
+      "subtitle": "Connect a Google account to Claude",
+      "steps": [
+        {
+          "id": "name-account",
+          "type": "text_input",
+          "title": "Name This Account",
+          "body": "Give this Google account a short name so you can tell Claude which one to use (e.g., 'Kam' or 'Tiera').",
+          "illustration": { "type": "sf_symbol", "name": "tag.fill" },
+          "action_label": "Next",
+          "input_config": {
+            "field_name": "ACCOUNT_NAME",
+            "placeholder": "Kam",
+            "validation": { "type": "regex", "pattern": "^[a-zA-Z0-9\\-_]+$", "error_message": "Letters, numbers, and dashes only — no spaces" }
+          }
+        },
+        {
+          "id": "install-cli",
+          "type": "run_command",
+          "title": "Install Google Workspace CLI",
+          "body": "This will install Google's official Workspace CLI tool. It only needs to happen once — future accounts will skip this step.",
+          "illustration": { "type": "sf_symbol", "name": "arrow.down.circle" },
+          "action_label": "Next",
+          "run_config": {
+            "command": "/usr/bin/env",
+            "args": ["npm", "install", "-g", "@googleworkspace/cli"],
+            "success_message": "Google Workspace CLI installed"
+          }
+        },
+        {
+          "id": "auth-setup",
+          "type": "run_command",
+          "title": "Set Up Google Cloud Project",
+          "body": "This creates a Google Cloud project for authenticating with your Google account. Follow the prompts in your browser. If you've already done this before, click Next to skip.",
+          "illustration": { "type": "sf_symbol", "name": "cloud.fill" },
+          "action_label": "Next",
+          "run_config": {
+            "command": "gws",
+            "args": ["auth", "setup"],
+            "env": { "GOOGLE_WORKSPACE_CLI_CONFIG_DIR": "{{resolved:CONFIG_DIR}}" },
+            "success_message": "Google Cloud project configured"
+          }
+        },
+        {
+          "id": "auth-login",
+          "type": "run_command",
+          "title": "Sign In to Google",
+          "body": "Sign into the Google account you want to connect. A browser window will open — log in and grant access to Gmail, Calendar, and Drive.",
+          "illustration": { "type": "sf_symbol", "name": "person.badge.key.fill" },
+          "action_label": "Next",
+          "run_config": {
+            "command": "gws",
+            "args": ["auth", "login"],
+            "env": { "GOOGLE_WORKSPACE_CLI_CONFIG_DIR": "{{resolved:CONFIG_DIR}}" },
+            "success_message": "Signed in to Google"
+          }
+        },
+        {
+          "id": "confirm",
+          "type": "completion",
+          "title": "Ready to Install",
+          "body": "Claude will be able to access the {{user_input:ACCOUNT_NAME}} Google account — Gmail, Calendar, and Drive. You can tell Claude 'check {{user_input:ACCOUNT_NAME}}'s email' and it'll know which account to use.",
+          "illustration": { "type": "sf_symbol", "name": "checkmark.circle.fill" },
+          "action_label": "Install",
+          "summary_fields": ["ACCOUNT_NAME"]
+        }
+      ]
+    },
+    "marketplace": true
   }
 ]

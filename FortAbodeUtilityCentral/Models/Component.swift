@@ -191,7 +191,16 @@ struct SetupStep: Codable, Hashable, Identifiable {
     let actionLabel: String
     let externalUrl: String?
     let inputConfig: InputConfig?
+    let runConfig: RunConfig?
     let summaryFields: [String]?
+}
+
+struct RunConfig: Codable, Hashable {
+    let command: String
+    let args: [String]
+    let env: [String: String]?
+    let successMessage: String
+    let globalInstall: String?
 }
 
 enum SetupStepType: String, Codable, Hashable {
@@ -199,6 +208,7 @@ enum SetupStepType: String, Codable, Hashable {
     case textInput = "text_input"
     case secureInput = "secure_input"
     case multiChoice = "multi_choice"
+    case runCommand = "run_command"
     case completion
 }
 

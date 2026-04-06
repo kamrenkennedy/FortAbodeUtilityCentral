@@ -94,12 +94,17 @@ actor VersionDetectionService {
 
         guard let data = try? Data(contentsOf: configPath),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let mcpServers = json["mcpServers"] as? [String: Any],
-              mcpServers[serverKey] != nil else {
+              let mcpServers = json["mcpServers"] as? [String: Any] else {
             return nil
         }
 
-        return "configured"
+        // If serverKey ends with "-", treat it as a prefix match (multi-instance)
+        if serverKey.hasSuffix("-") {
+            let hasMatch = mcpServers.keys.contains { $0.hasPrefix(serverKey) }
+            return hasMatch ? "configured" : nil
+        }
+
+        return mcpServers[serverKey] != nil ? "configured" : nil
     }
 
     // MARK: - Helpers

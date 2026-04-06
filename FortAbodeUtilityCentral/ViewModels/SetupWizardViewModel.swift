@@ -3,6 +3,13 @@ import SwiftUI
 
 // MARK: - Validation State
 
+enum CommandRunState: Equatable {
+    case idle
+    case running
+    case success
+    case error(message: String)
+}
+
 enum ValidationState: Equatable {
     case idle
     case validating
@@ -46,6 +53,10 @@ final class SetupWizardViewModel {
         Double(currentStepIndex + 1) / Double(totalSteps)
     }
 
+    /// State for run_command steps
+    var commandState: CommandRunState = .idle
+    var commandOutput = ""
+
     var canAdvance: Bool {
         switch currentStep.type {
         case .instruction:
@@ -56,6 +67,8 @@ final class SetupWizardViewModel {
                 && localValidationPasses
         case .multiChoice:
             return !currentInputValue.isEmpty
+        case .runCommand:
+            return commandState == .success
         case .completion:
             return true
         }
@@ -98,6 +111,8 @@ final class SetupWizardViewModel {
 
         currentStepIndex += 1
         validationState = .idle
+        commandState = .idle
+        commandOutput = ""
 
         // Pre-populate input if we already have a value for this step
         if let config = currentStep.inputConfig,
@@ -112,6 +127,8 @@ final class SetupWizardViewModel {
         guard currentStepIndex > 0 else { return }
         currentStepIndex -= 1
         validationState = .idle
+        commandState = .idle
+        commandOutput = ""
 
         // Restore the input value for this step
         if let config = currentStep.inputConfig,
@@ -119,6 +136,47 @@ final class SetupWizardViewModel {
             currentInputValue = existing
         } else {
             currentInputValue = ""
+        }
+    }
+
+    /// Run the shell command defined in the current step's runConfig.
+    func runCurrentCommand() async {
+        guard let config = currentStep.runConfig else { return }
+
+        commandState = .running
+        commandOutput = ""
+
+        // If globalInstall is specified, install it first
+        if let package = config.globalInstall {
+            let installResult = await runProcess(
+                command: "/usr/bin/env",
+                args: ["npm", "install", "-g", package],
+                env: nil
+            )
+            if !installResult.success {
+                commandState = .error(message: "Failed to install \(package): \(installResult.output)")
+                return
+            }
+        }
+
+        // Resolve placeholders in args and env
+        let resolvedArgs = config.args.map { resolvePlaceholders(in: $0) }
+        let resolvedEnv = config.env?.mapValues { resolvePlaceholders(in: $0) }
+
+        // Find the command path
+        let commandPath = await findCommandPath(config.command)
+
+        let result = await runProcess(
+            command: commandPath ?? config.command,
+            args: resolvedArgs,
+            env: resolvedEnv
+        )
+
+        if result.success {
+            commandState = .success
+            commandOutput = config.successMessage
+        } else {
+            commandState = .error(message: result.output.isEmpty ? "Command failed" : String(result.output.prefix(200)))
         }
     }
 
@@ -169,6 +227,69 @@ final class SetupWizardViewModel {
         for (key, value) in collectedInputs {
             resolved = resolved.replacingOccurrences(of: "{{user_input:\(key)}}", with: value)
         }
+        // Resolve {{resolved:CONFIG_DIR}} for Google Workspace
+        if let accountName = collectedInputs["ACCOUNT_NAME"] {
+            let home = FileManager.default.homeDirectoryForCurrentUser.path
+            let configDir = "\(home)/.config/gws-\(accountName)"
+            resolved = resolved.replacingOccurrences(of: "{{resolved:CONFIG_DIR}}", with: configDir)
+        }
         return resolved
+    }
+
+    // MARK: - Process Execution
+
+    private struct ProcessResult {
+        let success: Bool
+        let output: String
+    }
+
+    private func runProcess(command: String, args: [String], env: [String: String]?) async -> ProcessResult {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                let process = Process()
+                let pipe = Pipe()
+
+                process.executableURL = URL(fileURLWithPath: command)
+                process.arguments = args
+                process.standardOutput = pipe
+                process.standardError = pipe
+
+                // Inherit PATH from login shell and add custom env
+                var environment = ProcessInfo.processInfo.environment
+                if let env {
+                    for (key, value) in env {
+                        environment[key] = value
+                    }
+                }
+                process.environment = environment
+
+                do {
+                    try process.run()
+                    process.waitUntilExit()
+
+                    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                    let output = String(data: data, encoding: .utf8) ?? ""
+
+                    continuation.resume(returning: ProcessResult(
+                        success: process.terminationStatus == 0,
+                        output: output.trimmingCharacters(in: .whitespacesAndNewlines)
+                    ))
+                } catch {
+                    continuation.resume(returning: ProcessResult(
+                        success: false,
+                        output: error.localizedDescription
+                    ))
+                }
+            }
+        }
+    }
+
+    private func findCommandPath(_ command: String) async -> String? {
+        let result = await runProcess(
+            command: "/bin/zsh",
+            args: ["-l", "-c", "which \(command)"],
+            env: nil
+        )
+        return result.success ? result.output : nil
     }
 }

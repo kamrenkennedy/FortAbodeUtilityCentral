@@ -18,6 +18,9 @@ struct StepContentView: View {
         case .multiChoice:
             multiChoiceSection
 
+        case .runCommand:
+            runCommandSection
+
         case .completion:
             completionSummary
         }
@@ -141,6 +144,60 @@ struct StepContentView: View {
             }
         }
         .frame(maxWidth: 300)
+    }
+
+    // MARK: - Run Command
+
+    private var runCommandSection: some View {
+        VStack(spacing: 12) {
+            switch viewModel.commandState {
+            case .idle:
+                Button {
+                    Task { await viewModel.runCurrentCommand() }
+                } label: {
+                    Label("Run", systemImage: "play.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.blue)
+                .controlSize(.large)
+
+            case .running:
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Running...")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+            case .success:
+                Label(viewModel.commandOutput, systemImage: "checkmark.circle.fill")
+                    .font(.subheadline)
+                    .foregroundStyle(.green)
+                    .transition(.opacity)
+
+            case .error(let message):
+                VStack(spacing: 8) {
+                    Label("Failed", systemImage: "exclamationmark.triangle.fill")
+                        .font(.subheadline)
+                        .foregroundStyle(.red)
+
+                    Text(message)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(4)
+                        .frame(maxWidth: 350)
+
+                    Button {
+                        Task { await viewModel.runCurrentCommand() }
+                    } label: {
+                        Label("Retry", systemImage: "arrow.clockwise")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
+        }
     }
 
     // MARK: - Completion Summary

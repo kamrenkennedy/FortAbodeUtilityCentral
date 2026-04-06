@@ -207,19 +207,24 @@ final class ComponentListViewModel {
 
         statuses[id] = .updating
 
-        // Step 1: Run npm install (cache the package)
-        let result = await updateExecutionService.executeUpdate(for: component)
+        // Step 1: Run npm install (cache the package) — skip for components with no update command
+        // (e.g., Google Workspace is installed globally during the wizard's run_command steps)
+        if case .none = component.updateCommand {
+            // No npm install needed — CLI was installed during wizard
+        } else {
+            let result = await updateExecutionService.executeUpdate(for: component)
 
-        guard result.success else {
-            let message = result.errorOutput.isEmpty ? "Install failed" : String(result.errorOutput.prefix(80))
-            statuses[id] = .error(message: message)
-            await ErrorLogger.shared.log(
-                componentId: id,
-                displayName: component.displayName,
-                error: result.errorOutput,
-                installedVersion: nil
-            )
-            return
+            guard result.success else {
+                let message = result.errorOutput.isEmpty ? "Install failed" : String(result.errorOutput.prefix(80))
+                statuses[id] = .error(message: message)
+                await ErrorLogger.shared.log(
+                    componentId: id,
+                    displayName: component.displayName,
+                    error: result.errorOutput,
+                    installedVersion: nil
+                )
+                return
+            }
         }
 
         // Step 2: Resolve placeholders and write config entries
@@ -410,6 +415,12 @@ final class ComponentListViewModel {
         var resolved = text
         for (key, value) in inputs {
             resolved = resolved.replacingOccurrences(of: "{{user_input:\(key)}}", with: value)
+        }
+        // Resolve {{resolved:CONFIG_DIR}} for Google Workspace
+        if let accountName = inputs["ACCOUNT_NAME"] {
+            let home = FileManager.default.homeDirectoryForCurrentUser.path
+            let configDir = "\(home)/.config/gws-\(accountName)"
+            resolved = resolved.replacingOccurrences(of: "{{resolved:CONFIG_DIR}}", with: configDir)
         }
         return resolved
     }

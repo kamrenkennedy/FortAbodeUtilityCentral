@@ -251,9 +251,15 @@ final class SetupWizardViewModel {
 
     // MARK: - Terminal
 
-    /// Open a command in Terminal.app for commands that need browser/interactive access
+    /// Open a command in Terminal.app for commands that need browser/interactive access.
+    /// Wraps the command to auto-detect and open OAuth URLs in the browser.
     private func openCommandInTerminal(_ command: String) {
-        let escapedCommand = command.replacingOccurrences(of: "\\", with: "\\\\")
+        // Wrap the command to capture output and auto-open any OAuth URL
+        let wrappedCommand = """
+        \(command) 2>&1 | while IFS= read -r line; do echo "$line"; URL=$(echo "$line" | grep -o 'https://accounts.google.com[^ ]*'); if [ -n "$URL" ]; then open "$URL"; fi; done
+        """
+
+        let escapedCommand = wrappedCommand.replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "\"", with: "\\\"")
 
         let script = """

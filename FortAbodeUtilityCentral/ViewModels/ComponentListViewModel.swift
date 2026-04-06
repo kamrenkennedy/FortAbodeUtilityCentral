@@ -341,7 +341,9 @@ final class ComponentListViewModel {
         let installed = await versionDetectionService.detectInstalledVersion(for: component.versionSource)
 
         // Self-heal: if package is installed (npx cache hit) but config entries are missing, auto-add them
-        if installed != nil, let configEntries = component.claudeConfig, !configEntries.isEmpty {
+        // Skip for multi-instance components — their config keys have unresolved placeholders
+        if installed != nil, component.multiInstance != true,
+           let configEntries = component.claudeConfig, !configEntries.isEmpty {
             let keys = configEntries.map(\.key)
             let allPresent = await claudeConfigService.hasEntries(keys: keys)
             if !allPresent {
@@ -357,8 +359,15 @@ final class ComponentListViewModel {
         }
 
         // Dual detection: also check if config entries exist (manual installs)
+        // For multi-instance components, check if any instance exists (prefix match)
         let configPresent: Bool
-        if let configEntries = component.claudeConfig, !configEntries.isEmpty {
+        if component.multiInstance == true, let configEntries = component.claudeConfig,
+           let firstEntry = configEntries.first,
+           let range = firstEntry.key.range(of: "{{user_input:") {
+            let prefix = String(firstEntry.key[firstEntry.key.startIndex..<range.lowerBound])
+            let matches = await claudeConfigService.entriesMatching(prefix: prefix)
+            configPresent = !matches.isEmpty
+        } else if let configEntries = component.claudeConfig, !configEntries.isEmpty {
             configPresent = await claudeConfigService.hasEntries(keys: configEntries.map(\.key))
         } else {
             configPresent = false

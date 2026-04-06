@@ -218,81 +218,37 @@
   {
     "id": "google-workspace",
     "display_name": "Google Workspace",
-    "description": "Connect Gmail, Calendar, and Drive to Claude via Google's official CLI",
-    "user_description": "Lets Claude read and send Gmail, manage Google Calendar events, and access Google Drive files. Add multiple accounts — one for each person.",
-    "usage_instructions": "Tell Claude which account to use by name. Example: 'Check Tiera's Gmail for new messages' or 'Add a meeting to my calendar for Friday.'",
+    "description": "Gmail, Calendar, Drive, Sheets, Docs, and more via Google's official API",
+    "user_description": "Lets Claude read and send Gmail, manage Google Calendar events, access Google Drive files, edit Sheets and Docs, and more. Add multiple Google accounts by telling Claude 'add my Google account' after installing.",
+    "usage_instructions": "After installing, tell Claude 'add my Google account' to authenticate. The MCP will open your browser for Google sign-in. Once connected, use natural language: 'Check my Gmail', 'Add a meeting Friday at 2pm', 'Find the budget spreadsheet in Drive'. For multiple accounts, say 'add another Google account' and specify which to use by email.",
     "type": "mcpServer",
     "icon": "envelope.fill",
-    "multi_instance": true,
     "version_source": {
       "npx_cache": {
-        "package_name": "@googleworkspace/cli"
+        "package_name": "@aaronsb/google-workspace-mcp"
       }
     },
     "update_source": {
       "npm_registry": {
-        "package_name": "@googleworkspace/cli"
+        "package_name": "@aaronsb/google-workspace-mcp"
       }
     },
     "update_command": {
       "npx_install": {
-        "package_name": "@googleworkspace/cli"
+        "package_name": "@aaronsb/google-workspace-mcp"
       }
     },
     "claude_config": [
       {
-        "key": "google-{{user_input:ACCOUNT_NAME}}",
+        "key": "google-workspace",
         "command": "npx",
-        "args": ["-y", "@googleworkspace/cli", "mcp", "-s", "gmail,calendar,drive"],
+        "args": ["-y", "@aaronsb/google-workspace-mcp"],
         "env": {
-          "GOOGLE_WORKSPACE_CLI_CONFIG_DIR": "{{resolved:CONFIG_DIR}}"
+          "GOOGLE_CLIENT_ID": "87050830154-1b83f825a25a6k09fu433ppqnmas1leu.apps.googleusercontent.com",
+          "GOOGLE_CLIENT_SECRET": "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"
         }
       }
     ],
-    "setup_flow": {
-      "id": "google-workspace-setup",
-      "title": "Add Google Account",
-      "subtitle": "Connect a Google account to Claude",
-      "steps": [
-        {
-          "id": "name-account",
-          "type": "text_input",
-          "title": "Name This Account",
-          "body": "Give this Google account a short name so you can tell Claude which one to use (e.g., 'Personal' or 'Work').",
-          "illustration": { "type": "sf_symbol", "name": "tag.fill" },
-          "action_label": "Next",
-          "input_config": {
-            "field_name": "ACCOUNT_NAME",
-            "placeholder": "Personal",
-            "validation": { "type": "regex", "pattern": "^[a-zA-Z0-9\\-_]+$", "error_message": "Letters, numbers, and dashes only — no spaces" }
-          }
-        },
-        {
-          "id": "auth-login",
-          "type": "run_command",
-          "title": "Sign In to Google",
-          "body": "Terminal will open and your browser will launch for Google sign-in. Log into the Google account you want to connect and grant access. Come back here when you see 'Authentication successful' in Terminal.",
-          "illustration": { "type": "sf_symbol", "name": "person.badge.key.fill" },
-          "action_label": "I've Signed In",
-          "run_config": {
-            "command": "npx",
-            "args": ["-y", "@googleworkspace/cli", "auth", "login", "-s", "gmail,calendar,drive"],
-            "env": { "GOOGLE_WORKSPACE_CLI_CONFIG_DIR": "{{resolved:CONFIG_DIR}}" },
-            "success_message": "Signed in to Google",
-            "open_in_terminal": true
-          }
-        },
-        {
-          "id": "confirm",
-          "type": "completion",
-          "title": "Ready to Install",
-          "body": "Claude will be able to access the {{user_input:ACCOUNT_NAME}} Google account — Gmail, Calendar, and Drive. You can tell Claude 'check {{user_input:ACCOUNT_NAME}}'s email' and it'll know which account to use.",
-          "illustration": { "type": "sf_symbol", "name": "checkmark.circle.fill" },
-          "action_label": "Install",
-          "summary_fields": ["ACCOUNT_NAME"]
-        }
-      ]
-    },
     "marketplace": true
   }
 ]

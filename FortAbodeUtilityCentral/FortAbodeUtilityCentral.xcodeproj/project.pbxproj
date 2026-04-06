@@ -14,12 +14,15 @@
 		0C2AFE378C7F46B021BE15D4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 968811C1D0945F5BE9B6F0A8 /* ContentView.swift */; };
 		112863CDD6F3C554DAF8C3A9 /* UpdateExecutionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E343B9250E53EF5FE8057DAE /* UpdateExecutionService.swift */; };
 		156C48CEA34E68406BE574C7 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A1B1F334020349AF1BB567F /* AppSettings.swift */; };
+		15ACB224032293DD17F523FA /* SetupValidationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9646955BDB7A4F405EB1FDF0 /* SetupValidationService.swift */; };
+		1BE2080AB4AF9C0D5DDF3A05 /* SetupWizardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00E7940EB3A6AD0DB6A38C2F /* SetupWizardViewModel.swift */; };
 		24FDEC144817A4CB5E3EFB24 /* ComponentRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6938E7B668180CBA05772572 /* ComponentRowView.swift */; };
 		33743BBEA6592F741CB5A22B /* ComponentCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26113857AC506F0780BBEE4C /* ComponentCardView.swift */; };
 		386B5A369D88921474EC50B4 /* VersionComparisonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0AC8F02FED91F42FC4EB00 /* VersionComparisonTests.swift */; };
 		3B8CF00712BD137247649E22 /* VersionDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52A1E55BD560971A940F171A /* VersionDetectionService.swift */; };
 		49AFDBE9BAB4BDF2520332FF /* VersionDetectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE4CB53B5CB04DACA0FDC375 /* VersionDetectionTests.swift */; };
 		527E21E6BC0AA688C00FA4E9 /* GitHubServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ED7ECBE41703B1FC4EB0791 /* GitHubServiceTests.swift */; };
+		5AB3F1610DB5361CAC618ECC /* SecureInputStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88614DCA2B0E6155C755D3C /* SecureInputStorage.swift */; };
 		63DF7D1C11E3A188E94C469F /* ComponentRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 782EFED7B8F2AD1265BCF690 /* ComponentRegistry.swift */; };
 		64CA5B5EAAFCDA5C06236011 /* FortAbodeUtilityCentralApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F9DE0077075CA77D29FF77 /* FortAbodeUtilityCentralApp.swift */; };
 		84EF3894AB836BBA01A7FB6A /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA1C59FBAA6BF53EE5F93CE0 /* NotificationService.swift */; };
@@ -31,8 +34,10 @@
 		A57EFCA453010BE0DB621F72 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 48EB2A999B000B9AC11BB0DD /* Assets.xcassets */; };
 		A5D861B2D8E9BA0284E7ECF6 /* UpdateStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754EF798D1DADA467A6A6D84 /* UpdateStatus.swift */; };
 		A7D447D032884F15F3EA762E /* BadgeTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32B9115221657AAE3B2B132 /* BadgeTracker.swift */; };
+		A97EBD40591158370B2039CC /* StepIllustrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED50D447877CF3DECD42F54F /* StepIllustrationView.swift */; };
 		ADE9797A2E5EE7EB3C461ED6 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D31AA9A8E09678D0693ACE38 /* SettingsView.swift */; };
 		B4F10EEE4625314A880D027D /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC40AFA45E29AF2DBF63CC15 /* SettingsViewModel.swift */; };
+		BCC20DC3968DB7047C53917E /* SetupWizardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00E7AF22AE310DA57B354CDA /* SetupWizardView.swift */; };
 		BE31F2E9C53C3C01AF59B9E0 /* AppNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C939E66D6E0DCFD3C6E6B28F /* AppNavigation.swift */; };
 		BFFC39B7F0DEE48815EB2481 /* BackgroundTaskService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE892C2183E7CF82B548E18D /* BackgroundTaskService.swift */; };
 		CA4CA8134B5255875DB1AF2A /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 8B75BAAFED90C32A32CA2420 /* Sparkle */; };
@@ -40,6 +45,7 @@
 		E39F0B6F301568824A772E71 /* Component.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7E990CE834E05B52EAF553 /* Component.swift */; };
 		EB1961D3A6B1297856EF3C69 /* ComponentDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A394C02034C7CEDA5FA603 /* ComponentDetailView.swift */; };
 		ED44975C50A6C6A64F4954DE /* CheckForUpdatesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E67AB0BE82AA7AE5E6F418 /* CheckForUpdatesView.swift */; };
+		EF6A84B87BF7C01CF51F88F6 /* StepContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04657FBC8960E17F4E585ECA /* StepContentView.swift */; };
 		F2EA15F87DAAF9BDF02FDFAE /* component-registry.json in Resources */ = {isa = PBXBuildFile; fileRef = CB45A8A63D1E4873C3D739AA /* component-registry.json */; };
 		F37E0647A0A8D347473AA752 /* ComponentListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC09EC9C57BA66F1650B44A0 /* ComponentListViewModel.swift */; };
 /* End PBXBuildFile section */
@@ -55,7 +61,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		00E7940EB3A6AD0DB6A38C2F /* SetupWizardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupWizardViewModel.swift; sourceTree = "<group>"; };
+		00E7AF22AE310DA57B354CDA /* SetupWizardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupWizardView.swift; sourceTree = "<group>"; };
 		02B29456AE09E75239846438 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
+		04657FBC8960E17F4E585ECA /* StepContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StepContentView.swift; sourceTree = "<group>"; };
 		0C827BD5D498E86D1F3BEC2D /* GitHubService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubService.swift; sourceTree = "<group>"; };
 		1EB57DA95F7124E0519B2C86 /* ErrorLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorLogger.swift; sourceTree = "<group>"; };
 		26113857AC506F0780BBEE4C /* ComponentCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentCardView.swift; sourceTree = "<group>"; };
@@ -73,10 +82,12 @@
 		8BECADF7B96CB7D3842E642F /* ActivationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivationView.swift; sourceTree = "<group>"; };
 		8ED7ECBE41703B1FC4EB0791 /* GitHubServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubServiceTests.swift; sourceTree = "<group>"; };
 		91BE7F2F52EFF582932E8B9D /* ChangelogEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangelogEntry.swift; sourceTree = "<group>"; };
+		9646955BDB7A4F405EB1FDF0 /* SetupValidationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupValidationService.swift; sourceTree = "<group>"; };
 		968811C1D0945F5BE9B6F0A8 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		9A1B1F334020349AF1BB567F /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		A100840E6248DECFE28C4DBF /* FortAbodeUtilityCentralTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FortAbodeUtilityCentralTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A49ABEA06B33CB1666AD17A0 /* ClaudeDesktopConfigService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeDesktopConfigService.swift; sourceTree = "<group>"; };
+		A88614DCA2B0E6155C755D3C /* SecureInputStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureInputStorage.swift; sourceTree = "<group>"; };
 		BA1C59FBAA6BF53EE5F93CE0 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		BC40AFA45E29AF2DBF63CC15 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		C32B9115221657AAE3B2B132 /* BadgeTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgeTracker.swift; sourceTree = "<group>"; };
@@ -89,6 +100,7 @@
 		DE0AC8F02FED91F42FC4EB00 /* VersionComparisonTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionComparisonTests.swift; sourceTree = "<group>"; };
 		E343B9250E53EF5FE8057DAE /* UpdateExecutionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateExecutionService.swift; sourceTree = "<group>"; };
 		EC09EC9C57BA66F1650B44A0 /* ComponentListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentListViewModel.swift; sourceTree = "<group>"; };
+		ED50D447877CF3DECD42F54F /* StepIllustrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StepIllustrationView.swift; sourceTree = "<group>"; };
 		EE892C2183E7CF82B548E18D /* BackgroundTaskService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundTaskService.swift; sourceTree = "<group>"; };
 		FE4CB53B5CB04DACA0FDC375 /* VersionDetectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionDetectionTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -115,10 +127,22 @@
 				0C827BD5D498E86D1F3BEC2D /* GitHubService.swift */,
 				02B29456AE09E75239846438 /* KeychainService.swift */,
 				BA1C59FBAA6BF53EE5F93CE0 /* NotificationService.swift */,
+				A88614DCA2B0E6155C755D3C /* SecureInputStorage.swift */,
+				9646955BDB7A4F405EB1FDF0 /* SetupValidationService.swift */,
 				E343B9250E53EF5FE8057DAE /* UpdateExecutionService.swift */,
 				52A1E55BD560971A940F171A /* VersionDetectionService.swift */,
 			);
 			path = Services;
+			sourceTree = "<group>";
+		};
+		2A30269D269741003D221D42 /* SetupWizard */ = {
+			isa = PBXGroup;
+			children = (
+				00E7AF22AE310DA57B354CDA /* SetupWizardView.swift */,
+				04657FBC8960E17F4E585ECA /* StepContentView.swift */,
+				ED50D447877CF3DECD42F54F /* StepIllustrationView.swift */,
+			);
+			path = SetupWizard;
 			sourceTree = "<group>";
 		};
 		2B7E777056D86D2A12C04C6D /* App */ = {
@@ -150,6 +174,7 @@
 				7FB63D56853D1FFB0742D448 /* MarketplaceView.swift */,
 				D31AA9A8E09678D0693ACE38 /* SettingsView.swift */,
 				782D8AD84007D35B5B0DB9CD /* UpdateProgressView.swift */,
+				2A30269D269741003D221D42 /* SetupWizard */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -207,6 +232,7 @@
 			children = (
 				EC09EC9C57BA66F1650B44A0 /* ComponentListViewModel.swift */,
 				BC40AFA45E29AF2DBF63CC15 /* SettingsViewModel.swift */,
+				00E7940EB3A6AD0DB6A38C2F /* SetupWizardViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -363,8 +389,14 @@
 				05E6CAD0B79916E67AD9C87D /* KeychainService.swift in Sources */,
 				8FEB14627351680D4959D1BF /* MarketplaceView.swift in Sources */,
 				84EF3894AB836BBA01A7FB6A /* NotificationService.swift in Sources */,
+				5AB3F1610DB5361CAC618ECC /* SecureInputStorage.swift in Sources */,
 				ADE9797A2E5EE7EB3C461ED6 /* SettingsView.swift in Sources */,
 				B4F10EEE4625314A880D027D /* SettingsViewModel.swift in Sources */,
+				15ACB224032293DD17F523FA /* SetupValidationService.swift in Sources */,
+				BCC20DC3968DB7047C53917E /* SetupWizardView.swift in Sources */,
+				1BE2080AB4AF9C0D5DDF3A05 /* SetupWizardViewModel.swift in Sources */,
+				EF6A84B87BF7C01CF51F88F6 /* StepContentView.swift in Sources */,
+				A97EBD40591158370B2039CC /* StepIllustrationView.swift in Sources */,
 				112863CDD6F3C554DAF8C3A9 /* UpdateExecutionService.swift in Sources */,
 				864D70FCF7B97D190269DDFF /* UpdateProgressView.swift in Sources */,
 				A5D861B2D8E9BA0284E7ECF6 /* UpdateStatus.swift in Sources */,

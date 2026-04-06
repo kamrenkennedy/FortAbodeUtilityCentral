@@ -172,12 +172,91 @@ extension UpdateCommand: Codable {
     }
 }
 
+// MARK: - Setup Flow (declarative wizard for configurable components)
+
+struct SetupFlow: Codable, Hashable {
+    let id: String
+    let title: String
+    let subtitle: String?
+    let steps: [SetupStep]
+}
+
+struct SetupStep: Codable, Hashable, Identifiable {
+    let id: String
+    let type: SetupStepType
+    let title: String
+    let subtitle: String?
+    let body: String
+    let illustration: StepIllustration?
+    let actionLabel: String
+    let externalUrl: String?
+    let inputConfig: InputConfig?
+    let summaryFields: [String]?
+}
+
+enum SetupStepType: String, Codable, Hashable {
+    case instruction
+    case textInput = "text_input"
+    case secureInput = "secure_input"
+    case multiChoice = "multi_choice"
+    case completion
+}
+
+struct StepIllustration: Codable, Hashable {
+    let type: IllustrationType
+    let name: String
+
+    enum IllustrationType: String, Codable, Hashable {
+        case sfSymbol = "sf_symbol"
+        case bundledImage = "bundled_image"
+    }
+}
+
+struct InputConfig: Codable, Hashable {
+    let fieldName: String
+    let placeholder: String?
+    let validation: InputValidation?
+    let validateAction: ValidateAction?
+    let options: [ChoiceOption]?
+}
+
+struct InputValidation: Codable, Hashable {
+    let type: ValidationType
+    let pattern: String?
+    let minLength: Int?
+    let errorMessage: String
+
+    enum ValidationType: String, Codable, Hashable {
+        case regex
+        case notEmpty = "not_empty"
+        case minLength = "min_length"
+    }
+}
+
+struct ValidateAction: Codable, Hashable {
+    let type: ValidateActionType
+    let endpoint: String?
+
+    enum ValidateActionType: String, Codable, Hashable {
+        case notionToken = "notion_token"
+        case httpGet = "http_get"
+        case custom
+    }
+}
+
+struct ChoiceOption: Codable, Hashable {
+    let value: String
+    let label: String
+    let description: String?
+}
+
 // MARK: - Claude Desktop Config Entry
 
 struct ClaudeConfigEntry: Codable, Hashable {
     let key: String
     let command: String
     let args: [String]
+    let env: [String: String]?
 }
 
 // MARK: - Component
@@ -196,6 +275,8 @@ struct Component: Identifiable, Codable, Hashable {
     let updateSource: UpdateSource
     let updateCommand: UpdateCommand
     let marketplace: Bool?
+    let setupFlow: SetupFlow?
+    let multiInstance: Bool?
 
     /// SF Symbol name — uses the explicit icon if provided, otherwise falls back by type
     var iconName: String {
@@ -217,5 +298,10 @@ struct Component: Identifiable, Codable, Hashable {
     /// Whether this component should appear in the marketplace when not installed
     var showInMarketplace: Bool {
         marketplace ?? false
+    }
+
+    /// Whether this component requires a setup wizard before install
+    var requiresSetup: Bool {
+        setupFlow != nil
     }
 }

@@ -33,10 +33,16 @@ actor ClaudeDesktopConfigService {
                 return arg
             }
 
-            servers[entry.key] = [
+            var serverDict: [String: Any] = [
                 "command": entry.command,
                 "args": resolvedArgs
             ]
+
+            if let env = entry.env, !env.isEmpty {
+                serverDict["env"] = env
+            }
+
+            servers[entry.key] = serverDict
         }
 
         root["mcpServers"] = servers

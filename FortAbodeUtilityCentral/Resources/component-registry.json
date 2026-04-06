@@ -109,5 +109,110 @@
       }
     ],
     "marketplace": true
+  },
+  {
+    "id": "notion-workspace",
+    "display_name": "Notion Workspace",
+    "description": "Connect any Notion workspace to Claude via API integration",
+    "user_description": "Lets Claude read and write pages, databases, and comments in a Notion workspace. Add multiple workspaces — one for each person or team.",
+    "usage_instructions": "Tell Claude which workspace to use by name. Example: 'Search Tiera's Notion for upcoming shows' or 'Update my project page in Notion.'",
+    "type": "mcpServer",
+    "icon": "book.pages.fill",
+    "multi_instance": true,
+    "version_source": {
+      "npx_cache": {
+        "package_name": "@suekou/mcp-notion-server"
+      }
+    },
+    "update_source": {
+      "npm_registry": {
+        "package_name": "@suekou/mcp-notion-server"
+      }
+    },
+    "update_command": {
+      "npx_install": {
+        "package_name": "@suekou/mcp-notion-server"
+      }
+    },
+    "claude_config": [
+      {
+        "key": "notion-{{user_input:WORKSPACE_NAME}}",
+        "command": "npx",
+        "args": ["-y", "@suekou/mcp-notion-server"],
+        "env": {
+          "NOTION_API_TOKEN": "{{user_input:NOTION_API_TOKEN}}",
+          "NOTION_MARKDOWN_CONVERSION": "true"
+        }
+      }
+    ],
+    "setup_flow": {
+      "id": "notion-workspace-setup",
+      "title": "Add Notion Workspace",
+      "subtitle": "Connect a Notion workspace to Claude",
+      "steps": [
+        {
+          "id": "open-integrations",
+          "type": "instruction",
+          "title": "Open Notion Integrations",
+          "body": "First, we need to create a connection between Notion and Claude. Click the button below to open Notion's integrations page in your browser.",
+          "illustration": { "type": "sf_symbol", "name": "globe.badge.chevron.backward" },
+          "action_label": "Next",
+          "external_url": "https://www.notion.so/profile/integrations"
+        },
+        {
+          "id": "create-integration",
+          "type": "instruction",
+          "title": "Create New Integration",
+          "body": "Click 'New integration', name it 'Claude Access', select the workspace you want to connect, and click Submit.",
+          "illustration": { "type": "sf_symbol", "name": "plus.app" },
+          "action_label": "I've Created It"
+        },
+        {
+          "id": "copy-token",
+          "type": "secure_input",
+          "title": "Paste Your Token",
+          "body": "On the integration page, click 'Show' next to Internal Integration Secret, then copy and paste it below.",
+          "illustration": { "type": "sf_symbol", "name": "key.fill" },
+          "action_label": "Next",
+          "input_config": {
+            "field_name": "NOTION_API_TOKEN",
+            "placeholder": "ntn_...",
+            "validation": { "type": "regex", "pattern": "^(ntn_|secret_)", "error_message": "Token should start with ntn_ or secret_" },
+            "validate_action": { "type": "notion_token" }
+          }
+        },
+        {
+          "id": "share-pages",
+          "type": "instruction",
+          "title": "Share Pages with Claude",
+          "body": "In Notion, open each page or database you want Claude to access. Click \u2022\u2022\u2022 \u2192 Add connections \u2192 select 'Claude Access'. Without this step, Claude can't see anything.",
+          "illustration": { "type": "sf_symbol", "name": "person.2.badge.gearshape" },
+          "action_label": "I've Shared My Pages"
+        },
+        {
+          "id": "name-workspace",
+          "type": "text_input",
+          "title": "Name This Workspace",
+          "body": "Give this workspace a short name so you can tell Claude which one to use (e.g., 'Tiera' or 'Band').",
+          "illustration": { "type": "sf_symbol", "name": "tag.fill" },
+          "action_label": "Next",
+          "input_config": {
+            "field_name": "WORKSPACE_NAME",
+            "placeholder": "Tiera",
+            "validation": { "type": "regex", "pattern": "^[a-zA-Z0-9\\-_ ]+$", "error_message": "Letters, numbers, spaces, and dashes only" }
+          }
+        },
+        {
+          "id": "confirm",
+          "type": "completion",
+          "title": "Ready to Install",
+          "body": "Claude will be able to access the {{user_input:WORKSPACE_NAME}} Notion workspace. You can tell Claude 'check {{user_input:WORKSPACE_NAME}}'s Notion' and it'll know which workspace to use.",
+          "illustration": { "type": "sf_symbol", "name": "checkmark.circle.fill" },
+          "action_label": "Install",
+          "summary_fields": ["WORKSPACE_NAME", "NOTION_API_TOKEN"]
+        }
+      ]
+    },
+    "marketplace": true
   }
 ]

@@ -5,6 +5,7 @@ import SwiftUI
 struct MarketplaceView: View {
 
     @Environment(ComponentListViewModel.self) private var viewModel
+    @State private var wizardComponent: Component?
 
     var body: some View {
         ZStack {
@@ -38,6 +39,14 @@ struct MarketplaceView: View {
             }
         }
         .navigationTitle("Marketplace")
+        .sheet(item: $wizardComponent) { component in
+            SetupWizardView(
+                viewModel: SetupWizardViewModel(component: component),
+                onComplete: { inputs in
+                    Task { await viewModel.installComponentWithInputs(component.id, inputs: inputs) }
+                }
+            )
+        }
     }
 
     // MARK: - Card
@@ -90,7 +99,11 @@ struct MarketplaceView: View {
                 }
             } else {
                 Button {
-                    Task { await viewModel.installComponent(component.id) }
+                    if component.requiresSetup {
+                        wizardComponent = component
+                    } else {
+                        Task { await viewModel.installComponent(component.id) }
+                    }
                 } label: {
                     Text("Install")
                         .font(.subheadline.bold())

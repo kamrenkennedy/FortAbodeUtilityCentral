@@ -200,6 +200,72 @@ final class ComponentListViewModel {
         }
     }
 
+    /// Install a component with user-provided inputs from the setup wizard.
+    /// Resolves {{user_input:*}} placeholders in claude_config entries before writing.
+    func installComponentWithInputs(_ id: String, inputs: [String: String]) async {
+        guard let component = registry.component(withId: id) else { return }
+
+        statuses[id] = .updating
+
+        // Step 1: Run npm install (cache the package)
+        let result = await updateExecutionService.executeUpdate(for: component)
+
+        guard result.success else {
+            let message = result.errorOutput.isEmpty ? "Install failed" : String(result.errorOutput.prefix(80))
+            statuses[id] = .error(message: message)
+            await ErrorLogger.shared.log(
+                componentId: id,
+                displayName: component.displayName,
+                error: result.errorOutput,
+                installedVersion: nil
+            )
+            return
+        }
+
+        // Step 2: Resolve placeholders and write config entries
+        if let configEntries = component.claudeConfig, !configEntries.isEmpty {
+            do {
+                let resolvedEntries = configEntries.map { entry in
+                    ClaudeConfigEntry(
+                        key: resolveUserInputPlaceholders(in: entry.key, inputs: inputs),
+                        command: entry.command,
+                        args: entry.args.map { resolveUserInputPlaceholders(in: $0, inputs: inputs) },
+                        env: entry.env?.mapValues { resolveUserInputPlaceholders(in: $0, inputs: inputs) }
+                    )
+                }
+
+                let memoryPath = resolveMemoryPath()
+                try await claudeConfigService.addServerEntries(resolvedEntries, memoryPath: memoryPath)
+                showRestartHint = true
+            } catch {
+                statuses[id] = .error(message: "Installed but failed to configure Claude: \(error.localizedDescription)")
+                await ErrorLogger.shared.log(
+                    componentId: id,
+                    displayName: component.displayName,
+                    error: "Config write failed: \(error.localizedDescription)",
+                    installedVersion: nil
+                )
+                return
+            }
+        }
+
+        // Step 3: Store secrets in Keychain
+        for (key, value) in inputs {
+            if key.contains("TOKEN") || key.contains("SECRET") || key.contains("KEY") {
+                SecureInputStorage.save(componentId: id, fieldName: key, value: value)
+            }
+        }
+
+        // Step 4: Verify — re-check the version
+        try? await Task.sleep(for: .seconds(1))
+        let newStatus = await checkComponent(component)
+        statuses[id] = newStatus
+
+        if let version = newStatus.installedVersion {
+            badgeTracker.markUpdated(componentId: id, version: version)
+        }
+    }
+
     /// Uninstall a component — removes config entries from claude_desktop_config.json
     func uninstallComponent(_ id: String) async {
         guard let component = registry.component(withId: id) else { return }
@@ -286,5 +352,13 @@ final class ComponentListViewModel {
     private func resolveMemoryPath() -> String {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return "\(home)/Library/Mobile Documents/com~apple~CloudDocs/Claude Memory"
+    }
+
+    private func resolveUserInputPlaceholders(in text: String, inputs: [String: String]) -> String {
+        var resolved = text
+        for (key, value) in inputs {
+            resolved = resolved.replacingOccurrences(of: "{{user_input:\(key)}}", with: value)
+        }
+        return resolved
     }
 }

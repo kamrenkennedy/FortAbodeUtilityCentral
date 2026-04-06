@@ -9,6 +9,7 @@ struct ComponentDetailView: View {
     @Environment(ComponentListViewModel.self) private var viewModel
     @State private var changelog: [ChangelogEntry] = []
     @State private var isLoadingChangelog = false
+    @State private var showWizard = false
 
     private var component: Component? {
         viewModel.registry.component(withId: componentId)
@@ -84,6 +85,16 @@ struct ComponentDetailView: View {
             viewModel.badgeTracker.clearBadge(componentId: componentId)
             // Fetch changelog
             await loadChangelog()
+        }
+        .sheet(isPresented: $showWizard) {
+            if let component {
+                SetupWizardView(
+                    viewModel: SetupWizardViewModel(component: component),
+                    onComplete: { inputs in
+                        Task { await viewModel.installComponentWithInputs(component.id, inputs: inputs) }
+                    }
+                )
+            }
         }
     }
 
@@ -169,6 +180,17 @@ struct ComponentDetailView: View {
                     .font(.caption)
                     .foregroundStyle(.red)
                     .lineLimit(2)
+            }
+
+            // Add Another — for multi-instance components with setup wizard
+            if component.multiInstance == true, component.requiresSetup, status.installedVersion != nil {
+                Button {
+                    showWizard = true
+                } label: {
+                    Label("Add Another", systemImage: "plus.circle")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.regular)
             }
 
             Spacer()

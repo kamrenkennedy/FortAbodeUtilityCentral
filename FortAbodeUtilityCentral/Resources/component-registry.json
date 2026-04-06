@@ -225,17 +225,25 @@
     "icon": "envelope.fill",
     "multi_instance": true,
     "version_source": {
-      "claude_desktop_config": {
-        "server_key": "google-"
+      "npx_cache": {
+        "package_name": "@googleworkspace/cli"
       }
     },
-    "update_source": "none",
-    "update_command": "none",
+    "update_source": {
+      "npm_registry": {
+        "package_name": "@googleworkspace/cli"
+      }
+    },
+    "update_command": {
+      "npx_install": {
+        "package_name": "@googleworkspace/cli"
+      }
+    },
     "claude_config": [
       {
         "key": "google-{{user_input:ACCOUNT_NAME}}",
-        "command": "gws",
-        "args": ["mcp", "-s", "gmail,calendar,drive"],
+        "command": "npx",
+        "args": ["-y", "@googleworkspace/cli", "mcp", "-s", "gmail,calendar,drive"],
         "env": {
           "GOOGLE_WORKSPACE_CLI_CONFIG_DIR": "{{resolved:CONFIG_DIR}}"
         }
@@ -260,19 +268,6 @@
           }
         },
         {
-          "id": "install-cli",
-          "type": "run_command",
-          "title": "Install Google Workspace CLI",
-          "body": "This will install Google's official Workspace CLI tool. It only needs to happen once — future accounts will skip this step.",
-          "illustration": { "type": "sf_symbol", "name": "arrow.down.circle" },
-          "action_label": "Next",
-          "run_config": {
-            "command": "/usr/bin/env",
-            "args": ["npm", "install", "-g", "@googleworkspace/cli"],
-            "success_message": "Google Workspace CLI installed"
-          }
-        },
-        {
           "id": "auth-setup",
           "type": "run_command",
           "title": "Set Up Google Cloud Project",
@@ -280,8 +275,8 @@
           "illustration": { "type": "sf_symbol", "name": "cloud.fill" },
           "action_label": "Next",
           "run_config": {
-            "command": "gws",
-            "args": ["auth", "setup"],
+            "command": "npx",
+            "args": ["-y", "@googleworkspace/cli", "auth", "setup"],
             "env": { "GOOGLE_WORKSPACE_CLI_CONFIG_DIR": "{{resolved:CONFIG_DIR}}" },
             "success_message": "Google Cloud project configured"
           }
@@ -294,8 +289,8 @@
           "illustration": { "type": "sf_symbol", "name": "person.badge.key.fill" },
           "action_label": "Next",
           "run_config": {
-            "command": "gws",
-            "args": ["auth", "login"],
+            "command": "npx",
+            "args": ["-y", "@googleworkspace/cli", "auth", "login"],
             "env": { "GOOGLE_WORKSPACE_CLI_CONFIG_DIR": "{{resolved:CONFIG_DIR}}" },
             "success_message": "Signed in to Google"
           }

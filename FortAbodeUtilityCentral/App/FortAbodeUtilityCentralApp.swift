@@ -37,11 +37,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
-    /// Called from SwiftUI onAppear — guaranteed to run after the window exists
-    static func configureMainWindow() {
-        guard let window = NSApp.windows.first(where: { $0.className != "NSStatusBarWindow" }) else { return }
-        window.titlebarAppearsTransparent = true
-        window.titlebarSeparatorStyle = .none
+}
+
+// MARK: - Window Appearance
+
+/// NSViewRepresentable that configures the hosting NSWindow's title bar.
+/// More reliable than NSApp.windows lookup — gets the window directly from the view hierarchy.
+struct WindowAppearanceModifier: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            guard let window = view.window else { return }
+            window.titlebarAppearsTransparent = true
+            window.titlebarSeparatorStyle = .none
+        }
+        return view
+    }
+    func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async {
+            guard let window = nsView.window else { return }
+            window.titlebarAppearsTransparent = true
+            window.titlebarSeparatorStyle = .none
+        }
     }
 }
 
@@ -91,8 +108,8 @@ struct FortAbodeUtilityCentralApp: App {
                 }
             }
             .frame(minWidth: 500, minHeight: 400)
+            .background(WindowAppearanceModifier())
             .onAppear {
-                AppDelegate.configureMainWindow()
                 guard isActivated else { return }
                 if viewModel == nil {
                     viewModel = ComponentListViewModel(registry: registry)

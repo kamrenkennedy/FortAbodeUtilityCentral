@@ -23,6 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // Watch for window close to hide from dock
         if let window = NSApp.windows.first(where: { $0.className != "NSStatusBarWindow" }) {
             window.delegate = self
+            window.titlebarSeparatorStyle = .none
         }
     }
 

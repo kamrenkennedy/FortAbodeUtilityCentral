@@ -23,7 +23,8 @@ struct CheckForUpdatesView: View {
 
 // MARK: - View Model
 
-final class CheckForUpdatesViewModel: ObservableObject, @unchecked Sendable {
+@MainActor
+final class CheckForUpdatesViewModel: ObservableObject {
 
     @Published var canCheckForUpdates = false
     private var timer: Timer?
@@ -31,7 +32,9 @@ final class CheckForUpdatesViewModel: ObservableObject, @unchecked Sendable {
     init(updater: SPUUpdater) {
         canCheckForUpdates = updater.canCheckForUpdates
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            self?.canCheckForUpdates = updater.canCheckForUpdates
+            MainActor.assumeIsolated {
+                self?.canCheckForUpdates = updater.canCheckForUpdates
+            }
         }
     }
 

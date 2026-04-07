@@ -3,6 +3,7 @@ import Sparkle
 
 // MARK: - App Delegate
 
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     /// Keep the app alive when the last window closes
@@ -13,7 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// Reopen the main window when the dock icon is clicked or Spotlight-launched
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         if !flag {
-            showApp()
+            Self.showApp()
         }
         return true
     }
@@ -26,10 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
-        // Hide dock icon when window closes — app stays alive in background
-        DispatchQueue.main.async {
-            NSApp.setActivationPolicy(.accessory)
-        }
+        NSApp.setActivationPolicy(.accessory)
     }
 
     /// Show the app: restore dock icon and bring window forward
@@ -39,10 +37,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if let window = NSApp.windows.first(where: { $0.className != "NSStatusBarWindow" }) {
             window.makeKeyAndOrderFront(nil)
         }
-    }
-
-    private func showApp() {
-        AppDelegate.showApp()
     }
 }
 

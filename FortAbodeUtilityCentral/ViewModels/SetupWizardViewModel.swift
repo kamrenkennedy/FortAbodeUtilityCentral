@@ -1,6 +1,18 @@
 import Foundation
 import SwiftUI
 
+// MARK: - Thread-Safe Flag
+
+/// Sendable wrapper for a mutable boolean — replaces UnsafeMutablePointer in @Sendable closures.
+final class AtomicFlag: @unchecked Sendable {
+    private let lock = NSLock()
+    private var _value = false
+    var value: Bool {
+        get { lock.withLock { _value } }
+        set { lock.withLock { _value = newValue } }
+    }
+}
+
 // MARK: - Validation State
 
 enum CommandRunState: Equatable {
@@ -278,9 +290,7 @@ final class SetupWizardViewModel {
                     }
                 }
 
-                let urlOpenedBox = UnsafeMutablePointer<Bool>.allocate(capacity: 1)
-                urlOpenedBox.initialize(to: false)
-                let lock = NSLock()
+                let urlOpened = AtomicFlag()
 
                 // Watch stdout for the OAuth URL and open it immediately
                 stdoutPipe.fileHandleForReading.readabilityHandler = { handle in
@@ -288,17 +298,11 @@ final class SetupWizardViewModel {
                     guard !data.isEmpty else { return }
                     let chunk = String(data: data, encoding: .utf8) ?? ""
 
-                    lock.lock()
-                    let alreadyOpened = urlOpenedBox.pointee
-                    lock.unlock()
-
-                    if !alreadyOpened {
+                    if !urlOpened.value {
                         for line in chunk.components(separatedBy: .newlines) {
                             let trimmed = line.trimmingCharacters(in: .whitespaces)
                             if trimmed.hasPrefix("https://accounts.google.com") {
-                                lock.lock()
-                                urlOpenedBox.pointee = true
-                                lock.unlock()
+                                urlOpened.value = true
                                 if let url = URL(string: trimmed) {
                                     DispatchQueue.main.async {
                                         NSWorkspace.shared.open(url)
@@ -316,17 +320,11 @@ final class SetupWizardViewModel {
                     guard !data.isEmpty else { return }
                     let chunk = String(data: data, encoding: .utf8) ?? ""
 
-                    lock.lock()
-                    let alreadyOpened = urlOpenedBox.pointee
-                    lock.unlock()
-
-                    if !alreadyOpened {
+                    if !urlOpened.value {
                         for line in chunk.components(separatedBy: .newlines) {
                             let trimmed = line.trimmingCharacters(in: .whitespaces)
                             if trimmed.hasPrefix("https://accounts.google.com") {
-                                lock.lock()
-                                urlOpenedBox.pointee = true
-                                lock.unlock()
+                                urlOpened.value = true
                                 if let url = URL(string: trimmed) {
                                     DispatchQueue.main.async {
                                         NSWorkspace.shared.open(url)
@@ -441,7 +439,7 @@ final class SetupWizardViewModel {
         }
     }
 
-    private static func stripAnsiCodes(_ text: String) -> String {
+    nonisolated private static func stripAnsiCodes(_ text: String) -> String {
         text.replacingOccurrences(
             of: "\\x1B\\[[0-9;]*[a-zA-Z]|\\x1B\\[\\?[0-9]*[a-zA-Z]",
             with: "",

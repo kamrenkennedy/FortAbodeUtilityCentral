@@ -104,15 +104,6 @@ Uses an **explicit** `Resources/Info.plist` — not `GENERATE_INFOPLIST_FILE`. T
 
 ## Coding Preferences
 
-### General
-- Read files before modifying them — understand what's there first
-- Prefer editing existing files over creating new ones
-- No unnecessary abstractions, helpers, or speculative features
-- Don't add comments, docstrings, or type annotations to code you didn't change
-- Don't add error handling for scenarios that can't happen
-- Keep responses short and direct — lead with the action, not the reasoning
-- When referencing code, use `file_path:line_number` format
-
 ### Swift / SwiftUI Specific
 - Swift 6 strict concurrency — use actors for shared mutable state, `@MainActor` for UI-bound classes
 - `@Observable` (not `ObservableObject`) — this is a modern SwiftUI app
@@ -121,28 +112,17 @@ Uses an **explicit** `Resources/Info.plist` — not `GENERATE_INFOPLIST_FILE`. T
 - Enums with associated values for type-safe modeling (see `VersionSource`, `UpdateSource`, `UpdateCommand`)
 - `ComponentType.skill` exists in the data model but skills are not yet implemented
 
-### Git
-- Commit messages: imperative mood, explain the "why" not the "what"
-- Always include `Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>`
-- Don't amend commits — create new ones
-- Push to `origin main` after committing
+## Session Protocol (project-specific)
 
-### Notion Integration
-- Always use database templates (template_id) when creating Notion pages — never blank pages
-- Execution OS template IDs: Project=`9cae7781-5484-8335-bf78-810827897f54`, Task=`335e7781-5484-8291-98d5-81d18f0f0d22`
-
-## Session Protocol
+In addition to the global session protocol:
 
 ### Starting a Session
 1. Check Kam Memory MCP for `Fort_Abode_Utility_Central` entity — has current version, phase status, key decisions
-2. Check Deep Context for latest session summary (search "Fort Abode")
-3. **Ask Kam which phase he wants to work on** — don't assume
-4. **Ask if Kam wants to move the Skills phase to a different position in the roadmap** — it's fully specced but tabled
+2. **Ask Kam which phase he wants to work on** — don't assume
+3. **Ask if Kam wants to move the Skills phase to a different position in the roadmap** — it's fully specced but tabled
 
 ### Ending a Session
-1. Update Kam Memory MCP (`aim_memory_add_facts` on `Fort_Abode_Utility_Central`) with what was done, current version, what's next
-2. Store Deep Context session summary (`aim_deep_store`) with full narrative
-3. Both systems must be current — they follow Kam across machines
+Update the `Fort_Abode_Utility_Central` entity specifically with current version number, phase status changes, and what's next.
 
 ## Current Phase Status
 

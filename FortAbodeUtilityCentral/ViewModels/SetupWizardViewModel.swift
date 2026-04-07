@@ -343,14 +343,9 @@ final class SetupWizardViewModel {
                     stdoutPipe.fileHandleForReading.readabilityHandler = nil
                     stderrPipe.fileHandleForReading.readabilityHandler = nil
 
-                    lock.lock()
-                    let opened = urlOpenedBox.pointee
-                    lock.unlock()
-                    urlOpenedBox.deallocate()
-
                     continuation.resume(returning: ProcessResult(
                         success: process.terminationStatus == 0,
-                        output: opened ? "Authentication complete" : "No OAuth URL found"
+                        output: urlOpened.value ? "Authentication complete" : "No OAuth URL found"
                     ))
                 } catch {
                     continuation.resume(returning: ProcessResult(

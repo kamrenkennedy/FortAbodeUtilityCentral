@@ -27,7 +27,7 @@ struct CheckForUpdatesView: View {
 final class CheckForUpdatesViewModel: ObservableObject {
 
     @Published var canCheckForUpdates = false
-    private var timer: Timer?
+    private nonisolated(unsafe) var timer: Timer?
 
     init(updater: SPUUpdater) {
         canCheckForUpdates = updater.canCheckForUpdates

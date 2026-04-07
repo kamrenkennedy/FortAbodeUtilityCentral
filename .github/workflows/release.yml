@@ -135,7 +135,11 @@ jobs:
             exit 1
           fi
 
-          SIGN_OUTPUT=$("$SPARKLE_BIN" "$ZIP_PATH" -s "$SPARKLE_KEY")
+          # Write key to temp file — -s flag is deprecated in newer Sparkle
+          KEY_FILE=$(mktemp)
+          echo "$SPARKLE_KEY" > "$KEY_FILE"
+          SIGN_OUTPUT=$("$SPARKLE_BIN" "$ZIP_PATH" --ed-key-file "$KEY_FILE")
+          rm -f "$KEY_FILE"
           echo "sign_update output: $SIGN_OUTPUT"
 
           ED_SIGNATURE=$(echo "$SIGN_OUTPUT" | grep -o 'sparkle:edSignature="[^"]*"' | sed 's/sparkle:edSignature="//;s/"//')

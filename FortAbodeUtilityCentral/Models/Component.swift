@@ -288,6 +288,7 @@ struct Component: Identifiable, Codable, Hashable {
     let marketplace: Bool?
     let setupFlow: SetupFlow?
     let multiInstance: Bool?
+    let minAppVersion: String?
 
     /// SF Symbol name — uses the explicit icon if provided, otherwise falls back by type
     var iconName: String {
@@ -314,5 +315,12 @@ struct Component: Identifiable, Codable, Hashable {
     /// Whether this component requires a setup wizard before install
     var requiresSetup: Bool {
         setupFlow != nil
+    }
+
+    /// Whether this component is compatible with the running app version
+    var isCompatibleWithCurrentApp: Bool {
+        guard let required = minAppVersion else { return true }
+        let current = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
+        return current.compare(required, options: .numeric) != .orderedAscending
     }
 }

@@ -213,14 +213,15 @@
         }
       ]
     },
-    "marketplace": true
+    "marketplace": true,
+    "min_app_version": "3.0.0"
   },
   {
     "id": "google-workspace",
     "display_name": "Google Workspace",
     "description": "Gmail, Calendar, Drive, Sheets, Docs, and more via Google's official API",
-    "user_description": "Lets Claude read and send Gmail, manage Google Calendar events, access Google Drive files, edit Sheets and Docs, and more. Add multiple Google accounts by telling Claude 'add my Google account' after installing.",
-    "usage_instructions": "After installing, tell Claude 'add my Google account' to authenticate. The MCP will open your browser for Google sign-in. Once connected, use natural language: 'Check my Gmail', 'Add a meeting Friday at 2pm', 'Find the budget spreadsheet in Drive'. For multiple accounts, say 'add another Google account' and specify which to use by email.",
+    "user_description": "Lets Claude read and send Gmail, manage Google Calendar events, access Google Drive files, edit Sheets and Docs, and more.",
+    "usage_instructions": "After installing, copy and paste this to Claude to add your first Google account:\n\n\"Use the Google Workspace MCP manage_accounts tool to add my Google account.\"\n\nThe MCP will open your browser for Google sign-in. Once connected, use natural language: 'Check my Gmail', 'Add a meeting Friday at 2pm', 'Find the budget spreadsheet in Drive'. To add more accounts, ask Claude to run manage_accounts again.",
     "type": "mcpServer",
     "icon": "envelope.fill",
     "version_source": {
@@ -249,6 +250,7 @@
         }
       }
     ],
-    "marketplace": true
+    "marketplace": true,
+    "min_app_version": "3.0.0"
   }
 ]

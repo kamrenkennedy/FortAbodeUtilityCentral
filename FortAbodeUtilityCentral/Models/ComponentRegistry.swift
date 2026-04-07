@@ -66,10 +66,11 @@ final class ComponentRegistry {
         }
     }
 
-    /// Components available in the marketplace (not installed and marketplace=true)
+    /// Components available in the marketplace (not installed, marketplace=true, compatible with this app version)
     func marketplaceComponents(statuses: [String: UpdateStatus]) -> [Component] {
         components.filter { component in
             guard component.showInMarketplace else { return false }
+            guard component.isCompatibleWithCurrentApp else { return false }
             guard let status = statuses[component.id] else { return true }
             if case .notInstalled = status { return true }
             return false

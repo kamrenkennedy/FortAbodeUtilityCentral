@@ -67,7 +67,7 @@ struct FortAbodeUtilityCentralApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
+        Window("Fort Abode Utility Central", id: "main") {
             Group {
                 if !isActivated {
                     ActivationView {

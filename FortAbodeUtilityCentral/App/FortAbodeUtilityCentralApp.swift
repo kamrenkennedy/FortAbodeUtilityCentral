@@ -23,8 +23,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // Watch for window close to hide from dock
         if let window = NSApp.windows.first(where: { $0.className != "NSStatusBarWindow" }) {
             window.delegate = self
-            window.titlebarSeparatorStyle = .none
+            Self.configureWindowAppearance(window)
         }
+    }
+
+    /// Make the title bar transparent and seamless with content
+    private static func configureWindowAppearance(_ window: NSWindow) {
+        window.titlebarAppearsTransparent = true
+        window.titlebarSeparatorStyle = .none
     }
 
     func windowWillClose(_ notification: Notification) {
@@ -37,6 +43,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSApp.activate(ignoringOtherApps: true)
         if let window = NSApp.windows.first(where: { $0.className != "NSStatusBarWindow" }) {
             window.makeKeyAndOrderFront(nil)
+            configureWindowAppearance(window)
         }
     }
 }

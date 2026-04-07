@@ -351,7 +351,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ \"$CONFIGURATION\" = \"Debug\" ]; then\n  echo \"Skipping EdDSA key validation in Debug builds.\"\n  exit 0\nfi\nSPARKLE_BIN=\"${BUILD_DIR%Build/*}SourcePackages/artifacts/sparkle/Sparkle/bin\"\nEXPECTED_KEY=$(\"${SPARKLE_BIN}/generate_keys\" -p 2>/dev/null | grep \"^[A-Za-z0-9+/=]\" | head -1)\nif [ -z \"$EXPECTED_KEY\" ]; then\n  echo \"warning: Could not extract EdDSA public key from Keychain — skipping validation\"\n  exit 0\nfi\nPLIST_KEY=$(/usr/libexec/PlistBuddy -c \"Print :SUPublicEDKey\" \"${TARGET_BUILD_DIR}/${INFOPLIST_PATH}\")\nif [ \"$EXPECTED_KEY\" != \"$PLIST_KEY\" ]; then\n  echo \"error: SUPublicEDKey mismatch! Info.plist has '${PLIST_KEY}' but Keychain has '${EXPECTED_KEY}'\"\n  exit 1\nfi\necho \"EdDSA public key validated successfully.\"\n";
+			shellScript = "if [ \"$CONFIGURATION\" = \"Debug\" ]; then\n  echo \"Skipping EdDSA key validation in Debug builds.\"\n  exit 0\nfi\nSPARKLE_BIN=\"${BUILD_DIR%Build/*}SourcePackages/artifacts/sparkle/Sparkle/bin\"\nEXPECTED_KEY=$(\"${SPARKLE_BIN}/generate_keys\" -p 2>/dev/null | grep -E \"^[A-Za-z0-9+/=]{40,}$\" | head -1)\nif [ -z \"$EXPECTED_KEY\" ]; then\n  echo \"warning: Could not extract EdDSA public key from Keychain — skipping validation\"\n  exit 0\nfi\nPLIST_KEY=$(/usr/libexec/PlistBuddy -c \"Print :SUPublicEDKey\" \"${TARGET_BUILD_DIR}/${INFOPLIST_PATH}\")\nif [ \"$EXPECTED_KEY\" != \"$PLIST_KEY\" ]; then\n  echo \"error: SUPublicEDKey mismatch! Info.plist has '${PLIST_KEY}' but Keychain has '${EXPECTED_KEY}'\"\n  exit 1\nfi\necho \"EdDSA public key validated successfully.\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

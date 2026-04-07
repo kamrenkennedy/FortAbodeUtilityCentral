@@ -167,9 +167,23 @@ final class ComponentListViewModel {
             return
         }
 
-        // Step 1.5: Pin iCloud folders if this is the memory component
+        // Step 1.5: Pin iCloud folders and set up CLAUDE.md if this is the memory component
         if component.id == "setup-claude-memory" {
             await filePinningService.pinClaudeMemoryFolder()
+
+            // Phase 6: Deploy CLAUDE.md template + session-wrap settings.json hook
+            let claudeCodeService = ClaudeCodeConfigService()
+            do {
+                try await claudeCodeService.setupClaudeMD()
+                try await claudeCodeService.setupSettingsHooks()
+            } catch {
+                await ErrorLogger.shared.log(
+                    componentId: component.id,
+                    displayName: component.displayName,
+                    error: "CLAUDE.md sync failed: \(error.localizedDescription)",
+                    installedVersion: nil
+                )
+            }
         }
 
         // Step 2: Write config entries to claude_desktop_config.json
@@ -360,6 +374,11 @@ final class ComponentListViewModel {
             // Pin iCloud folders for memory component — ensures folder is downloaded locally
             if component.id == "setup-claude-memory" {
                 await filePinningService.pinClaudeMemoryFolder()
+
+                // Self-heal Phase 6: ensure CLAUDE.md + settings hooks exist
+                let claudeCodeService = ClaudeCodeConfigService()
+                try? await claudeCodeService.setupClaudeMD()
+                try? await claudeCodeService.setupSettingsHooks()
             }
         }
 

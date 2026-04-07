@@ -102,8 +102,6 @@ struct FortAbodeUtilityCentralApp: App {
                 handleLaunchMode()
             }
         }
-        .windowStyle(.titleBar)
-        .windowToolbarStyle(.unified)
         .defaultSize(width: 600, height: 500)
         .windowResizability(.contentMinSize)
         .commands {

@@ -133,10 +133,15 @@ Update the `Fort_Abode_Utility_Central` entity specifically with current version
 | Install → config + self-healing (v2.1) | COMPLETE |
 | Dynamic marketplace (Phase 4) | COMPLETE |
 | Family activation security | COMPLETE |
-| Build-time key validation (Phase 5) | NOT STARTED |
-| **Skills support (Phase 3)** | **FULLY SPECCED, TABLED** — PDF spec at project folder, deep context `fort-abode-skills-phase-complete-spec` |
-| CLAUDE.md sync (Phase 6) | NOT STARTED |
-| Future enhancements (Phase 7) | NOT STARTED |
+| Build-time key validation (Phase 5) | COMPLETE |
+| In-App Configurator + Setup Wizards | COMPLETE |
+| Google Workspace + Notion MCPs | COMPLETE |
+| GitHub Actions CI/CD Pipeline | COMPLETE |
+| iCloud folder pinning | COMPLETE |
+| **CLAUDE.md sync (Phase 6)** | **IN PROGRESS** |
+| Skills support (Phase 3) | FULLY SPECCED, TABLED — PDF spec at project folder |
+| Family Memory (Phase 7) | CONCEPT — shared iCloud memory for family communication |
+| Future enhancements (Phase 8) | NOT STARTED |
 
 ## Family Activation
 - Code validated against SHA-256 hash — plaintext never in binary

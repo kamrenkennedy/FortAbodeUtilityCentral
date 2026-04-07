@@ -20,17 +20,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Watch for window close to hide from dock
-        if let window = NSApp.windows.first(where: { $0.className != "NSStatusBarWindow" }) {
-            window.delegate = self
-            Self.configureWindowAppearance(window)
-        }
-    }
-
-    /// Make the title bar transparent and seamless with content
-    private static func configureWindowAppearance(_ window: NSWindow) {
-        window.titlebarAppearsTransparent = true
-        window.titlebarSeparatorStyle = .none
+        // Window configuration moved to SwiftUI onAppear (configureMainWindow)
+        // to guarantee the window exists — Release builds may not have it yet here.
     }
 
     func windowWillClose(_ notification: Notification) {
@@ -43,8 +34,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSApp.activate(ignoringOtherApps: true)
         if let window = NSApp.windows.first(where: { $0.className != "NSStatusBarWindow" }) {
             window.makeKeyAndOrderFront(nil)
-            configureWindowAppearance(window)
         }
+    }
+
+    /// Called from SwiftUI onAppear — guaranteed to run after the window exists
+    static func configureMainWindow() {
+        guard let window = NSApp.windows.first(where: { $0.className != "NSStatusBarWindow" }) else { return }
+        window.titlebarAppearsTransparent = true
+        window.titlebarSeparatorStyle = .none
     }
 }
 
@@ -95,6 +92,7 @@ struct FortAbodeUtilityCentralApp: App {
             }
             .frame(minWidth: 500, minHeight: 400)
             .onAppear {
+                AppDelegate.configureMainWindow()
                 guard isActivated else { return }
                 if viewModel == nil {
                     viewModel = ComponentListViewModel(registry: registry)

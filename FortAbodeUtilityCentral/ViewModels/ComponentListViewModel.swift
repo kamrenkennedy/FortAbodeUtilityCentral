@@ -378,7 +378,6 @@ final class ComponentListViewModel {
                 // Self-heal Phase 6: ensure CLAUDE.md + settings hooks exist
                 let claudeCodeService = ClaudeCodeConfigService()
                 try? await claudeCodeService.setupClaudeMD()
-                try? await claudeCodeService.setupSettingsHooks()
             }
         }
 

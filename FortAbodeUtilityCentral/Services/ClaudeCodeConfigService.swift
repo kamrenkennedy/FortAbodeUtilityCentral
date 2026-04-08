@@ -25,11 +25,6 @@ actor ClaudeCodeConfigService {
         "\(homePath)/.claude/CLAUDE.md"
     }
 
-    /// Claude Code user settings
-    private var settingsPath: String {
-        "\(homePath)/.claude/settings.json"
-    }
-
     // MARK: - CLAUDE.md Setup
 
     /// Deploy the CLAUDE.md template and symlink if not already configured.
@@ -64,62 +59,11 @@ actor ClaudeCodeConfigService {
         try fm.createSymbolicLink(atPath: claudeMDSymlink, withDestinationPath: iCloudClaudeMD)
     }
 
-    // MARK: - Settings.json Hooks
-
-    /// Add session-wrap stop hook to settings.json if not already present.
-    /// Preserves all existing settings — only adds the hook.
-    func setupSettingsHooks() async throws {
-        var settings: [String: Any] = [:]
-
-        // Read existing settings if file exists
-        if fm.fileExists(atPath: settingsPath) {
-            let data = try Data(contentsOf: URL(fileURLWithPath: settingsPath))
-            if let existing = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                settings = existing
-            }
-        }
-
-        // Check if hooks.Stop already has our session-wrap hook
-        if let hooks = settings["hooks"] as? [String: Any],
-           let stopHooks = hooks["Stop"] as? [[String: Any]] {
-            let hasSessionWrap = stopHooks.contains { entry in
-                guard let innerHooks = entry["hooks"] as? [[String: Any]] else { return false }
-                return innerHooks.contains { hook in
-                    (hook["type"] as? String) == "prompt" &&
-                    ((hook["prompt"] as? String) ?? "").contains("session wrap")
-                }
-            }
-            if hasSessionWrap { return }
-        }
-
-        // Build the stop hook
-        let sessionWrapHook: [String: Any] = [
-            "matcher": "",
-            "hooks": [
-                [
-                    "type": "prompt",
-                    "prompt": "Before ending, run the session wrap: update Memory MCP with current status and Deep Context with a session summary."
-                ]
-            ]
-        ]
-
-        // Merge into existing hooks
-        var hooks = settings["hooks"] as? [String: Any] ?? [:]
-        var stopHooks = hooks["Stop"] as? [[String: Any]] ?? []
-        stopHooks.append(sessionWrapHook)
-        hooks["Stop"] = stopHooks
-        settings["hooks"] = hooks
-
-        // Ensure ~/.claude/ directory exists
-        let claudeDir = (settingsPath as NSString).deletingLastPathComponent
-        if !fm.fileExists(atPath: claudeDir) {
-            try fm.createDirectory(atPath: claudeDir, withIntermediateDirectories: true)
-        }
-
-        // Write back — pretty-printed for human readability
-        let data = try JSONSerialization.data(withJSONObject: settings, options: [.prettyPrinted, .sortedKeys])
-        try data.write(to: URL(fileURLWithPath: settingsPath), options: .atomic)
-    }
+    // MARK: - Settings.json
+    // Note: Stop hooks with type "prompt" cause infinite loops (fire on every
+    // assistant turn). Session wrap is handled by CLAUDE.md instructions instead.
+    // This method is intentionally a no-op — kept as a placeholder for future
+    // non-looping settings if needed.
 
     // MARK: - Status Checks
 

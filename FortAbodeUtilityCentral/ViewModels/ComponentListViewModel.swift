@@ -175,7 +175,7 @@ final class ComponentListViewModel {
             let claudeCodeService = ClaudeCodeConfigService()
             do {
                 try await claudeCodeService.setupClaudeMD()
-                try await claudeCodeService.setupSettingsHooks()
+
             } catch {
                 await ErrorLogger.shared.log(
                     componentId: component.id,

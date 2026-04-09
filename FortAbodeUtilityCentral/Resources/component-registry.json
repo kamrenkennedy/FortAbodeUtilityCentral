@@ -34,16 +34,45 @@
     },
     "claude_config": [
       {
-        "key": "Kam-Memory",
+        "key": "{{user_input:DISPLAY_NAME}}-Memory",
         "command": "npx",
         "args": ["-y", "mcp-knowledge-graph", "--memory-path", "{{MEMORY_PATH}}"]
       },
       {
-        "key": "Kam-Deep-Context",
+        "key": "{{user_input:DISPLAY_NAME}}-Deep-Context",
         "command": "npx",
         "args": ["-y", "--package=setup-claude-memory", "aim-deep-context-server", "--memory-path", "{{MEMORY_PATH}}"]
       }
     ],
+    "setup_flow": {
+      "id": "memory-setup",
+      "title": "Set Up Memory",
+      "subtitle": "Personalize your Claude memory servers",
+      "steps": [
+        {
+          "id": "enter-name",
+          "type": "text_input",
+          "title": "What's Your First Name?",
+          "body": "This name will label your memory servers in Claude — for example, 'Tiera-Memory' and 'Tiera-Deep-Context'. Each family member gets their own name.",
+          "illustration": { "type": "sf_symbol", "name": "person.fill" },
+          "action_label": "Next",
+          "input_config": {
+            "field_name": "DISPLAY_NAME",
+            "placeholder": "Tiera",
+            "validation": { "type": "regex", "pattern": "^[a-zA-Z0-9\\-_ ]+$", "error_message": "Letters, numbers, spaces, and dashes only" }
+          }
+        },
+        {
+          "id": "confirm",
+          "type": "completion",
+          "title": "Ready to Install",
+          "body": "Claude will get two memory servers:\n\n• {{user_input:DISPLAY_NAME}}-Memory — quick-access knowledge graph\n• {{user_input:DISPLAY_NAME}}-Deep-Context — session summaries and decision logs\n\nYour memory is stored in iCloud and syncs across devices.",
+          "illustration": { "type": "sf_symbol", "name": "checkmark.circle.fill" },
+          "action_label": "Install",
+          "summary_fields": ["DISPLAY_NAME"]
+        }
+      ]
+    },
     "marketplace": true
   },
   {

@@ -70,6 +70,7 @@ struct FortAbodeUtilityCentralApp: App {
     @State private var registry = ComponentRegistry()
     @State private var viewModel: ComponentListViewModel?
     @State private var isActivated = KeychainService.isActivated
+    @State private var whatsNewRelease: WhatsNewRelease?
 
     // Sparkle updater controller — starts checking for updates automatically
     private let updaterController: SPUStandardUpdaterController
@@ -109,12 +110,18 @@ struct FortAbodeUtilityCentralApp: App {
             }
             .frame(minWidth: 500, minHeight: 400)
             .background(WindowAppearanceModifier())
+            .sheet(item: $whatsNewRelease) { release in
+                WhatsNewView(version: release.version, notes: release.notes) {
+                    whatsNewRelease = nil
+                }
+            }
             .onAppear {
                 guard isActivated else { return }
                 if viewModel == nil {
                     viewModel = ComponentListViewModel(registry: registry)
                 }
                 handleLaunchMode()
+                checkWhatsNew()
             }
             .onChange(of: isActivated) { _, activated in
                 guard activated else { return }
@@ -207,6 +214,22 @@ struct FortAbodeUtilityCentralApp: App {
 
                 // Prompt for launch at login on first launch
                 promptLaunchAtLoginIfNeeded()
+            }
+        }
+    }
+
+    private func checkWhatsNew() {
+        let currentVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
+        let lastSeenKey = "lastSeenAppVersion"
+        let lastSeen = UserDefaults.standard.string(forKey: lastSeenKey)
+
+        guard lastSeen != currentVersion else { return }
+        UserDefaults.standard.set(currentVersion, forKey: lastSeenKey)
+
+        if lastSeen != nil, let release = WhatsNewLoader.load(for: currentVersion) {
+            // Only show if upgrading (not first install) and notes exist for this version
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                whatsNewRelease = release
             }
         }
     }

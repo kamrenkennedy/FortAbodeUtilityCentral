@@ -26,6 +26,10 @@ final class ComponentListViewModel {
     /// Set after install/uninstall to prompt user to restart Claude
     var showRestartHint = false
 
+    /// Set when a legacy Memory install is detected (hardcoded keys, no stored DISPLAY_NAME).
+    /// The UI should present a name prompt and call `migrateMemoryKeys(displayName:)`.
+    var memoryNeedsMigration = false
+
     var components: [Component] {
         registry.components
     }
@@ -96,6 +100,9 @@ final class ComponentListViewModel {
             }
         }
 
+        // Check for legacy Memory installs that need migration
+        await detectMemoryMigration()
+
         lastChecked = Date()
         UserDefaults.standard.set(lastChecked, forKey: AppSettingsKey.lastCheckDate)
         isCheckingAll = false
@@ -119,8 +126,21 @@ final class ComponentListViewModel {
         if result.success {
             // Re-apply config entries (idempotent — ensures config stays in sync)
             if let configEntries = component.claudeConfig, !configEntries.isEmpty {
+                let entriesToWrite: [ClaudeConfigEntry]
+                if hasPlaceholderKeys(configEntries), let stored = persistedInputs(for: id) {
+                    entriesToWrite = configEntries.map { entry in
+                        ClaudeConfigEntry(
+                            key: resolveUserInputPlaceholders(in: entry.key, inputs: stored),
+                            command: entry.command,
+                            args: entry.args.map { resolveUserInputPlaceholders(in: $0, inputs: stored) },
+                            env: entry.env?.mapValues { resolveUserInputPlaceholders(in: $0, inputs: stored) }
+                        )
+                    }
+                } else {
+                    entriesToWrite = configEntries
+                }
                 let memoryPath = resolveMemoryPath()
-                try? await claudeConfigService.addServerEntries(configEntries, memoryPath: memoryPath)
+                try? await claudeConfigService.addServerEntries(entriesToWrite, memoryPath: memoryPath)
             }
 
             statuses[id] = .checking
@@ -165,25 +185,6 @@ final class ComponentListViewModel {
                 installedVersion: nil
             )
             return
-        }
-
-        // Step 1.5: Pin iCloud folders and set up CLAUDE.md if this is the memory component
-        if component.id == "setup-claude-memory" {
-            await filePinningService.pinClaudeMemoryFolder()
-
-            // Phase 6: Deploy CLAUDE.md template + session-wrap settings.json hook
-            let claudeCodeService = ClaudeCodeConfigService()
-            do {
-                try await claudeCodeService.setupClaudeMD()
-
-            } catch {
-                await ErrorLogger.shared.log(
-                    componentId: component.id,
-                    displayName: component.displayName,
-                    error: "CLAUDE.md sync failed: \(error.localizedDescription)",
-                    installedVersion: nil
-                )
-            }
         }
 
         // Step 2: Write config entries to claude_desktop_config.json
@@ -268,7 +269,15 @@ final class ComponentListViewModel {
             }
         }
 
-        // Step 3: Store secrets in Keychain
+        // Step 2.5: Pin iCloud folders and set up CLAUDE.md if this is the memory component
+        if component.id == "setup-claude-memory" {
+            await performMemoryPostInstall(component: component)
+        }
+
+        // Step 3: Persist user inputs for future updates/self-heal
+        storeInputs(inputs, for: id)
+
+        // Step 3.5: Store secrets in Keychain
         for (key, value) in inputs {
             if key.contains("TOKEN") || key.contains("SECRET") || key.contains("KEY") {
                 SecureInputStorage.save(componentId: id, fieldName: key, value: value)
@@ -290,9 +299,22 @@ final class ComponentListViewModel {
         guard let component = registry.component(withId: id) else { return }
         guard let configEntries = component.claudeConfig, !configEntries.isEmpty else { return }
 
-        let keys = configEntries.map(\.key)
+        let keys: [String]
+        if hasPlaceholderKeys(configEntries), component.multiInstance != true {
+            // Resolve actual keys by suffix matching (e.g. find "Tiera-Memory" from template "-Memory")
+            keys = await resolveActualKeys(for: configEntries)
+        } else {
+            keys = configEntries.map(\.key)
+        }
+
+        guard !keys.isEmpty else {
+            statuses[id] = .notInstalled
+            return
+        }
+
         do {
             try await claudeConfigService.removeServerEntries(keys: keys)
+            clearPersistedInputs(for: id)
             statuses[id] = .notInstalled
             showRestartHint = true
         } catch {
@@ -360,36 +382,69 @@ final class ComponentListViewModel {
         let installed = await versionDetectionService.detectInstalledVersion(for: component.versionSource)
 
         // Self-heal: if package is installed (npx cache hit) but config entries are missing, auto-add them
-        // Skip for multi-instance components — their config keys have unresolved placeholders
+        // Skip for multi-instance components and components with placeholder keys — can't resolve without user input
         if installed != nil, component.multiInstance != true,
            let configEntries = component.claudeConfig, !configEntries.isEmpty {
-            let keys = configEntries.map(\.key)
-            let allPresent = await claudeConfigService.hasEntries(keys: keys)
-            if !allPresent {
-                let memoryPath = resolveMemoryPath()
-                try? await claudeConfigService.addServerEntries(configEntries, memoryPath: memoryPath)
-                showRestartHint = true
+
+            if hasPlaceholderKeys(configEntries) {
+                // Placeholder keys: self-heal using stored inputs (if available)
+                if let stored = persistedInputs(for: component.id) {
+                    let resolvedEntries = configEntries.map { entry in
+                        ClaudeConfigEntry(
+                            key: resolveUserInputPlaceholders(in: entry.key, inputs: stored),
+                            command: entry.command,
+                            args: entry.args.map { resolveUserInputPlaceholders(in: $0, inputs: stored) },
+                            env: entry.env?.mapValues { resolveUserInputPlaceholders(in: $0, inputs: stored) }
+                        )
+                    }
+                    let allPresent = await claudeConfigService.hasEntries(keys: resolvedEntries.map(\.key))
+                    if !allPresent {
+                        let memoryPath = resolveMemoryPath()
+                        try? await claudeConfigService.addServerEntries(resolvedEntries, memoryPath: memoryPath)
+                        showRestartHint = true
+                    }
+                }
+                // No stored inputs → can't self-heal config keys, but migration will handle it
+            } else {
+                // Static keys: self-heal as before
+                let keys = configEntries.map(\.key)
+                let allPresent = await claudeConfigService.hasEntries(keys: keys)
+                if !allPresent {
+                    let memoryPath = resolveMemoryPath()
+                    try? await claudeConfigService.addServerEntries(configEntries, memoryPath: memoryPath)
+                    showRestartHint = true
+                }
             }
 
-            // Pin iCloud folders for memory component — ensures folder is downloaded locally
+            // Memory-specific: pin iCloud folders + CLAUDE.md sync (not key-dependent)
             if component.id == "setup-claude-memory" {
-                await filePinningService.pinClaudeMemoryFolder()
-
-                // Self-heal Phase 6: ensure CLAUDE.md + settings hooks exist
-                let claudeCodeService = ClaudeCodeConfigService()
-                try? await claudeCodeService.setupClaudeMD()
+                await performMemoryPostInstall(component: component)
             }
         }
 
         // Dual detection: also check if config entries exist (manual installs)
         // For multi-instance components, check if any instance exists (prefix match)
+        // For placeholder-key components, check by suffix match
         let configPresent: Bool
-        if component.multiInstance == true, let configEntries = component.claudeConfig,
-           let firstEntry = configEntries.first,
-           let range = firstEntry.key.range(of: "{{user_input:") {
-            let prefix = String(firstEntry.key[firstEntry.key.startIndex..<range.lowerBound])
-            let matches = await claudeConfigService.entriesMatching(prefix: prefix)
-            configPresent = !matches.isEmpty
+        if let configEntries = component.claudeConfig, !configEntries.isEmpty,
+           configEntries.first?.key.contains("{{user_input:") == true {
+            if component.multiInstance == true,
+               let firstEntry = configEntries.first,
+               let range = firstEntry.key.range(of: "{{user_input:") {
+                // Multi-instance: prefix match (e.g. Notion)
+                let prefix = String(firstEntry.key[firstEntry.key.startIndex..<range.lowerBound])
+                let matches = await claudeConfigService.entriesMatching(prefix: prefix)
+                configPresent = !matches.isEmpty
+            } else {
+                // Single-instance with personalized keys (e.g. Memory): suffix match
+                let suffixes = configKeySuffixes(from: configEntries)
+                var allFound = true
+                for suffix in suffixes {
+                    let matches = await claudeConfigService.entriesMatching(suffix: suffix)
+                    if matches.isEmpty { allFound = false; break }
+                }
+                configPresent = allFound
+            }
         } else if let configEntries = component.claudeConfig, !configEntries.isEmpty {
             configPresent = await claudeConfigService.hasEntries(keys: configEntries.map(\.key))
         } else {
@@ -441,5 +496,108 @@ final class ComponentListViewModel {
             resolved = resolved.replacingOccurrences(of: "{{resolved:CONFIG_DIR}}", with: configDir)
         }
         return resolved
+    }
+
+    // MARK: - Persisted Inputs (UserDefaults)
+
+    private static let inputsKeyPrefix = "component.inputs."
+
+    func storeInputs(_ inputs: [String: String], for componentId: String) {
+        UserDefaults.standard.set(inputs, forKey: Self.inputsKeyPrefix + componentId)
+    }
+
+    func persistedInputs(for componentId: String) -> [String: String]? {
+        UserDefaults.standard.dictionary(forKey: Self.inputsKeyPrefix + componentId) as? [String: String]
+    }
+
+    private func clearPersistedInputs(for componentId: String) {
+        UserDefaults.standard.removeObject(forKey: Self.inputsKeyPrefix + componentId)
+    }
+
+    /// Check whether config entries contain unresolved `{{user_input:*}}` placeholders.
+    private func hasPlaceholderKeys(_ entries: [ClaudeConfigEntry]) -> Bool {
+        entries.contains { $0.key.contains("{{user_input:") }
+    }
+
+    /// Extract the suffix after the `}}` placeholder closing for each config entry key.
+    /// e.g. `"{{user_input:DISPLAY_NAME}}-Memory"` → `"-Memory"`
+    private func configKeySuffixes(from entries: [ClaudeConfigEntry]) -> [String] {
+        entries.compactMap { entry in
+            guard let range = entry.key.range(of: "}}") else { return nil }
+            return String(entry.key[range.upperBound...])
+        }
+    }
+
+    /// Resolve actual config keys by finding entries that match the expected suffixes.
+    private func resolveActualKeys(for entries: [ClaudeConfigEntry]) async -> [String] {
+        let suffixes = configKeySuffixes(from: entries)
+        var keys: [String] = []
+        for suffix in suffixes {
+            let matches = await claudeConfigService.entriesMatching(suffix: suffix)
+            keys.append(contentsOf: matches)
+        }
+        return keys
+    }
+
+    // MARK: - Legacy Migration
+
+    /// Detect if a legacy Memory install exists (hardcoded keys, no stored DISPLAY_NAME).
+    /// Called during checkAll() to trigger the migration prompt.
+    func detectMemoryMigration() async {
+        guard persistedInputs(for: "setup-claude-memory") == nil else { return }
+
+        // Check if any *-Memory or *-Deep-Context keys exist in the config
+        let memoryKeys = await claudeConfigService.entriesMatching(suffix: "-Memory")
+        let deepContextKeys = await claudeConfigService.entriesMatching(suffix: "-Deep-Context")
+
+        if !memoryKeys.isEmpty || !deepContextKeys.isEmpty {
+            memoryNeedsMigration = true
+        }
+    }
+
+    /// Rename legacy Memory config keys to use the provided display name.
+    /// Called from the migration UI after the user enters their name.
+    func migrateMemoryKeys(displayName: String) async {
+        let memoryKeys = await claudeConfigService.entriesMatching(suffix: "-Memory")
+        let deepContextKeys = await claudeConfigService.entriesMatching(suffix: "-Deep-Context")
+
+        var mapping: [String: String] = [:]
+        for key in memoryKeys {
+            mapping[key] = "\(displayName)-Memory"
+        }
+        for key in deepContextKeys {
+            mapping[key] = "\(displayName)-Deep-Context"
+        }
+
+        do {
+            try await claudeConfigService.renameServerEntries(mapping: mapping)
+            storeInputs(["DISPLAY_NAME": displayName], for: "setup-claude-memory")
+            memoryNeedsMigration = false
+            showRestartHint = true
+        } catch {
+            await ErrorLogger.shared.log(
+                componentId: "setup-claude-memory",
+                displayName: "Memory",
+                error: "Migration failed: \(error.localizedDescription)",
+                installedVersion: nil
+            )
+        }
+    }
+
+    /// Post-install tasks specific to the Memory component (iCloud pinning + CLAUDE.md sync).
+    private func performMemoryPostInstall(component: Component) async {
+        await filePinningService.pinClaudeMemoryFolder()
+
+        let claudeCodeService = ClaudeCodeConfigService()
+        do {
+            try await claudeCodeService.setupClaudeMD()
+        } catch {
+            await ErrorLogger.shared.log(
+                componentId: component.id,
+                displayName: component.displayName,
+                error: "CLAUDE.md sync failed: \(error.localizedDescription)",
+                installedVersion: nil
+            )
+        }
     }
 }

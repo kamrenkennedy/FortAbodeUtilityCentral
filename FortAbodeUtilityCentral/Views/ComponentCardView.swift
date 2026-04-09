@@ -81,65 +81,31 @@ struct ComponentCardView: View {
     // MARK: - Styling
 
     private var iconBackgroundGradient: some ShapeStyle {
-        switch status {
-        case .updateAvailable:
+        if isHovering {
             return AnyShapeStyle(
                 LinearGradient(
-                    colors: [.orange.opacity(0.12), .orange.opacity(0.04)],
+                    colors: [.green.opacity(0.10), .green.opacity(0.03)],
                     startPoint: .topLeading, endPoint: .bottomTrailing
                 )
             )
-        case .upToDate, .updateComplete:
-            return AnyShapeStyle(
-                LinearGradient(
-                    colors: [.green.opacity(0.08), .green.opacity(0.02)],
-                    startPoint: .topLeading, endPoint: .bottomTrailing
-                )
-            )
-        case .error:
-            return AnyShapeStyle(
-                LinearGradient(
-                    colors: [.red.opacity(0.1), .red.opacity(0.03)],
-                    startPoint: .topLeading, endPoint: .bottomTrailing
-                )
-            )
-        case .checkFailed:
-            return AnyShapeStyle(
-                LinearGradient(
-                    colors: [.yellow.opacity(0.08), .yellow.opacity(0.02)],
-                    startPoint: .topLeading, endPoint: .bottomTrailing
-                )
-            )
-        default:
-            return AnyShapeStyle(Color.clear)
         }
+        return AnyShapeStyle(Color.clear)
     }
 
     private var iconForeground: some ShapeStyle {
         switch status {
-        case .upToDate, .updateComplete:
-            return AnyShapeStyle(.white.opacity(0.9))
-        case .updateAvailable:
-            return AnyShapeStyle(.orange)
-        case .error:
-            return AnyShapeStyle(.red.opacity(0.8))
-        case .checkFailed:
-            return AnyShapeStyle(.yellow.opacity(0.7))
         case .checking, .updating:
             return AnyShapeStyle(.white.opacity(0.5))
         default:
-            return AnyShapeStyle(.white.opacity(0.6))
+            return AnyShapeStyle(isHovering ? .white.opacity(0.95) : .white.opacity(0.7))
         }
     }
 
     private var shadowColor: Color {
-        switch status {
-        case .updateAvailable: return .orange.opacity(0.2)
-        case .upToDate, .updateComplete: return .green.opacity(0.1)
-        case .checkFailed: return .yellow.opacity(0.1)
-        case .error: return .red.opacity(0.15)
-        default: return .black.opacity(0.15)
+        if isHovering {
+            return .green.opacity(0.15)
         }
+        return .black.opacity(0.15)
     }
 
     private var versionLabel: String {

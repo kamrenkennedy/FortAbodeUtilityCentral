@@ -1,0 +1,12 @@
+[
+  {
+    "version": "3.3.0",
+    "notes": [
+      "Memory servers now use your name — \"Tiera-Memory\" instead of generic labels",
+      "Setup wizard asks your name when installing Memory for the first time",
+      "Existing installs get a one-time prompt to personalize",
+      "App updates now download silently and install on next relaunch",
+      "Bugs and stability improvements"
+    ]
+  }
+]

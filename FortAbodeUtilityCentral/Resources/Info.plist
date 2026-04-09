@@ -32,5 +32,7 @@
     <string>y+SVlkSIOrgn/DOapgxZG39y29vhGl9BI/nGVSI5Tz0=</string>
     <key>SUEnableAutomaticChecks</key>
     <true/>
+    <key>SUAutomaticallyUpdate</key>
+    <true/>
 </dict>
 </plist>

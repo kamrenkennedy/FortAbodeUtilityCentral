@@ -77,6 +77,31 @@ actor ClaudeDesktopConfigService {
         return servers.keys.filter { $0.hasPrefix(prefix) }.sorted()
     }
 
+    /// List all mcpServer keys matching a suffix (e.g. "-Memory" returns ["Kam-Memory", "Tiera-Memory"]).
+    func entriesMatching(suffix: String) -> [String] {
+        guard let root = try? readConfig(),
+              let servers = root["mcpServers"] as? [String: Any] else {
+            return []
+        }
+        return servers.keys.filter { $0.hasSuffix(suffix) }.sorted()
+    }
+
+    /// Rename mcpServer keys while preserving their configuration.
+    /// Keys not found in the config are silently skipped.
+    func renameServerEntries(mapping: [String: String]) throws {
+        var root = try readConfig()
+        var servers = root["mcpServers"] as? [String: Any] ?? [:]
+
+        for (oldKey, newKey) in mapping where oldKey != newKey {
+            if let value = servers.removeValue(forKey: oldKey) {
+                servers[newKey] = value
+            }
+        }
+
+        root["mcpServers"] = servers
+        try writeConfig(root)
+    }
+
     /// Check if all specified keys exist in the mcpServers dictionary.
     func hasEntries(keys: [String]) -> Bool {
         guard let root = try? readConfig(),

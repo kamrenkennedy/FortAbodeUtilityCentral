@@ -28,6 +28,8 @@ targets:
         buildPhase: resources
       - path: Resources/claude-md-template.md
         buildPhase: resources
+      - path: Resources/whats-new.json
+        buildPhase: resources
     dependencies:
       - package: Sparkle
     postCompileScripts:

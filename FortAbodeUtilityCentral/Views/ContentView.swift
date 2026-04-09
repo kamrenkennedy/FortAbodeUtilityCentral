@@ -5,6 +5,7 @@ import SwiftUI
 struct ContentView: View {
 
     @Environment(ComponentListViewModel.self) private var viewModel
+    @State private var migrationName = ""
 
     private let columns = [
         GridItem(.adaptive(minimum: 120, maximum: 140), spacing: 24)
@@ -115,6 +116,49 @@ struct ContentView: View {
         .task {
             await viewModel.checkAll()
         }
+        .sheet(isPresented: Bindable(viewModel).memoryNeedsMigration) {
+            MemoryMigrationSheet(name: $migrationName) {
+                Task {
+                    await viewModel.migrateMemoryKeys(displayName: migrationName)
+                    migrationName = ""
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Memory Migration Sheet
+
+private struct MemoryMigrationSheet: View {
+    @Binding var name: String
+    let onConfirm: () -> Void
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "person.fill")
+                .font(.system(size: 36, weight: .light))
+                .foregroundStyle(.blue)
+
+            Text("Personalize Your Memory")
+                .font(.headline)
+
+            Text("Your memory servers will be labeled with your name — for example, \"Tiera-Memory\" instead of a generic label.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            TextField("Your first name", text: $name)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 200)
+
+            Button("Update Labels") {
+                onConfirm()
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+        }
+        .padding(32)
+        .frame(width: 340)
     }
 }
 

@@ -14,6 +14,7 @@
 		0C2AFE378C7F46B021BE15D4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 968811C1D0945F5BE9B6F0A8 /* ContentView.swift */; };
 		0D7F85E45BFAFB9CBA75F829 /* ClaudeCodeConfigService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67CBAA3E68AE042FD8F6FFDF /* ClaudeCodeConfigService.swift */; };
 		112863CDD6F3C554DAF8C3A9 /* UpdateExecutionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E343B9250E53EF5FE8057DAE /* UpdateExecutionService.swift */; };
+		11E72DFAD7010B08CCFA2023 /* dashboard-template.html in Resources */ = {isa = PBXBuildFile; fileRef = 750E9292C50A1D0B0C4EE603 /* dashboard-template.html */; };
 		156C48CEA34E68406BE574C7 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A1B1F334020349AF1BB567F /* AppSettings.swift */; };
 		15ACB224032293DD17F523FA /* SetupValidationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9646955BDB7A4F405EB1FDF0 /* SetupValidationService.swift */; };
 		1BE2080AB4AF9C0D5DDF3A05 /* SetupWizardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00E7940EB3A6AD0DB6A38C2F /* SetupWizardViewModel.swift */; };
@@ -32,6 +33,7 @@
 		8C46F547DCED96736E019D49 /* ComponentRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB0B45EFBB7DD5A133107515 /* ComponentRegistryTests.swift */; };
 		8FEB14627351680D4959D1BF /* MarketplaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FB63D56853D1FFB0742D448 /* MarketplaceView.swift */; };
 		91D50E1EB920B8C40D6B33FB /* ClaudeDesktopConfigService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A49ABEA06B33CB1666AD17A0 /* ClaudeDesktopConfigService.swift */; };
+		A1F5C83EBA3836D3FFACAC5D /* WeeklyRhythmService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66C0B457A755E70A4E21D034 /* WeeklyRhythmService.swift */; };
 		A2B2C6005EF42A9C341F8826 /* FilePinningService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72B3F9599ED98BC09073C78C /* FilePinningService.swift */; };
 		A57EFCA453010BE0DB621F72 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 48EB2A999B000B9AC11BB0DD /* Assets.xcassets */; };
 		A5D861B2D8E9BA0284E7ECF6 /* UpdateStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754EF798D1DADA467A6A6D84 /* UpdateStatus.swift */; };
@@ -52,6 +54,7 @@
 		EF6A84B87BF7C01CF51F88F6 /* StepContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04657FBC8960E17F4E585ECA /* StepContentView.swift */; };
 		F2EA15F87DAAF9BDF02FDFAE /* component-registry.json in Resources */ = {isa = PBXBuildFile; fileRef = CB45A8A63D1E4873C3D739AA /* component-registry.json */; };
 		F37E0647A0A8D347473AA752 /* ComponentListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC09EC9C57BA66F1650B44A0 /* ComponentListViewModel.swift */; };
+		F89C6DB5F46AA0E2B5C06700 /* engine-spec.md in Resources */ = {isa = PBXBuildFile; fileRef = 50C8FB18F4E77DC49B18BFA9 /* engine-spec.md */; };
 		FE125FC93FD596804B8211EE /* claude-md-template.md in Resources */ = {isa = PBXBuildFile; fileRef = 910E96CDC9E2B2E4595DEFA8 /* claude-md-template.md */; };
 /* End PBXBuildFile section */
 
@@ -75,13 +78,16 @@
 		1EB57DA95F7124E0519B2C86 /* ErrorLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorLogger.swift; sourceTree = "<group>"; };
 		26113857AC506F0780BBEE4C /* ComponentCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentCardView.swift; sourceTree = "<group>"; };
 		48EB2A999B000B9AC11BB0DD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		50C8FB18F4E77DC49B18BFA9 /* engine-spec.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "engine-spec.md"; sourceTree = "<group>"; };
 		52A1E55BD560971A940F171A /* VersionDetectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionDetectionService.swift; sourceTree = "<group>"; };
 		5914439D10E470294A91A039 /* FortAbodeUtilityCentral.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FortAbodeUtilityCentral.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		66C0B457A755E70A4E21D034 /* WeeklyRhythmService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmService.swift; sourceTree = "<group>"; };
 		67CBAA3E68AE042FD8F6FFDF /* ClaudeCodeConfigService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeCodeConfigService.swift; sourceTree = "<group>"; };
 		6938E7B668180CBA05772572 /* ComponentRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentRowView.swift; sourceTree = "<group>"; };
 		69E67AB0BE82AA7AE5E6F418 /* CheckForUpdatesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckForUpdatesView.swift; sourceTree = "<group>"; };
 		6F7E990CE834E05B52EAF553 /* Component.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Component.swift; sourceTree = "<group>"; };
 		72B3F9599ED98BC09073C78C /* FilePinningService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilePinningService.swift; sourceTree = "<group>"; };
+		750E9292C50A1D0B0C4EE603 /* dashboard-template.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = "dashboard-template.html"; sourceTree = "<group>"; };
 		754EF798D1DADA467A6A6D84 /* UpdateStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateStatus.swift; sourceTree = "<group>"; };
 		782D8AD84007D35B5B0DB9CD /* UpdateProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateProgressView.swift; sourceTree = "<group>"; };
 		782EFED7B8F2AD1265BCF690 /* ComponentRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentRegistry.swift; sourceTree = "<group>"; };
@@ -142,6 +148,7 @@
 				9646955BDB7A4F405EB1FDF0 /* SetupValidationService.swift */,
 				E343B9250E53EF5FE8057DAE /* UpdateExecutionService.swift */,
 				52A1E55BD560971A940F171A /* VersionDetectionService.swift */,
+				66C0B457A755E70A4E21D034 /* WeeklyRhythmService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -170,6 +177,8 @@
 				48EB2A999B000B9AC11BB0DD /* Assets.xcassets */,
 				910E96CDC9E2B2E4595DEFA8 /* claude-md-template.md */,
 				CB45A8A63D1E4873C3D739AA /* component-registry.json */,
+				750E9292C50A1D0B0C4EE603 /* dashboard-template.html */,
+				50C8FB18F4E77DC49B18BFA9 /* engine-spec.md */,
 				B34078A97122C23C4D2D35E0 /* gws-client-secret.json */,
 				CB4031837BBE075B7CEF1484 /* whats-new.json */,
 			);
@@ -340,6 +349,8 @@
 				A57EFCA453010BE0DB621F72 /* Assets.xcassets in Resources */,
 				FE125FC93FD596804B8211EE /* claude-md-template.md in Resources */,
 				F2EA15F87DAAF9BDF02FDFAE /* component-registry.json in Resources */,
+				11E72DFAD7010B08CCFA2023 /* dashboard-template.html in Resources */,
+				F89C6DB5F46AA0E2B5C06700 /* engine-spec.md in Resources */,
 				B30AFA9528E558568F1FC9C0 /* gws-client-secret.json in Resources */,
 				C3404068D33521F15C9DAC34 /* whats-new.json in Resources */,
 			);
@@ -420,6 +431,7 @@
 				864D70FCF7B97D190269DDFF /* UpdateProgressView.swift in Sources */,
 				A5D861B2D8E9BA0284E7ECF6 /* UpdateStatus.swift in Sources */,
 				3B8CF00712BD137247649E22 /* VersionDetectionService.swift in Sources */,
+				A1F5C83EBA3836D3FFACAC5D /* WeeklyRhythmService.swift in Sources */,
 				61D6E60947EC0AEB30BF7D97 /* WhatsNewView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -443,7 +455,7 @@
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 18;
+				CURRENT_PROJECT_VERSION = 19;
 				DEVELOPMENT_TEAM = X6LBF9H7M5;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -453,7 +465,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 3.3.0;
+				MARKETING_VERSION = 3.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kamstudios.fortabodeutilitycentral;
 				PRODUCT_NAME = "Fort Abode Utility Central";
 				SDKROOT = macosx;
@@ -533,7 +545,7 @@
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 18;
+				CURRENT_PROJECT_VERSION = 19;
 				DEVELOPMENT_TEAM = X6LBF9H7M5;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -543,7 +555,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 3.3.0;
+				MARKETING_VERSION = 3.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kamstudios.fortabodeutilitycentral;
 				PRODUCT_NAME = "Fort Abode Utility Central";
 				SDKROOT = macosx;

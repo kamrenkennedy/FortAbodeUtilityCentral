@@ -15,6 +15,8 @@ actor VersionDetectionService {
             return readPackageJSON(at: path)
         case .claudeDesktopConfig(let serverKey):
             return checkClaudeDesktopConfig(serverKey: serverKey)
+        case .icloudTemplateVersion(let relativePath):
+            return parseICloudTemplateVersion(relativePath: relativePath)
         }
     }
 
@@ -105,6 +107,28 @@ actor VersionDetectionService {
         }
 
         return mcpServers[serverKey] != nil ? "configured" : nil
+    }
+
+    // MARK: - iCloud Template Version
+
+    private func parseICloudTemplateVersion(relativePath: String) -> String? {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let fullPath = "\(home)/Library/Mobile Documents/com~apple~CloudDocs/\(relativePath)"
+
+        guard let content = try? String(contentsOfFile: fullPath, encoding: .utf8) else {
+            return nil
+        }
+
+        let lines = content.components(separatedBy: "\n").prefix(5)
+        let pattern = "Weekly Rhythm Dashboard v([0-9.]+)"
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+        for line in lines {
+            if let match = regex.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)),
+               let range = Range(match.range(at: 1), in: line) {
+                return String(line[range])
+            }
+        }
+        return nil
     }
 
     // MARK: - Helpers

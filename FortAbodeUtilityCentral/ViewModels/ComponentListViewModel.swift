@@ -22,6 +22,7 @@ final class ComponentListViewModel {
     private let updateExecutionService = UpdateExecutionService()
     private let claudeConfigService = ClaudeDesktopConfigService()
     private let filePinningService = FilePinningService()
+    private let weeklyRhythmService = WeeklyRhythmService()
 
     /// Set after install/uninstall to prompt user to restart Claude
     var showRestartHint = false
@@ -274,6 +275,11 @@ final class ComponentListViewModel {
             await performMemoryPostInstall(component: component)
         }
 
+        // Step 2.6: Deploy Weekly Rhythm Engine files to iCloud
+        if component.id == "weekly-rhythm" {
+            await performWeeklyRhythmPostInstall(userName: inputs["DISPLAY_NAME"] ?? "")
+        }
+
         // Step 3: Persist user inputs for future updates/self-heal
         storeInputs(inputs, for: id)
 
@@ -297,6 +303,15 @@ final class ComponentListViewModel {
     /// Uninstall a component — removes config entries from claude_desktop_config.json
     func uninstallComponent(_ id: String) async {
         guard let component = registry.component(withId: id) else { return }
+
+        // Skills manage their own files instead of claude_desktop_config.json
+        if component.id == "weekly-rhythm" {
+            try? await weeklyRhythmService.uninstall()
+            clearPersistedInputs(for: id)
+            statuses[id] = .notInstalled
+            return
+        }
+
         guard let configEntries = component.claudeConfig, !configEntries.isEmpty else { return }
 
         let keys: [String]
@@ -420,6 +435,11 @@ final class ComponentListViewModel {
             if component.id == "setup-claude-memory" {
                 await performMemoryPostInstall(component: component)
             }
+        }
+
+        // Weekly Rhythm: silently update managed files if a newer version is bundled
+        if component.id == "weekly-rhythm" {
+            try? await weeklyRhythmService.updateManagedFiles()
         }
 
         // Dual detection: also check if config entries exist (manual installs)
@@ -596,6 +616,21 @@ final class ComponentListViewModel {
                 componentId: component.id,
                 displayName: component.displayName,
                 error: "CLAUDE.md sync failed: \(error.localizedDescription)",
+                installedVersion: nil
+            )
+        }
+    }
+
+    /// Post-install tasks for the Weekly Rhythm Engine (deploy files to iCloud + pin folder).
+    private func performWeeklyRhythmPostInstall(userName: String) async {
+        do {
+            try await weeklyRhythmService.setupWeeklyFlow(userName: userName)
+            await filePinningService.pinClaudeMemoryFolder()
+        } catch {
+            await ErrorLogger.shared.log(
+                componentId: "weekly-rhythm",
+                displayName: "Weekly Rhythm Engine",
+                error: "Setup failed: \(error.localizedDescription)",
                 installedVersion: nil
             )
         }

@@ -32,6 +32,7 @@ enum VersionSource: Hashable {
     case localDirectory(name: String)
     case packageJSON(path: String)
     case claudeDesktopConfig(serverKey: String)
+    case icloudTemplateVersion(relativePath: String)
 }
 
 extension VersionSource: Codable {
@@ -39,9 +40,10 @@ extension VersionSource: Codable {
     private struct LocalDirectoryPayload: Codable { let name: String }
     private struct PackageJSONPayload: Codable { let path: String }
     private struct ClaudeDesktopPayload: Codable { let serverKey: String }
+    private struct ICloudTemplatePayload: Codable { let relativePath: String }
 
     private enum CodingKeys: String, CodingKey {
-        case npxCache, localDirectory, packageJson, claudeDesktopConfig
+        case npxCache, localDirectory, packageJson, claudeDesktopConfig, icloudTemplateVersion
     }
 
     init(from decoder: Decoder) throws {
@@ -54,6 +56,8 @@ extension VersionSource: Codable {
             self = .packageJSON(path: payload.path)
         } else if let payload = try container.decodeIfPresent(ClaudeDesktopPayload.self, forKey: .claudeDesktopConfig) {
             self = .claudeDesktopConfig(serverKey: payload.serverKey)
+        } else if let payload = try container.decodeIfPresent(ICloudTemplatePayload.self, forKey: .icloudTemplateVersion) {
+            self = .icloudTemplateVersion(relativePath: payload.relativePath)
         } else {
             throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "Unknown VersionSource type"))
         }
@@ -70,6 +74,8 @@ extension VersionSource: Codable {
             try container.encode(PackageJSONPayload(path: path), forKey: .packageJson)
         case .claudeDesktopConfig(let serverKey):
             try container.encode(ClaudeDesktopPayload(serverKey: serverKey), forKey: .claudeDesktopConfig)
+        case .icloudTemplateVersion(let relativePath):
+            try container.encode(ICloudTemplatePayload(relativePath: relativePath), forKey: .icloudTemplateVersion)
         }
     }
 }

@@ -281,5 +281,52 @@
     ],
     "marketplace": true,
     "min_app_version": "3.0.0"
+  },
+  {
+    "id": "weekly-rhythm",
+    "display_name": "Weekly Rhythm Engine",
+    "description": "Weekly planning dashboard — unified work + life rhythm",
+    "user_description": "Plans your entire week in one dashboard. Synthesizes calendars, reminders, email, and Notion into a clean weekly rhythm with time blocks, triage, and priorities.",
+    "usage_instructions": "Run '/weekly-rhythm-engine' in Claude Code on Fridays to plan the coming week, or anytime something changes. Your dashboard opens in the browser automatically.",
+    "type": "skill",
+    "icon": "calendar.badge.clock",
+    "version_source": {
+      "icloud_template_version": {
+        "relative_path": "Kennedy Family Docs/Claude/Weekly Flow/dashboard-template.html"
+      }
+    },
+    "update_source": "none",
+    "update_command": "none",
+    "setup_flow": {
+      "id": "weekly-rhythm-setup",
+      "title": "Set Up Weekly Rhythm",
+      "subtitle": "Configure your weekly planning dashboard",
+      "steps": [
+        {
+          "id": "enter-name",
+          "type": "text_input",
+          "title": "What's Your First Name?",
+          "body": "Each family member gets their own config folder. Your weekly preferences will be saved under your name.",
+          "illustration": { "type": "sf_symbol", "name": "person.fill" },
+          "action_label": "Next",
+          "input_config": {
+            "field_name": "DISPLAY_NAME",
+            "placeholder": "Kamren",
+            "validation": { "type": "not_empty", "error_message": "Enter your first name" }
+          }
+        },
+        {
+          "id": "confirm",
+          "type": "completion",
+          "title": "Ready to Install",
+          "body": "Fort Abode will set up the Weekly Rhythm Engine in iCloud:\n\n\u2022 engine-spec.md \u2014 the planning engine (auto-updated)\n\u2022 dashboard-template.html \u2014 the dashboard layout (auto-updated)\n\u2022 {{user_input:DISPLAY_NAME}}/config.md \u2014 your personal config (created on first run)\n\nRun '/weekly-rhythm-engine' in Claude Code to generate your first dashboard.",
+          "illustration": { "type": "sf_symbol", "name": "checkmark.circle.fill" },
+          "action_label": "Install",
+          "summary_fields": ["DISPLAY_NAME"]
+        }
+      ]
+    },
+    "marketplace": true,
+    "min_app_version": "3.4.0"
   }
 ]

@@ -1,5 +1,13 @@
 [
   {
+    "version": "3.4.0",
+    "notes": [
+      "Weekly Rhythm Engine now available in the Marketplace",
+      "Install it to get your weekly planning dashboard set up automatically",
+      "Engine files stay up to date with every app update — no manual copying"
+    ]
+  },
+  {
     "version": "3.3.0",
     "notes": [
       "Memory servers now use your name — \"Tiera-Memory\" instead of generic labels",

@@ -45,6 +45,23 @@ actor ErrorLogger {
         appendLine(line, to: logPath)
     }
 
+    /// Read the most recent error entries from the log file
+    func recentErrors(limit: Int = 10) -> [ErrorLogEntry] {
+        let logPath = resolveLogPath()
+        guard let data = try? String(contentsOf: logPath, encoding: .utf8) else { return [] }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        let lines = data.components(separatedBy: "\n").filter { !$0.isEmpty }
+        let entries = lines.compactMap { line -> ErrorLogEntry? in
+            guard let lineData = line.data(using: .utf8) else { return nil }
+            return try? decoder.decode(ErrorLogEntry.self, from: lineData)
+        }
+
+        return Array(entries.suffix(limit))
+    }
+
     // MARK: - Private
 
     private func resolveLogPath() -> URL {

@@ -91,6 +91,21 @@ enum UpdateStatus: Equatable {
         }
     }
 
+    /// Short label for debug reports
+    var debugLabel: String {
+        switch self {
+        case .unknown: return "unknown"
+        case .checking: return "checking"
+        case .upToDate(let v): return "v\(v) (up to date)"
+        case .updateAvailable(let i, let l): return "v\(i) → v\(l) available"
+        case .notInstalled: return "not installed"
+        case .updating: return "updating"
+        case .updateComplete(let v): return "v\(v) (just updated)"
+        case .checkFailed(let v): return "v\(v) (check failed)"
+        case .error(let m): return "error: \(m)"
+        }
+    }
+
     var isUpdateAvailable: Bool {
         if case .updateAvailable = self { return true }
         return false

@@ -1,5 +1,14 @@
 [
   {
+    "version": "3.5.0",
+    "notes": [
+      "Send feedback, bug reports, and feature ideas directly from the app",
+      "What's New now shows all updates you missed — not just the latest",
+      "Toolbar separator fix for all family machines",
+      "Translucent glass look for the What's New screen"
+    ]
+  },
+  {
     "version": "3.4.0",
     "notes": [
       "Weekly Rhythm Engine now available in the Marketplace",

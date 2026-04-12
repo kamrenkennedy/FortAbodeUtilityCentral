@@ -89,6 +89,13 @@ struct ContentView: View {
                         .controlSize(.small)
                         .tint(.orange)
                     }
+
+                    NavigationLink(value: AppDestination.feedback) {
+                        Label("Feedback", systemImage: "exclamationmark.bubble")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 10)

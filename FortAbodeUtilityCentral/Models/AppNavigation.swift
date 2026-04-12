@@ -5,4 +5,5 @@ import Foundation
 enum AppDestination: Hashable {
     case componentDetail(componentId: String)
     case marketplace
+    case feedback
 }

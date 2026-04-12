@@ -42,23 +42,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 // MARK: - Window Appearance
 
 /// NSViewRepresentable that configures the hosting NSWindow's title bar.
-/// More reliable than NSApp.windows lookup — gets the window directly from the view hierarchy.
+/// Uses viewDidMoveToWindow() for guaranteed window access — no timing race.
 struct WindowAppearanceModifier: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        DispatchQueue.main.async {
-            guard let window = view.window else { return }
-            window.titlebarAppearsTransparent = true
-            window.titlebarSeparatorStyle = .none
-        }
-        return view
+        WindowConfigView()
     }
-    func updateNSView(_ nsView: NSView, context: Context) {
-        DispatchQueue.main.async {
-            guard let window = nsView.window else { return }
-            window.titlebarAppearsTransparent = true
-            window.titlebarSeparatorStyle = .none
-        }
+    func updateNSView(_ nsView: NSView, context: Context) {}
+}
+
+private final class WindowConfigView: NSView {
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        guard let window else { return }
+        window.titlebarAppearsTransparent = true
+        window.titlebarSeparatorStyle = .none
     }
 }
 
@@ -70,7 +67,7 @@ struct FortAbodeUtilityCentralApp: App {
     @State private var registry = ComponentRegistry()
     @State private var viewModel: ComponentListViewModel?
     @State private var isActivated = KeychainService.isActivated
-    @State private var whatsNewRelease: WhatsNewRelease?
+    @State private var whatsNewReleases: [WhatsNewRelease]?
 
     // Sparkle updater controller — starts checking for updates automatically
     private let updaterController: SPUStandardUpdaterController
@@ -99,6 +96,8 @@ struct FortAbodeUtilityCentralApp: App {
                                     ComponentDetailView(componentId: id)
                                 case .marketplace:
                                     MarketplaceView()
+                                case .feedback:
+                                    FeedbackView()
                                 }
                             }
                     }
@@ -110,9 +109,14 @@ struct FortAbodeUtilityCentralApp: App {
             }
             .frame(minWidth: 500, minHeight: 400)
             .background(WindowAppearanceModifier())
-            .sheet(item: $whatsNewRelease) { release in
-                WhatsNewView(version: release.version, notes: release.notes) {
-                    whatsNewRelease = nil
+            .sheet(isPresented: Binding(
+                get: { whatsNewReleases != nil },
+                set: { if !$0 { whatsNewReleases = nil } }
+            )) {
+                if let releases = whatsNewReleases {
+                    WhatsNewView(releases: releases) {
+                        whatsNewReleases = nil
+                    }
                 }
             }
             .onAppear {
@@ -226,10 +230,10 @@ struct FortAbodeUtilityCentralApp: App {
         guard lastSeen != currentVersion else { return }
         UserDefaults.standard.set(currentVersion, forKey: lastSeenKey)
 
-        if lastSeen != nil, let release = WhatsNewLoader.load(for: currentVersion) {
-            // Only show if upgrading (not first install) and notes exist for this version
+        if let lastSeen, let releases = WhatsNewLoader.loadSince(lastSeen: lastSeen, current: currentVersion) {
+            // Only show if upgrading (not first install) and notes exist
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                whatsNewRelease = release
+                whatsNewReleases = releases
             }
         }
     }

@@ -51,11 +51,36 @@ struct WindowAppearanceModifier: NSViewRepresentable {
 }
 
 private final class WindowConfigView: NSView {
+    private nonisolated(unsafe) var observation: NSObjectProtocol?
+
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        applyStyle()
+
+        // Re-apply whenever the window becomes key (SwiftUI can reset properties)
+        if let obs = observation {
+            NotificationCenter.default.removeObserver(obs)
+            observation = nil
+        }
+        if let window {
+            observation = NotificationCenter.default.addObserver(
+                forName: NSWindow.didBecomeKeyNotification,
+                object: window,
+                queue: .main
+            ) { [weak self] _ in
+                self?.applyStyle()
+            }
+        }
+    }
+
+    private func applyStyle() {
         guard let window else { return }
         window.titlebarAppearsTransparent = true
         window.titlebarSeparatorStyle = .none
+    }
+
+    deinit {
+        if let observation { NotificationCenter.default.removeObserver(observation) }
     }
 }
 

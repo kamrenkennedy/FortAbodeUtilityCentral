@@ -50,6 +50,7 @@ struct WindowAppearanceModifier: NSViewRepresentable {
     func updateNSView(_ nsView: NSView, context: Context) {}
 }
 
+@MainActor
 private final class WindowConfigView: NSView {
     private nonisolated(unsafe) var observation: NSObjectProtocol?
 
@@ -68,7 +69,9 @@ private final class WindowConfigView: NSView {
                 object: window,
                 queue: .main
             ) { [weak self] _ in
-                self?.applyStyle()
+                MainActor.assumeIsolated {
+                    self?.applyStyle()
+                }
             }
         }
     }
@@ -79,7 +82,7 @@ private final class WindowConfigView: NSView {
         window.titlebarSeparatorStyle = .none
     }
 
-    deinit {
+    nonisolated deinit {
         if let observation { NotificationCenter.default.removeObserver(observation) }
     }
 }

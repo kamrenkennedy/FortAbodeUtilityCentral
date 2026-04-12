@@ -82,7 +82,7 @@ private final class WindowConfigView: NSView {
         window.titlebarSeparatorStyle = .none
     }
 
-    nonisolated deinit {
+    deinit {
         if let observation { NotificationCenter.default.removeObserver(observation) }
     }
 }

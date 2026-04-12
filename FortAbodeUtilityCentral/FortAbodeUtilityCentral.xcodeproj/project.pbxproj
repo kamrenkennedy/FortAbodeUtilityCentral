@@ -15,6 +15,7 @@
 		0D7F85E45BFAFB9CBA75F829 /* ClaudeCodeConfigService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67CBAA3E68AE042FD8F6FFDF /* ClaudeCodeConfigService.swift */; };
 		112863CDD6F3C554DAF8C3A9 /* UpdateExecutionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E343B9250E53EF5FE8057DAE /* UpdateExecutionService.swift */; };
 		11E72DFAD7010B08CCFA2023 /* dashboard-template.html in Resources */ = {isa = PBXBuildFile; fileRef = 750E9292C50A1D0B0C4EE603 /* dashboard-template.html */; };
+		13B98C724D6580546B4A9F6C /* weekly-rhythm-skill-wrapper.md in Resources */ = {isa = PBXBuildFile; fileRef = CFEBF1AD73F4AD47132E5387 /* weekly-rhythm-skill-wrapper.md */; };
 		156C48CEA34E68406BE574C7 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A1B1F334020349AF1BB567F /* AppSettings.swift */; };
 		15ACB224032293DD17F523FA /* SetupValidationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9646955BDB7A4F405EB1FDF0 /* SetupValidationService.swift */; };
 		1BE2080AB4AF9C0D5DDF3A05 /* SetupWizardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00E7940EB3A6AD0DB6A38C2F /* SetupWizardViewModel.swift */; };
@@ -50,6 +51,7 @@
 		BFFC39B7F0DEE48815EB2481 /* BackgroundTaskService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE892C2183E7CF82B548E18D /* BackgroundTaskService.swift */; };
 		C3404068D33521F15C9DAC34 /* whats-new.json in Resources */ = {isa = PBXBuildFile; fileRef = CB4031837BBE075B7CEF1484 /* whats-new.json */; };
 		CA4CA8134B5255875DB1AF2A /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 8B75BAAFED90C32A32CA2420 /* Sparkle */; };
+		CB346FEB794E23991188381B /* CoworkSkillService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B5DB8AEAB5C2C6F4D2DCE /* CoworkSkillService.swift */; };
 		DF4E9A21418662B5D610866B /* ChangelogEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91BE7F2F52EFF582932E8B9D /* ChangelogEntry.swift */; };
 		E39F0B6F301568824A772E71 /* Component.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7E990CE834E05B52EAF553 /* Component.swift */; };
 		EB1961D3A6B1297856EF3C69 /* ComponentDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A394C02034C7CEDA5FA603 /* ComponentDetailView.swift */; };
@@ -80,6 +82,7 @@
 		16FB3766D3708E744FA90472 /* WhatsNewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewView.swift; sourceTree = "<group>"; };
 		1EB57DA95F7124E0519B2C86 /* ErrorLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorLogger.swift; sourceTree = "<group>"; };
 		26113857AC506F0780BBEE4C /* ComponentCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentCardView.swift; sourceTree = "<group>"; };
+		354B5DB8AEAB5C2C6F4D2DCE /* CoworkSkillService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoworkSkillService.swift; sourceTree = "<group>"; };
 		3757BEFBB847475D0690FF32 /* FeedbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackView.swift; sourceTree = "<group>"; };
 		3DACD2838A1C216461103AE6 /* FeedbackService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackService.swift; sourceTree = "<group>"; };
 		48EB2A999B000B9AC11BB0DD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -116,6 +119,7 @@
 		CB0B45EFBB7DD5A133107515 /* ComponentRegistryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentRegistryTests.swift; sourceTree = "<group>"; };
 		CB4031837BBE075B7CEF1484 /* whats-new.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "whats-new.json"; sourceTree = "<group>"; };
 		CB45A8A63D1E4873C3D739AA /* component-registry.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "component-registry.json"; sourceTree = "<group>"; };
+		CFEBF1AD73F4AD47132E5387 /* weekly-rhythm-skill-wrapper.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "weekly-rhythm-skill-wrapper.md"; sourceTree = "<group>"; };
 		D1A394C02034C7CEDA5FA603 /* ComponentDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentDetailView.swift; sourceTree = "<group>"; };
 		D31AA9A8E09678D0693ACE38 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		DE0AC8F02FED91F42FC4EB00 /* VersionComparisonTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionComparisonTests.swift; sourceTree = "<group>"; };
@@ -145,6 +149,7 @@
 				EE892C2183E7CF82B548E18D /* BackgroundTaskService.swift */,
 				67CBAA3E68AE042FD8F6FFDF /* ClaudeCodeConfigService.swift */,
 				A49ABEA06B33CB1666AD17A0 /* ClaudeDesktopConfigService.swift */,
+				354B5DB8AEAB5C2C6F4D2DCE /* CoworkSkillService.swift */,
 				1EB57DA95F7124E0519B2C86 /* ErrorLogger.swift */,
 				3DACD2838A1C216461103AE6 /* FeedbackService.swift */,
 				72B3F9599ED98BC09073C78C /* FilePinningService.swift */,
@@ -187,6 +192,7 @@
 				750E9292C50A1D0B0C4EE603 /* dashboard-template.html */,
 				50C8FB18F4E77DC49B18BFA9 /* engine-spec.md */,
 				B34078A97122C23C4D2D35E0 /* gws-client-secret.json */,
+				CFEBF1AD73F4AD47132E5387 /* weekly-rhythm-skill-wrapper.md */,
 				CB4031837BBE075B7CEF1484 /* whats-new.json */,
 			);
 			path = Resources;
@@ -361,6 +367,7 @@
 				11E72DFAD7010B08CCFA2023 /* dashboard-template.html in Resources */,
 				F89C6DB5F46AA0E2B5C06700 /* engine-spec.md in Resources */,
 				B30AFA9528E558568F1FC9C0 /* gws-client-secret.json in Resources */,
+				13B98C724D6580546B4A9F6C /* weekly-rhythm-skill-wrapper.md in Resources */,
 				C3404068D33521F15C9DAC34 /* whats-new.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -421,6 +428,7 @@
 				63DF7D1C11E3A188E94C469F /* ComponentRegistry.swift in Sources */,
 				24FDEC144817A4CB5E3EFB24 /* ComponentRowView.swift in Sources */,
 				0C2AFE378C7F46B021BE15D4 /* ContentView.swift in Sources */,
+				CB346FEB794E23991188381B /* CoworkSkillService.swift in Sources */,
 				07BA11DC7D460A01979E6F21 /* ErrorLogger.swift in Sources */,
 				2B92C1E7ECA9DC4D7DC50F0E /* FeedbackService.swift in Sources */,
 				38D925B340A40492A5DB7FAC /* FeedbackView.swift in Sources */,

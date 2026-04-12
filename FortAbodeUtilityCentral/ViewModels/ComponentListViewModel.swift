@@ -23,6 +23,7 @@ final class ComponentListViewModel {
     private let claudeConfigService = ClaudeDesktopConfigService()
     private let filePinningService = FilePinningService()
     private let weeklyRhythmService = WeeklyRhythmService()
+    private let coworkSkillService = CoworkSkillService()
 
     /// Set after install/uninstall to prompt user to restart Claude
     var showRestartHint = false
@@ -307,6 +308,7 @@ final class ComponentListViewModel {
         // Skills manage their own files instead of claude_desktop_config.json
         if component.id == "weekly-rhythm" {
             try? await weeklyRhythmService.uninstall()
+            try? await coworkSkillService.unregisterSkill(name: "weekly-rhythm-engine")
             clearPersistedInputs(for: id)
             statuses[id] = .notInstalled
             return
@@ -440,6 +442,10 @@ final class ComponentListViewModel {
         // Weekly Rhythm: silently update managed files if a newer version is bundled
         if component.id == "weekly-rhythm" {
             try? await weeklyRhythmService.updateManagedFiles()
+            // Self-heal: ensure Cowork has the thin wrapper (replaces stale 33KB full spec)
+            if !(await coworkSkillService.isSkillWrapperCurrent(name: "weekly-rhythm-engine")) {
+                await coworkSkillService.registerWeeklyRhythmSkill()
+            }
         }
 
         // Dual detection: also check if config entries exist (manual installs)
@@ -621,7 +627,7 @@ final class ComponentListViewModel {
         }
     }
 
-    /// Post-install tasks for the Weekly Rhythm Engine (deploy files to iCloud + pin folder).
+    /// Post-install tasks for the Weekly Rhythm Engine (deploy files to iCloud + pin folder + register in Cowork).
     private func performWeeklyRhythmPostInstall(userName: String) async {
         do {
             try await weeklyRhythmService.setupWeeklyFlow(userName: userName)
@@ -634,5 +640,8 @@ final class ComponentListViewModel {
                 installedVersion: nil
             )
         }
+
+        // Register skill in Cowork (best-effort — non-fatal if Cowork not installed)
+        await coworkSkillService.registerWeeklyRhythmSkill()
     }
 }

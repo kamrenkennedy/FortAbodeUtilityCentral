@@ -34,6 +34,8 @@ targets:
         buildPhase: resources
       - path: Resources/dashboard-template.html
         buildPhase: resources
+      - path: Resources/weekly-rhythm-skill-wrapper.md
+        buildPhase: resources
     dependencies:
       - package: Sparkle
     postCompileScripts:

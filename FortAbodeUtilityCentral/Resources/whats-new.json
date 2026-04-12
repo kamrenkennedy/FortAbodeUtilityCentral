@@ -1,5 +1,13 @@
 [
   {
+    "version": "3.6.0",
+    "notes": [
+      "Weekly Rhythm skill now auto-registers in Claude Code on install",
+      "Existing installs self-heal — stale skill files get replaced automatically",
+      "Uninstalling Weekly Rhythm cleanly removes the Claude Code skill entry"
+    ]
+  },
+  {
     "version": "3.5.0",
     "notes": [
       "Send feedback, bug reports, and feature ideas directly from the app",

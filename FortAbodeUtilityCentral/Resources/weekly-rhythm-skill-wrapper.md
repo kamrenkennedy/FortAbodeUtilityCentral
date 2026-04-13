@@ -1,5 +1,6 @@
 ---
 name: weekly-rhythm-engine
+model: opus
 description: >
   The strategic engine for Kam's week — work and personal life in one unified rhythm. Runs on Fridays to plan the full coming week, and on-demand anytime something changes. Synthesizes all Google Calendars, Apple Reminders, and Gmail into a clean weekly brief shaped by day types, goals, errands, and milestone awareness.
 
@@ -29,7 +30,7 @@ Read: {skill_root}/engine-spec-fallback.md
 ```
 
 Once the spec is loaded, follow all steps in it exactly. The spec contains:
-- Step 1: User detection + setup state
+- Step 1: User detection + setup state (includes Cowork environment detection)
 - Step 2: Smart first-run + incremental setup
 - Steps 3-12: Full engine pipeline (calendar, reminders, Gmail, Notion, triage, proposals, dashboard generation, memory updates)
 
@@ -41,6 +42,6 @@ Once the spec is loaded, follow all steps in it exactly. The spec contains:
 | Dashboard template | `~/...iCloud.../Kennedy Family Docs/Claude/Weekly Flow/dashboard-template.html` |
 | User config | `~/...iCloud.../Kennedy Family Docs/Claude/Weekly Flow/{UserName}/config.md` |
 | User memory | `~/...iCloud.../Kennedy Family Docs/Claude/Weekly Flow/{UserName}/memory.md` |
-| Generated dashboards | `~/...iCloud.../Kennedy Family Docs/Claude/Weekly Flow/{UserName}/weekly-brief-*.html` |
+| Generated dashboards | `~/...iCloud.../Kennedy Family Docs/Claude/Weekly Flow/{UserName}/dashboards/weekly-brief-*.html` |
 
 All files in the shared iCloud folder are synced across machines. Fort Abode manages `engine-spec.md` and `dashboard-template.html` (updates them on new versions). User files (`config.md`, `memory.md`, dashboards) are never overwritten.

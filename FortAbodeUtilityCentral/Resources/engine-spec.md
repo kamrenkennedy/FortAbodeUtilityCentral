@@ -1,4 +1,4 @@
-<!-- Engine Spec v1.6.0 — Managed by Fort Abode — Updates to this file are picked up on next skill run -->
+<!-- Engine Spec v1.7.0 — Managed by Fort Abode — Updates to this file are picked up on next skill run -->
 
 # Weekly Rhythm Engine
 
@@ -70,6 +70,19 @@ Glob: ~/Library/Mobile Documents/com~apple~CloudDocs/*/Claude/Weekly Flow/*/conf
   ```
   - **Folder exists, no config** → go to Step 2 (questionnaire, skip path question — folder is ready)
   - **No folder at all** → go to Step 2 (full questionnaire including path)
+
+### Step 1a-ii — Environment detection (Cowork / sandbox)
+
+If the iCloud Glob in Step 1a returns no results, check whether you're in a Cowork sandbox:
+
+- **Detection:** Working directory starts with `/sessions/` or skill loaded from a path containing `/mnt/.claude/skills/`
+- **Do NOT fall back to any bundled config directory** (`kam/`, `{skill_root}/kam/`, or any config file found in the skill's own directory tree). These are development artifacts with placeholder data — using them produces incorrect output.
+- **Request folder access:** Ask the user to select their Weekly Flow folder in iCloud. The path will be:
+  `~/Library/Mobile Documents/com~apple~CloudDocs/Kennedy Family Docs/Claude/Weekly Flow`
+  Tell the user: "I need access to your Weekly Flow folder in iCloud to load your config and save your dashboard. Please select it when prompted."
+- Once the folder is mounted, re-run the Step 1a Glob against the mounted path to find `config.md`
+- **If folder access is denied or unavailable:** Stop and explain that the engine needs iCloud access to run.
+- **Automated/scheduled runs (no user present):** Emit an error and stop — folder access requires user interaction.
 
 ### Step 1b — Config completeness check
 
@@ -647,6 +660,31 @@ One suggestion per goal max. Omit section if all covered + silent.
 
 ---
 
+## Step 8b — Write Scratchpad (context preservation)
+
+After completing classification (Steps 5–8), write a structured scratchpad file to preserve all assembled data before brief and dashboard generation. This prevents context compaction from losing classified data mid-run — especially important in Cowork on Sonnet where the context window fills up fast with calendar, reminder, Gmail, and Memory MCP data.
+
+**Write to:** `{icloud_path}/scratchpad-{YYYY-MM-DD}.md` (or the session outputs directory if iCloud is unavailable)
+
+**Contents — include ALL of these:**
+- All classified events (day, time, title, type, source calendar)
+- All reminders with list mapping, priority, and due dates
+- Flagged items with decision context
+- Proposed calendar blocks with specific times and proposal reasons
+- Proposed reminders with list, priority, and due date
+- Day narratives (one paragraph per day)
+- Brief content HTML (the structured `<div class="bct-line">` divs per Step 9's format)
+- Goal coverage status and any suggestions
+- All JSON arrays ready for template injection (PROPOSED_BLOCKS_JSON, EXISTING_EVENTS_JSON, REMINDERS_JSON, REMINDER_LISTS_JSON, INBOX_TRIAGE_JSON, WEEKLY_TRIAGE_JSON, DAY_NARRATIVES_JSON, WEEK_GOALS_JSON, PROJECTS_JSON)
+
+**Placeholder-ready format:** Structure the scratchpad so that each JSON array section is already valid JSON that can be copied directly into the `.placeholders-{YYYY-MM-DD}.json` file used by Step 10b-ii. This means if context compacts between Step 8b and Step 10b, the engine can re-read the scratchpad and pipe the values straight to the Python substitution script without re-deriving anything.
+
+**Recovery:** If context is compacted before Step 10b, re-read the scratchpad file to recover all structured data needed for dashboard generation.
+
+**Cleanup:** Delete the scratchpad after successful dashboard generation. If the run fails, leave it in place as a debug artifact.
+
+---
+
 ## Step 9 — Generate the Weekly Brief
 
 Read the template using the Read tool:
@@ -782,7 +820,11 @@ After producing the proposed blocks, generate an interactive HTML dashboard file
 
 **Template location:** `dashboard-template.html` in the shared Weekly Flow iCloud folder (same directory as this spec file). Read it using the path derived from the iCloud folder detection in Step 1a — e.g. `~/Library/Mobile Documents/com~apple~CloudDocs/.../Weekly Flow/dashboard-template.html`
 
-**Output file:** `{icloud_path}/weekly-brief-{YYYY-MM-DD}.html`
+**Output file:** `{icloud_path}/dashboards/weekly-brief-{YYYY-MM-DD}.html`
+
+Create the `dashboards/` directory if it doesn't exist. This keeps generated output separate from config files and makes it easy to browse past weeks. Each user gets their own dashboards folder (Kam → `Kamren/dashboards/`, Tiera → `Tiera/dashboards/`) — always write to the detected user's path, never a hardcoded one.
+
+**Cowork fallback:** If `{icloud_path}` is not writable (sandbox), write to the session outputs directory instead and note in the run output: "Dashboard saved to Cowork outputs (iCloud path unavailable). Copy to your Weekly Flow dashboards folder after the session."
 
 **Inject ALL of these values into the template:**
 
@@ -791,7 +833,7 @@ After producing the proposed blocks, generate an interactive HTML dashboard file
 | `{{WEEK_OF}}` | Sunday of the week being planned, e.g. `March 29, 2026` |
 | `{{GENERATED_ON}}` | Day + date + time generated, e.g. `Generated Fri, Mar 27, 2026 · 7:42 AM` |
 | `{{RUN_CONTEXT}}` | `Planning Next Week` or `This Week Update` or `Week 13 · Q1 2026` |
-| `{{BRIEF_CONTENT}}` | The full brief text (plain text — the template handles display) |
+| `{{BRIEF_CONTENT}}` | Structured HTML highlights — one `<div class="bct-line">` per day with colored dots and 1-line summaries. See Step 9, "Brief Content — Structured Highlights" for the exact HTML format. Do NOT inject the full weekly brief text here — only the structured day-by-day snapshot. |
 | `{{PROPOSED_BLOCKS_JSON}}` | JSON array of proposed new calendar blocks (see format below) |
 | `{{EXISTING_EVENTS_JSON}}` | JSON array of events already confirmed on Google Calendar for the full 30-day window |
 | `{{REMINDERS_JSON}}` | JSON array of proposed new reminders and errands (see format below) |
@@ -801,6 +843,54 @@ After producing the proposed blocks, generate an interactive HTML dashboard file
 | `{{DAY_NARRATIVES_JSON}}` | JSON object keyed by ISO date → string narrative for each day of the week |
 | `{{WEEK_GOALS_JSON}}` | JSON array of weekly goals with `id`, `label`, `description`, `relatedTypes` |
 | `{{PROJECTS_JSON}}` | JSON array of active Notion projects for the Project Pulse strip (see format below) |
+
+---
+
+### Step 10b-ii — Template substitution method (context optimization)
+
+**Do NOT read `dashboard-template.html` into the conversation.** It is ~100KB and will consume context needed for reasoning — this is especially critical in Cowork but applies to Claude Code runs too.
+
+Instead, write all placeholder values to a JSON file, then run a Python script that performs the substitution on disk:
+
+**1. Write the placeholders file** to `{icloud_path}/dashboards/.placeholders-{YYYY-MM-DD}.json` containing all 13 placeholder key-value pairs as a JSON object. Keys are the placeholder names without curly braces (e.g. `"WEEK_OF"`, `"BRIEF_CONTENT"`, `"PROPOSED_BLOCKS_JSON"`, etc.). Values are the fully-formed strings ready for injection — JSON arrays should be serialized as strings.
+
+**2. Run this Python script via Bash:**
+
+```python
+import json, sys, os
+
+icloud_base = sys.argv[1]  # Weekly Flow root (e.g. ~/...Kennedy Family Docs/Claude/Weekly Flow)
+user_path = sys.argv[2]    # User folder (e.g. ~/...Weekly Flow/Kamren)
+date_str = sys.argv[3]     # ISO date (e.g. 2026-04-13)
+
+# Read template (from Weekly Flow root, not user folder)
+with open(os.path.join(icloud_base, 'dashboard-template.html'), 'r') as f:
+    html = f.read()
+
+# Read placeholders
+ph_path = os.path.join(user_path, 'dashboards', f'.placeholders-{date_str}.json')
+with open(ph_path, 'r') as f:
+    placeholders = json.load(f)
+
+# Replace all placeholders
+for key, value in placeholders.items():
+    html = html.replace('{{' + key + '}}', str(value))
+
+# Write output
+out_dir = os.path.join(user_path, 'dashboards')
+os.makedirs(out_dir, exist_ok=True)
+out_path = os.path.join(out_dir, f'weekly-brief-{date_str}.html')
+with open(out_path, 'w') as f:
+    f.write(html)
+
+# Clean up placeholders file
+os.remove(ph_path)
+print(f'Dashboard written to {out_path} ({os.path.getsize(out_path)} bytes)')
+```
+
+**3. Verify** the script's stdout confirms the file was written and check the byte count is reasonable (should be ~100KB+).
+
+**Important:** The engine must produce all 13 placeholder values and write them to the JSON file BEFORE running the script. If any placeholder is missing, the template will render with raw `{{PLACEHOLDER}}` text. Double-check the JSON file has all keys from the table above.
 
 ---
 
@@ -1242,6 +1332,19 @@ last_run: 2026-03-28T08:42:00-06:00
 ```
 
 This sets the window for the next Gmail pull (`since_last_run`).
+
+**Fallback (when config.md is not writable — e.g. Cowork sandbox):** Store the timestamp in Memory MCP so it's not lost:
+
+```
+aim_memory_add_facts — entity: "Weekly_Rhythm_Config", entityType: "config"
+- "last_run: 2026-04-13T12:00:00-05:00"
+```
+
+**On the next run (Step 5, before Gmail pull):** If `last_run` is missing or stale in config.md, check Memory MCP:
+```
+aim_memory_get — names: ["Weekly_Rhythm_Config"]
+```
+Parse the `last_run` fact and use it for the Gmail window. If found in both config.md and Memory MCP, use whichever is more recent.
 
 ### 11b — Update Kam Memory MCP
 

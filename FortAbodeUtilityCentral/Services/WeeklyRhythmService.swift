@@ -37,6 +37,12 @@ actor WeeklyRhythmService {
         if !fm.fileExists(atPath: userFolder) {
             try fm.createDirectory(atPath: userFolder, withIntermediateDirectories: true)
         }
+
+        // Create dashboards subdirectory for generated dashboard HTML files
+        let dashboardsDir = "\(userFolder)/dashboards"
+        if !fm.fileExists(atPath: dashboardsDir) {
+            try fm.createDirectory(atPath: dashboardsDir, withIntermediateDirectories: true)
+        }
     }
 
     // MARK: - Update

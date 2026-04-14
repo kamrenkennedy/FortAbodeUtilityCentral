@@ -314,6 +314,14 @@ final class ComponentListViewModel {
             return
         }
 
+        // Keychain-only components: wipe stored secrets, no config to remove
+        if case .keychainSecret = component.versionSource {
+            SecureInputStorage.deleteAll(componentId: id)
+            clearPersistedInputs(for: id)
+            statuses[id] = .notInstalled
+            return
+        }
+
         guard let configEntries = component.claudeConfig, !configEntries.isEmpty else { return }
 
         let keys: [String]

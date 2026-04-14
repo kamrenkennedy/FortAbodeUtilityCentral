@@ -1,3 +1,4 @@
+<!-- Skill Wrapper v2.0.0 — Managed by Fort Abode -->
 ---
 name: weekly-rhythm-engine
 model: opus

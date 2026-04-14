@@ -147,3 +147,144 @@ Update the `Fort_Abode_Utility_Central` entity specifically with current version
 - Code validated against SHA-256 hash — plaintext never in binary
 - Keychain: service `com.kamstudios.fortabodeutilitycentral`, account `family-activation`
 - `KeychainService.deactivate()` available for testing
+
+---
+
+## Weekly Rhythm Engine — Handoff Protocol
+
+**This section documents exactly how to ship a Weekly Rhythm Engine update through Fort Abode without missing steps.** Update it any time a new issue is discovered so the same mistake is never made twice.
+
+### The Weekly Rhythm distribution chain
+
+The Weekly Rhythm Engine is a Claude skill that lives in multiple places simultaneously. A full update touches **all of them**:
+
+```
+1. iCloud canonical (source of truth, edited during dev)
+   ~/Library/Mobile Documents/com~apple~CloudDocs/Kennedy Family Docs/Weekly Flow/
+     ├── dashboard-template.html      ← app-managed
+     ├── engine-spec.md               ← app-managed
+     └── {UserName}/                  ← user-owned, NEVER overwrite
+         ├── config.md
+         ├── memory.md
+         └── dashboards/              ← generated output
+
+2. iCloud sync copies (kept in sync with canonical)
+   ~/.../Kennedy Family Docs/Weekly Flow/Kamren/dashboard-template.html
+   ~/.../Kennedy Family Docs/Claude/Weekly Flow/dashboard-template.html
+   ~/.../Kennedy Family Docs/Claude/Weekly Flow/engine-spec.md
+
+3. Dropbox repo (source of truth for GitHub)
+   ~/Library/CloudStorage/Dropbox-KamStudios,LLC/Aligned/Projects/Weekly Rythm/
+     ├── SKILL.md                     ← thin wrapper
+     ├── dashboard-template.html
+     ├── engine-spec.md
+     ├── CHANGELOG.md
+     └── releases/{version}.md
+
+4. GitHub repo: kamrenkennedy/weekly-rhythm (private)
+   Pushed from the Dropbox repo above.
+
+5. Fort Abode bundled skills (this repo)
+   FortAbodeUtilityCentral/Resources/component-registry.json
+   (or inline skill_manifest when sourcing from GitHub)
+
+6. Installed skill path on each user's machine (managed by Fort Abode)
+   ~/Library/Application Support/Claude/local-agent-mode-sessions/.../skills-plugin/.../skills/weekly-rhythm-engine/
+```
+
+### The handoff checklist (in order)
+
+When a new Weekly Rhythm version is ready to ship, ALWAYS do all of these steps. Skipping any one has historically caused broken runs.
+
+**Phase A — Verify the template**
+1. Run `python3 /tmp/make-loc-preview.py` to regenerate the test fixture with all placeholders substituted. The script's final line reports `All placeholders substituted.` or `WARNING: Unsubstituted placeholders`. If any are unsubstituted, fix before proceeding.
+2. Open the test fixture in a browser at a desktop viewport (1440×900 minimum) and click through every interactive element Kam cares about: day type dropdown, family message modal, travel itinerary edit, errand route selector, run health pill.
+3. Take screenshots and get Kam's explicit approval BEFORE any shipping.
+
+**Phase B — Sync the canonical files**
+4. Sync dashboard-template.html from the iCloud canonical to ALL three sync locations:
+   ```
+   cp "~/.../Weekly Flow/dashboard-template.html" "~/.../Weekly Flow/Kamren/dashboard-template.html"
+   cp "~/.../Weekly Flow/dashboard-template.html" "~/.../Claude/Weekly Flow/dashboard-template.html"
+   cp "~/.../Weekly Flow/dashboard-template.html" "~/Dropbox/.../Weekly Rythm/dashboard-template.html"
+   ```
+5. Sync engine-spec.md from the Claude subfolder (which has the latest dev edits) to the non-Claude iCloud copy:
+   ```
+   cp "~/.../Claude/Weekly Flow/engine-spec.md" "~/.../Weekly Flow/engine-spec.md"
+   ```
+6. Verify SKILL.md (the thin wrapper) in the Dropbox repo matches the iCloud canonical if it was edited.
+7. Bump `template_version:` in `Kamren/config.md` and any other per-user configs so the diagnostics system tracks the upgrade.
+
+**Phase C — GitHub release**
+8. `cd` to the weekly-rhythm repo (Dropbox folder).
+9. Run `git status` to verify only expected files changed. **Check for any accidentally-committed secrets** — API keys, OAuth tokens, family config files. The `.gitignore` should cover these; if it doesn't, fix the gitignore FIRST and `git rm --cached` the leaked files.
+10. Write or update `CHANGELOG.md` (Keep-a-Changelog format) with the new version.
+11. Write `releases/{version}.md` (user-friendly release notes) — this is what Fort Abode reads for the "What's New" modal.
+12. `git add CHANGELOG.md releases/{version}.md dashboard-template.html engine-spec.md SKILL.md`
+13. `git commit -m "Release {version}: ..."`
+14. `git push origin main`
+15. `gh release create v{version} --title "v{version}" --notes-file releases/{version}.md`
+
+**Phase D — Fort Abode bundle update**
+16. If the skill's manifest (placeholders, setup prompts, API key requirements) changed, edit `FortAbodeUtilityCentral/Resources/component-registry.json` to match.
+17. If the MCP requirements changed (e.g., Google Maps is now required), update the component entry's `mcp_requirements` or equivalent.
+18. Bump Fort Abode's own version in `project.yml` (MARKETING_VERSION + CURRENT_PROJECT_VERSION) — this is separate from the Weekly Rhythm skill version.
+19. `xcodegen generate`, archive, export, staple, zip, sign, update BOTH appcast.xml files (root + subdirectory).
+20. Push, create GitHub release (see main Release Process above).
+
+**Phase E — Verify the update lands**
+21. On Kam's machine, open Fort Abode and trigger an update check. It should detect both the Weekly Rhythm skill version bump AND its own app update.
+22. Install the update, then run the Weekly Rhythm Engine. Check the **Run Health pill** in the top-right of the dashboard:
+    - Status should be `✓ All good` (if all MCPs healthy)
+    - Versions section should show the NEW version numbers (not the old ones)
+    - "Version drift detected" warning must NOT appear
+23. Verify the update banner shows on first run after install.
+24. Ask Kam to verify on his desktop machine before considering the release done.
+
+### Common failure modes (fix log)
+
+Update this list any time a new bug surfaces. The goal: never repeat the same mistake.
+
+**[2026-04-13] Cowork used a stale bundled dashboard template**
+- **Symptom**: Cowork-generated dashboard was missing Project Pulse, Weekly Triage, carousel — all Phase 3/5/6 features that were already in the iCloud template.
+- **Root cause**: The skill in Cowork reads from `local-agent-mode-sessions/.../skills/weekly-rhythm-engine/` which had an old bundled copy of `dashboard-template.html`. The iCloud canonical had been updated but Cowork never saw the new version.
+- **Fix**: Engine-spec Step 10b-ii added — Python template substitution reads `dashboard-template.html` directly from iCloud (not from the installed skill path), so Cowork always gets the latest.
+- **Prevention**: Never bundle `dashboard-template.html` into the skill zip. The skill only needs `SKILL.md` + `engine-spec.md`. The template lives in iCloud and is updated separately via Fort Abode.
+
+**[2026-04-13] Engine-spec version drift between `Claude/Weekly Flow/` and `Weekly Flow/` folders**
+- **Symptom**: Today's fixes were applied to `Kennedy Family Docs/Claude/Weekly Flow/engine-spec.md` but the `Weekly Flow/engine-spec.md` was 100+ lines behind. Some runs may have read the stale copy depending on path resolution.
+- **Root cause**: Two iCloud copies with no automatic sync. Dev edits went to one but not the other.
+- **Fix**: Phase B Step 5 in the handoff checklist always syncs both.
+- **Prevention**: When editing engine-spec.md, always `cp` to both iCloud locations immediately. Better yet: consolidate to a single canonical path and symlink the other.
+
+**[2026-04-13] `{{FAMILY_PARTNERS_JSON}}` placeholder appeared in a code comment and failed the preview substitution check**
+- **Symptom**: The preview generator's "all placeholders substituted" check failed because a code comment mentioned `{{FAMILY_PARTNERS_JSON}}` as a TODO reference, and the regex picked it up.
+- **Root cause**: Using `{{...}}` syntax anywhere in the template (even in comments) triggers the substitution check.
+- **Fix**: Removed the comment reference.
+- **Prevention**: Never use `{{...}}` syntax in comments. Use `<< ... >>` or `__...__` for comment markers.
+
+**[2026-04-13] `last_run` timestamp lost when config.md was not writable in Cowork sandbox**
+- **Symptom**: Cowork sandbox couldn't write to iCloud config.md, so subsequent Gmail pulls used the wrong window (defaulted to 7 days).
+- **Root cause**: config.md was the only persistence target.
+- **Fix**: Step 11a expanded — `last_run` is also written to Memory MCP (`Weekly_Rhythm_Config` entity) as a fallback. Next run checks BOTH and uses the most recent.
+- **Prevention**: Any persistent state the engine needs across runs should have a Memory MCP fallback, not just file-based storage.
+
+### Handoff non-negotiables
+
+Never ship a Weekly Rhythm update without:
+- [ ] Running the preview generator and confirming all placeholders substituted
+- [ ] Kam's explicit visual approval via screenshots or a live preview walkthrough
+- [ ] All four sync locations updated (canonical iCloud, Kamren/, Claude/Weekly Flow/, Dropbox repo)
+- [ ] CHANGELOG.md and releases/{version}.md in the GitHub repo
+- [ ] `git log` verified — no API keys or secrets committed
+- [ ] Fort Abode bundle version bumped in `project.yml`
+- [ ] BOTH appcast.xml files updated (root + subdirectory)
+- [ ] First-run verification on Kam's machine: Run Health pill shows new version, update banner displays, no version drift warnings
+
+### When in doubt
+
+If anything about the handoff is ambiguous, **ask Kam first** rather than guessing. The cost of pausing to confirm is low; the cost of shipping a broken update to his desktop Mac (or worse, Tiera's Cowork session) is high.
+
+### Always update this section
+
+**Any time you discover a new bug, add it to the "Common failure modes" list above with symptom, root cause, fix, and prevention.** Any time you change the handoff process (new step, changed order, new tool), update the checklist above. This file is the only thing keeping future Claude sessions from repeating the same mistakes.

@@ -1,4 +1,4 @@
-<!-- Engine Spec v1.7.0 — Managed by Fort Abode — Updates to this file are picked up on next skill run -->
+<!-- Engine Spec v2.0.0 — Managed by Fort Abode — Updates to this file are picked up on next skill run -->
 
 # Weekly Rhythm Engine
 
@@ -122,6 +122,32 @@ From the user's prompt:
 | **Shuffle** | "Move X to Thursday" | Proposes rearrangement, confirms before applying |
 | **Rollup** | "How's my month/quarter going" | Summarizes weeks against goals |
 
+### Step 1d — Version Check and Update Banner
+
+After loading config (Step 1a/1b) and determining run mode (Step 1c), compare versions to detect a fresh install or upgrade and emit `UPDATE_BANNER_JSON` for the dashboard.
+
+1. Read `last_seen_version:` from `config.md` (may be missing on first run after install).
+2. Compare to the engine spec's current version (parse from the `<!-- Engine Spec vX.Y.Z -->` header on line 1 of this file).
+3. **If `last_seen_version` is missing or older than the current version** → set `show_update_banner = true` and load release notes:
+   - Try `{icloud_path}/../releases/{new_version}.md` first (Fort-Abode-managed iCloud copy)
+   - Fall back to the bundled skill directory: `{skill_root}/releases/{new_version}.md`
+   - If neither exists, use a one-line summary: `"Updated to v{new_version}"`
+4. **Otherwise** → set `show_update_banner = false`.
+5. Build `UPDATE_BANNER_JSON`:
+   ```json
+   {
+     "version": "2.0.0",
+     "title": "Updated to 2.0.0 — Location Intelligence & Family Sync",
+     "summary": "First line of release notes",
+     "notes": "Full markdown body of releases/{version}.md",
+     "dismissed": false
+   }
+   ```
+   If `show_update_banner = false`, set `UPDATE_BANNER_JSON = null` (the dashboard skips the banner entirely).
+6. **After the dashboard renders successfully** (Step 10b complete), update `last_seen_version` in BOTH `config.md` AND Memory MCP fallback (`Weekly_Rhythm_Config` entity, fact: `last_seen_version: 2.0.0`) so the banner doesn't re-fire next run.
+
+The dashboard's update banner has localStorage-based dismissal — if the user clicks "Dismiss" before next run, the banner won't reappear for that browser even if `last_seen_version` is stale. The release-notes modal is always reachable via the Run Health pill diagnostics.
+
 ---
 
 ## Step 2 — Setup (new users or incomplete config)
@@ -185,6 +211,18 @@ Run conversationally — one or two questions at a time. **Only ask about sectio
 10. **Lunch preferences:**
     > "Any food preferences or diet restrictions? Favorite types of cuisine? This helps if you want lunch suggestions during busy days."
 
+11. **Family Sync (v2.0.0+):**
+    > "Do you want to share weekly context with a family member? This enables a shared message board, travel itinerary sync, and cross-user awareness. Each partner needs their own Weekly Flow folder."
+    - If **yes** → ask: "Who's your partner, and where's their Weekly Flow folder? (e.g., Tiera at `~/.../Kennedy Family Docs/Weekly Flow/Tiera`)"
+      - Persist as `family_sync_enabled: true`, `family_partners: [{name, icloud_path}]`, `message_auto_archive_days: 30`
+    - If **no** → persist `family_sync_enabled: false`, omit `family_partners`
+    - **Never copy a partner's config wholesale** — each user's identity, day types, goals, and lunch prefs must be answered fresh in their own setup run. Family Sync only shares the message board + travel itineraries, not the rest of the config.
+
+12. **Diagnostics (v2.0.0+):**
+    > "Want me to write a run report after each weekly rhythm run? It tracks MCP health, version drift, and any errors. Reports go to `{icloud_path}/diagnostics/runs/` and are visible in the dashboard's Run Health pill."
+    - Default **yes** unless the user opts out
+    - Persist as `diagnostics_enabled: true` (or `false`)
+
 ### Step 2c — Notion Command Center Detection
 
 Search for an existing Command Center in Notion:
@@ -207,9 +245,79 @@ After gathering all answers:
 3. **Show the generated config before saving** — let user review
 4. **Confirm before writing** — never write without explicit yes
 5. Write files to `{icloud_path}/`
-6. Offer to schedule a Friday run
+6. Create the user subdirectories: `{icloud_path}/dashboards/`, `{icloud_path}/messages/inbox/`, `{icloud_path}/messages/sent/`, `{icloud_path}/diagnostics/runs/` (the last two only if `family_sync_enabled` / `diagnostics_enabled` are true respectively)
+7. Offer to schedule a Friday run
 
-> **Multi-user note:** Each person gets their own iCloud path with their own files. Memory MCP routing is handled at the MCP level — the skill calls Memory MCP tools directly and they route to whoever's MCP is connected.
+**v2.0.0+ required fields** — every newly-generated config MUST include:
+
+```yaml
+## System
+template_version: 2.0.0          # auto-set by engine to current spec version
+last_seen_version: 2.0.0         # auto-set on first run; bumps after dashboard renders
+fort_abode_managed: true         # tells Fort Abode this config is upgrade-eligible
+
+## Family Sync (v2.0.0+)
+family_sync_enabled: {true|false}
+family_partners:                 # only present if enabled
+  - name: {Partner Name}
+    icloud_path: {absolute path}
+message_auto_archive_days: 30    # only present if enabled
+
+## Diagnostics (v2.0.0+)
+diagnostics_enabled: {true|false}
+
+## Day Types (v2.0.0+, see Step 2e)
+day_types:
+  - id: {slug}
+    label: {display name}
+    color: "{hex}"
+    exclusive: {true|false}
+  ...
+```
+
+If any of these fields are missing on an existing config (e.g., user upgraded from 1.7.0), the engine fills them in from defaults during Step 1b's incremental setup pass — never silently skip.
+
+> **Multi-user note:** Each person gets their own iCloud path with their own files. Memory MCP routing is handled at the MCP level — the skill calls Memory MCP tools directly and they route to whoever's MCP is connected. **Never copy one user's config to another** — always run Step 2 fresh for each new user. Names, day types, goals, lunch prefs, and identity must all be personalized.
+
+### Step 2e — Day Types Setup
+
+The dashboard supports a structured day-type editor with replace-or-add semantics and an exclusive `Off` type. Day types must be persisted to `config.md` as structured data — not just free-text answers in the schedule question.
+
+**On first-run setup** (or when `day_types:` is missing from config), seed from the dashboard's hardcoded `DAY_TYPE_COLORS` map and walk the user through customization:
+
+1. Present the default day type set:
+   - `Creative` (#b8611a) — deep creative work
+   - `Business Dev` (#2e6090) — pitches, calls, outreach
+   - `Admin` (#6a3e98) — taxes, invoices, paperwork
+   - `Personal` (#3a7a50) — non-work commitments
+   - `Shoot Day` (#9e3020) — production days
+   - `Content Day` (#8a6800) — capture/edit days
+   - `Travel` (#1878a0) — travel mode
+   - `Edit Day` (#5a6e7a) — post-production
+   - `Off` (#555) — protected, exclusive
+
+2. Ask: "Want to keep these, rename any, or add your own?"
+
+3. Persist as a structured array under `day_types:` in config.md:
+   ```yaml
+   day_types:
+     - id: creative
+       label: Creative
+       color: "#b8611a"
+       exclusive: false
+     - id: off
+       label: Off
+       color: "#555"
+       exclusive: true
+   ```
+
+4. Emit `DAY_TYPES_JSON` placeholder (array of `{id, label, color, exclusive}` objects) for the dashboard's day-type dropdown UI.
+
+**On subsequent runs**, read `day_types:` directly from config and emit unchanged. The user can edit them via the dashboard dropdown UI; on next paste-back, persist the changes back to config.
+
+**Exclusive flag:** When `exclusive: true` (e.g., Off), selecting that type for a day removes all other types. Other types can stack additively (a day can be both Creative and Personal).
+
+**Replace vs Add:** The dashboard dropdown defaults to "replace" semantics — picking a new type replaces whatever was there. A modifier key (or a checkbox) toggles "add" mode for stacking. Engine doesn't enforce this — it just persists whatever the user selected.
 
 ---
 
@@ -499,6 +607,340 @@ If after checking internal sources a new project still has no clear direction (n
 
 ---
 
+## Step 5g — Location Intelligence Analysis
+
+**Prerequisite:** `travel_itinerary_enabled: true` in config AND Google Maps MCP connected (detected in Step 2a health check). If either is false, skip this entire step and set `LOCATION_INTEL_JSON` to `{}`.
+
+This step geocodes event locations, detects travel vs commute days, computes drive times, plans errand routes, and generates lunch suggestions.
+
+### 5g-i — Geocode Home Address
+
+First check Memory MCP for a cached `Location_Cache` entity with `home_geo` coordinates. If found, reuse them. If not:
+
+```
+maps_geocode(address: config.home_address)
+```
+
+Cache the result:
+```
+aim_memory_store(name: "Location_Cache", entityType: "cache")
+aim_memory_add_facts(entityName: "Location_Cache", contents: [
+  "home_geo: {lat},{lng} ({config.home_address})",
+  "rb_geo: {lat},{lng} ({config.rb_address})"
+])
+```
+
+Store as `homeGeo = { lat, lng }`.
+
+### 5g-ii — Geocode Event Locations
+
+For every event in the planning window (all dates covered by the current view — 7 or 30 days) that has a non-empty Location field:
+
+**Skip if location matches any of:** "Zoom", "Virtual", "Google Meet", "Teams", "Remote", "Online", "FaceTime", any URL (starts with http/https), "Home", "TBD", "TBA"
+
+For all others, call `maps_geocode(address: event.location)`.
+
+Build a location map:
+```json
+{
+  "eventId": {
+    "address": "original location string",
+    "lat": 36.1234,
+    "lng": -86.5678,
+    "isRemote": false,
+    "geocodeSuccess": true
+  }
+}
+```
+
+If geocoding fails for an event (vague location like "downtown" or "studio"), set `geocodeSuccess: false` and skip that event in subsequent location analysis. Do NOT guess coordinates.
+
+**Call budget:** Max ~15 geocode calls per run. If more than 15 events have locations, prioritize events in the current week over later dates.
+
+### 5g-iii — Detect Travel vs Commute Mode
+
+For each day in the planning window, check if any event's geocoded location is more than 60 miles from `homeGeo`.
+
+**Distance calculation:** Use the Haversine formula (compute in reasoning, no MCP call needed):
+```
+d = 2 * R * arcsin(sqrt(sin²((lat2-lat1)/2) + cos(lat1)*cos(lat2)*sin²((lng2-lng1)/2)))
+R = 3959 miles
+```
+
+- **Travel Mode:** Any event >60mi from home → that day (and travel days around it) are in travel mode
+- **Commute Mode:** All events <60mi from home → normal commute analysis
+
+Set `dayMode[date] = "travel" | "commute" | "home"` for each day. "home" means no events with physical locations.
+
+### 5g-iv — Travel Mode Processing
+
+For each travel day, check if the events indicate a flight:
+
+**Flight detection keywords** (scan event title + description): airline names (Southwest, Delta, American, United, JetBlue, Spirit, Frontier, Alaska), flight numbers (2-4 digit numbers after airline abbreviations), airport codes (3-letter IATA codes like BNA, LAX, ATL, AUS), "boarding", "departs", "takeoff", "gate", "terminal", "TSA"
+
+**If a flight is detected**, generate a full travel itinerary working backwards from boarding time:
+
+1. **Boarding time** — from event start time or description
+2. **Airport arrival** — boarding time minus buffer from config:
+   - Check `config.familiar_airports` — if departure airport is in the list: `domestic_familiar_bag` (60min default)
+   - If not familiar: `domestic_unfamiliar` (90min)
+   - International flights: `international` (120min)
+   - If rental car return at airport: add `rental_car_return` (25min) on top
+3. **Drive to airport** — call `maps_directions(origin: home_address or last_event_location, destination: airport_address, departure_time: calculated_departure_iso)`. Use `duration_in_traffic` from response.
+4. **R&B drop-off** — if departing from home and travel is >1 day, add a stop at `config.rb_address` before the airport. Call `maps_directions` for home→R&B and R&B→airport legs separately.
+5. **Pack/prep block** — auto-propose a "Pack + prep for [trip name]" reminder for the day before departure, 1 hour duration, afternoon slot.
+
+**Build itinerary object:**
+```json
+{
+  "date": "2026-04-16",
+  "mode": "travel",
+  "destination": "Atlanta",
+  "flight": {
+    "airline": "Southwest",
+    "number": "WN 1234",
+    "from": "BNA",
+    "to": "ATL",
+    "boards": "11:00",
+    "departs": "11:30"
+  },
+  "itinerary": [
+    { "time": "07:15", "emoji": "car", "action": "Leave home", "detail": "18 min drive to parents" },
+    { "time": "07:35", "emoji": "dog", "action": "R&B drop-off", "detail": "726 Ewell Farm Dr, Spring Hill" },
+    { "time": "08:10", "emoji": "car", "action": "Drive to BNA", "detail": "35 min via I-65 N" },
+    { "time": "08:45", "emoji": "airport", "action": "Arrive at BNA", "detail": "TSA + gate — 1hr 15min buffer" },
+    { "time": "10:00", "emoji": "board", "action": "Board flight", "detail": "Gate TBD" }
+  ],
+  "appleNoteTitle": "Travel Iten — Nashville → Atlanta April 2026",
+  "appleNoteBody": "<h1>Travel Iten — Nashville → Atlanta April 2026</h1>..."
+}
+```
+
+**Apple Notes body format:** Follow the Travel Itinerary Skill format exactly:
+- `<h1>` title, `<h3>` date
+- Each step: emoji + time + action + detail in Courier 12px
+- `<blockquote>` only for real alerts (tight timing, rental car notes)
+- `#iten` tag at bottom with 4 blank lines above
+
+**If NO flight detected** but the day is travel mode (distant event), generate a simpler drive itinerary:
+- Call `maps_directions` from home to event location with departure_time
+- Note the drive time in the itinerary
+- Still propose pack/prep if overnight
+
+### 5g-v — Commute Mode Processing
+
+For each commute day, find consecutive events that are at different physical locations (both non-remote, both geocoded successfully).
+
+For each pair, call:
+```
+maps_distance_matrix(
+  origins: [first_event.location],
+  destinations: [second_event.location],
+  departure_time: first_event.endTime_iso
+)
+```
+
+Calculate:
+- `driveMinutes` = `duration_in_traffic` from response (in minutes)
+- `gapMinutes` = second_event.startTime - first_event.endTime (in minutes)
+- `severity` = driveMinutes > gapMinutes ? "conflict" : driveMinutes > gapMinutes - 10 ? "tight" : "ok"
+
+**Build warnings array:**
+```json
+{
+  "date": "2026-04-14",
+  "fromEvent": "Client lunch downtown",
+  "fromEndTime": "13:30",
+  "toEvent": "Team standup at studio",
+  "toStartTime": "14:00",
+  "driveMinutes": 35,
+  "gapMinutes": 30,
+  "severity": "conflict",
+  "suggestion": "Leave lunch 5 min early or shift standup to 2:15pm"
+}
+```
+
+Only include warnings where `severity` is "conflict" or "tight". Skip "ok" pairs.
+
+### 5g-vi — Smart Errand Routing
+
+Gather all floating errands — reminders in the "Errands" list (or category Errand) that have no specific scheduled time for this week.
+
+For errands that have a location (from reminder notes, or infer from store names like "Target", "Kroger", "Home Depot", "Costco"):
+1. Geocode each errand location
+2. Compute distances from home to each errand and between errands
+3. Route using **furthest-first**: start with the farthest errand from home, work back toward home. This minimizes total backtracking.
+
+Call `maps_directions` with waypoints for the full route:
+```
+maps_directions(
+  origin: config.home_address,
+  destination: config.home_address,
+  waypoints: [errand1_address, errand2_address, ...],
+  departure_time: proposed_start_iso,
+  optimize_waypoints: true
+)
+```
+
+**Build errand route:**
+```json
+{
+  "date": "2026-04-18",
+  "stops": [
+    { "name": "Costco (Cool Springs)", "address": "2100 Crossing Blvd, Franklin", "estimatedMinutes": 25 },
+    { "name": "Target (Mallory Lane)", "address": "1745 Mallory Ln, Brentwood", "estimatedMinutes": 15 },
+    { "name": "Kroger (Franklin Rd)", "address": "330 Franklin Rd, Franklin", "estimatedMinutes": 20 }
+  ],
+  "totalDriveMinutes": 38,
+  "totalShoppingMinutes": 60,
+  "departTime": "14:00",
+  "returnTime": "15:38",
+  "routeNote": "Furthest first (Costco), ending 8 min from home (Kroger)"
+}
+```
+
+If no errands have geocodeable locations, skip this sub-step.
+
+### 5g-vii — Lunch Planning
+
+For each weekday in the planning window, determine the user's location over the lunch window (11:30am–1:30pm):
+
+1. Check events that overlap or are adjacent to the lunch window
+2. If the user has a physical-location event during lunch → they're **away from home**
+3. If no events or only remote events → they're **at home**
+
+**Away from home:**
+Call `maps_search_places` to find nearby restaurants:
+```
+maps_search_places(
+  query: config.lunch_preferences.likes[cycle_index],
+  location: "{midday_event_lat},{midday_event_lng}",
+  radius: 2000
+)
+```
+
+Cycle through the `likes` array across different days (Monday = likes[0], Tuesday = likes[1], etc.) for variety.
+
+Filter results:
+- Exclude restaurants matching `config.lunch_preferences.avoids`
+- Prefer `config.lunch_preferences.price_range` (map $$ to priceLevel 2)
+- Take top 2-3 results
+
+**At home:**
+Set suggestion type to "home" with note "Home all morning — do you have something at home, or want to order?"
+
+**Build lunch suggestions:**
+```json
+{
+  "date": "2026-04-14",
+  "type": "restaurant",
+  "location": "downtown Nashville",
+  "suggestions": [
+    { "name": "Noko", "cuisine": "Japanese", "rating": 4.5, "priceLevel": 2, "walkMinutes": 3, "address": "163 3rd Ave N" },
+    { "name": "Taqueria del Sol", "cuisine": "Mexican", "rating": 4.3, "priceLevel": 2, "walkMinutes": 5, "address": "600 8th Ave S" }
+  ]
+}
+```
+
+or:
+
+```json
+{
+  "date": "2026-04-15",
+  "type": "home",
+  "note": "Home all morning — do you have something at home, or want to order?"
+}
+```
+
+### 5g Output — LOCATION_INTEL_JSON
+
+Assemble all location intelligence into one JSON object:
+
+```json
+{
+  "travelDays": [ ...itinerary objects from 5g-iv... ],
+  "commuteWarnings": [ ...warning objects from 5g-v... ],
+  "errandRoute": { ...route object from 5g-vi... },
+  "lunchSuggestions": [ ...suggestion objects from 5g-vii... ],
+  "dayModes": { "2026-04-14": "commute", "2026-04-16": "travel", ... }
+}
+```
+
+If a sub-step produced no results (e.g., no travel days, no commute conflicts), use an empty array `[]` or `null` for that field. Never omit the field.
+
+### Graceful Degradation
+
+- **Google Maps MCP unavailable:** Skip entire Step 5g. Set `LOCATION_INTEL_JSON = {}`. Note in brief: "Google Maps not connected — location intelligence unavailable this run."
+- **Individual geocode failures:** Skip that event in subsequent analysis. Don't fail the whole step.
+- **Maps API rate limit or error on a specific call:** Log it, skip that sub-analysis, continue with remaining sub-steps.
+- **No events with locations:** Skip 5g-ii through 5g-v. Still run 5g-vii (lunch planning uses home-vs-away logic).
+
+---
+
+## Step 5h — Family Messages Inbox Scanner
+
+**Prerequisite:** `family_sync_enabled: true` in config. If false, skip this step entirely and set `FAMILY_MESSAGES_JSON = []`.
+
+This step scans the family messaging inbox for messages received from configured family partners since the last run, and surfaces them in the dashboard's Family Message Board card.
+
+**Inbox path:** `{icloud_path}/messages/inbox/`
+
+Each message is a markdown file named `{ISO-timestamp}-{sender}-{category}.md` with frontmatter:
+
+```markdown
+---
+from: Tiera
+timestamp: 2026-04-13T14:30:00-05:00
+category: travel
+urgency: normal
+subject: Atlanta trip itinerary
+status: unread
+read_at: null
+action_items:
+  - Drop R&B at Mom's by 7:30am Thursday
+  - Confirm hotel checkout time
+---
+
+Body of the message in markdown.
+```
+
+**Scan algorithm:**
+1. List all `.md` files in `{icloud_path}/messages/inbox/`
+2. Parse each frontmatter block; skip files that fail to parse (log a warning, never crash)
+3. Filter out messages where `status: archived` AND `timestamp` is older than `message_auto_archive_days` (config, default 30)
+4. Sort newest-first
+5. (Optional check) For each `family_partners` entry in config, also peek at `{partner_icloud_path}/messages/inbox/` for messages where `from == currentUser` to verify Step 12b deliveries — informational only
+
+**Build `FAMILY_MESSAGES_JSON`:**
+```json
+[
+  {
+    "id": "msg-2026-04-13-tiera-travel",
+    "from": "Tiera",
+    "timestamp": "2026-04-13T14:30:00-05:00",
+    "category": "travel",
+    "urgency": "normal",
+    "subject": "Atlanta trip itinerary",
+    "body": "Body markdown rendered to plain text",
+    "status": "unread",
+    "read_at": null,
+    "action_items": [
+      "Drop R&B at Mom's by 7:30am Thursday",
+      "Confirm hotel checkout time"
+    ],
+    "filePath": "messages/inbox/2026-04-13T14:30:00-tiera-travel.md"
+  }
+]
+```
+
+**Auto-mark-read:** When the dashboard renders, any unread messages older than 24 hours get auto-marked as read on next run. Update the file frontmatter `status: read` and `read_at: {now}`.
+
+**Action item bridging:** If a message has `action_items[]`, surface them in Step 6 as candidate proposals with `sourceType: "family_message"` and `sourceMessageId: msg-...`. The user can accept/reject in the planner. Accepted items inherit the message's urgency for placement priority.
+
+**Graceful degradation:** If the inbox folder doesn't exist, create it on first run. If a message file fails to parse, log a warning and skip it. Never crash the run on a malformed message.
+
+---
+
 ## Step 6 — Classify, Place, and Propose
 
 Determine for each item: Category (Creative | Business Dev | Admin | Personal | Errand | Family), Urgency, Calendar block needed, Suggested placement.
@@ -587,6 +1029,18 @@ These rules are informed by Kam's neurodivergent profile (circumscribed interest
 
 7. **Transition buffers.** 15-min buffer blocks between different task types (see Step 6b). These are real proposed calendar events, not just notes.
 
+### Location-Aware Scheduling Rules (requires Step 5g)
+
+These rules apply when `LOCATION_INTEL_JSON` is populated. If Step 5g was skipped, ignore these rules.
+
+8. **Travel days suppress proposals.** If `dayModes[date] == "travel"`, do NOT generate work proposals for that day. The travel itinerary IS the plan. Only exception: a pre-existing calendar event on a travel day stays on the grid.
+
+9. **Pack/prep auto-proposal.** If tomorrow is a travel day and today is not, auto-propose a "Pack + prep for [trip name]" block. 1 hour, afternoon slot, Personal task type.
+
+10. **Commute buffers.** If two proposed blocks on the same day are at different physical locations and `commuteWarnings` shows a conflict or tight gap, either: (a) add a commute buffer between them, or (b) shift the second block later to accommodate drive time. Note the drive time in the proposal reason.
+
+11. **Errand batching by route.** When placing errands, prefer the route order from `errandRoute` in Step 5g-vi. Propose them as a single contiguous block rather than scattered individual slots. Include the route note in the proposal reason.
+
 ### Errand Handling
 Surface as a floating pool. Nudge items sitting longer than config threshold (default: 14 days) — brief note, not pushy.
 
@@ -636,6 +1090,42 @@ Buffer blocks are proposed like any other item — the user can check or uncheck
 
 ---
 
+## Step 6c — Proposed Family Messages
+
+**Prerequisite:** `family_sync_enabled: true` in config. If false, skip this step and set `PROPOSED_FAM_MSGS_JSON = []`.
+
+After all blocks are placed (Step 6/6b) but before brief generation (Step 9), query Memory MCP for past outbound-message patterns and unfulfilled partner action items. Synthesize 3–5 draft message candidates the engine thinks the user might want to send.
+
+**Sources:**
+1. **Memory MCP `Family_Message_Log` entity** — past outbound messages, by category. Look for recurring patterns (e.g., "Kam sends Tiera a travel itinerary heads-up the day before any flight").
+2. **Unfulfilled action items from inbound messages** — items in `FAMILY_MESSAGES_JSON` where the user hasn't replied or acted yet (no matching outbound entry in the log within 48 hours of receipt).
+3. **Calendar context** — upcoming travel days, late evenings, busy stretches that affect the partner.
+4. **R&B drop-off detection** — if any travel itinerary in `LOCATION_INTEL_JSON` requires an R&B drop-off, propose a heads-up message to the partner about timing.
+
+**For each candidate, build:**
+```json
+{
+  "id": "fammsg-1",
+  "to": "Tiera",
+  "category": "travel",
+  "draft": "Heads up — flying to Atlanta Thursday morning. R&B will go to Mom's at 7:30am. Boarding 11am, back Saturday evening.",
+  "reason": "You usually send Tiera an itinerary heads-up the day before flights. This Thursday's BNA→ATL trip wasn't mentioned in the last 7 days of family messages.",
+  "relatedItem": "loc-travel-2026-04-16",
+  "urgency": "normal"
+}
+```
+
+**Build `PROPOSED_FAM_MSGS_JSON`** with 3–5 of the strongest candidates. Empty array if no patterns surface or if the partner has been kept up to date.
+
+The dashboard renders these in the Family Message Board "Proposed messages" section. The user can:
+- **Accept** → message is queued in the dashboard's compose buffer and sent via Step 12b on paste-back
+- **Edit** → edit the draft inline before accepting
+- **Dismiss** → log dismissal to Memory MCP so the engine doesn't re-propose the same draft next run
+
+**Calibration over time:** Memory MCP `Family_Message_Calibration` entity tracks accept-rate per category. If "travel heads-up" gets accepted 4/4 times, weight it higher in future proposals. If "weekly check-in" gets dismissed 5/5 times, stop proposing it.
+
+---
+
 ## Step 7 — Birthdays and Personal Awareness
 
 Scan ALL calendars for:
@@ -675,7 +1165,7 @@ After completing classification (Steps 5–8), write a structured scratchpad fil
 - Day narratives (one paragraph per day)
 - Brief content HTML (the structured `<div class="bct-line">` divs per Step 9's format)
 - Goal coverage status and any suggestions
-- All JSON arrays ready for template injection (PROPOSED_BLOCKS_JSON, EXISTING_EVENTS_JSON, REMINDERS_JSON, REMINDER_LISTS_JSON, INBOX_TRIAGE_JSON, WEEKLY_TRIAGE_JSON, DAY_NARRATIVES_JSON, WEEK_GOALS_JSON, PROJECTS_JSON)
+- All JSON arrays ready for template injection (PROPOSED_BLOCKS_JSON, EXISTING_EVENTS_JSON, REMINDERS_JSON, REMINDER_LISTS_JSON, INBOX_TRIAGE_JSON, WEEKLY_TRIAGE_JSON, DAY_NARRATIVES_JSON, WEEK_GOALS_JSON, PROJECTS_JSON, LOCATION_INTEL_JSON, UPDATE_BANNER_JSON, DAY_TYPES_JSON, FAMILY_MESSAGES_JSON, PROPOSED_FAM_MSGS_JSON, RUN_REPORT_JSON)
 
 **Placeholder-ready format:** Structure the scratchpad so that each JSON array section is already valid JSON that can be copied directly into the `.placeholders-{YYYY-MM-DD}.json` file used by Step 10b-ii. This means if context compacts between Step 8b and Step 10b, the engine can re-read the scratchpad and pipe the values straight to the Python substitution script without re-deriving anything.
 
@@ -735,7 +1225,30 @@ The brief card at the top of the dashboard is the first thing the user sees. It 
 </div>
 ```
 
-**Color mapping for dots:** Use the day type color from the DTC constants — Creative=#b8611a, Business Dev=#2e6090, Admin=#6a3e98, Personal=#3a7a50, Shoot Day=#9e3020, Content Day=#8a6800, Travel=#1878a0, Off=#555.
+**Color mapping for dots:** Use the day type color from the DTC constants — Creative=#b8611a, Business Dev=#2e6090, Admin=#6a3e98, Personal=#3a7a50, Shoot Day=#9e3020, Content Day=#8a6800, Travel=#1878a0, Edit Day=#5a6e7a, Off=#555.
+
+**Location alerts in brief:** If `LOCATION_INTEL_JSON` has travel days or commute conflicts, add alert lines at the TOP of BRIEF_CONTENT (before the first day):
+
+```html
+<div class="bct-line">
+  <div class="bct-dot" style="background:#1878a0"></div>
+  <div class="bct-content">
+    <div class="bct-day">Travel: Nashville → Atlanta (Thu Apr 16)</div>
+    <div class="bct-summary">Leave home 7:15am · R&B drop-off · BNA boards 10:00am</div>
+  </div>
+</div>
+```
+
+For commute conflicts:
+```html
+<div class="bct-line">
+  <div class="bct-dot" style="background:#b85848"></div>
+  <div class="bct-content">
+    <div class="bct-day">Commute conflict: Tue 1:30pm → 2:00pm</div>
+    <div class="bct-summary">Client lunch downtown → Studio (35min drive, only 30min gap)</div>
+  </div>
+</div>
+```
 
 **Rules:**
 - Skip days with nothing notable (no events, no proposals, no milestones)
@@ -843,6 +1356,12 @@ Create the `dashboards/` directory if it doesn't exist. This keeps generated out
 | `{{DAY_NARRATIVES_JSON}}` | JSON object keyed by ISO date → string narrative for each day of the week |
 | `{{WEEK_GOALS_JSON}}` | JSON array of weekly goals with `id`, `label`, `description`, `relatedTypes` |
 | `{{PROJECTS_JSON}}` | JSON array of active Notion projects for the Project Pulse strip (see format below) |
+| `{{LOCATION_INTEL_JSON}}` | JSON object with travel itineraries, commute warnings, errand routes, and lunch suggestions (from Step 5g). Empty object `{}` if Step 5g was skipped. |
+| `{{UPDATE_BANNER_JSON}}` | JSON object with `{version, title, summary, notes, dismissed}` for the update banner (from Step 1d). `null` if no banner should display this run. |
+| `{{DAY_TYPES_JSON}}` | JSON array of `{id, label, color, exclusive}` from `config.day_types` (from Step 2e). |
+| `{{FAMILY_MESSAGES_JSON}}` | JSON array of inbound family messages (from Step 5h). Empty array `[]` if `family_sync_enabled` is false or no messages exist. |
+| `{{PROPOSED_FAM_MSGS_JSON}}` | JSON array of proposed outbound family message drafts (from Step 6c). Empty array `[]` if disabled or no candidates. |
+| `{{RUN_REPORT_JSON}}` | JSON object with `runId`, `versions` (5-string), `mcpHealth`, `dataPulled`, `status`, `errors`, `warnings` (from Step 13). Powers the Run Health pill. |
 
 ---
 
@@ -852,7 +1371,7 @@ Create the `dashboards/` directory if it doesn't exist. This keeps generated out
 
 Instead, write all placeholder values to a JSON file, then run a Python script that performs the substitution on disk:
 
-**1. Write the placeholders file** to `{icloud_path}/dashboards/.placeholders-{YYYY-MM-DD}.json` containing all 13 placeholder key-value pairs as a JSON object. Keys are the placeholder names without curly braces (e.g. `"WEEK_OF"`, `"BRIEF_CONTENT"`, `"PROPOSED_BLOCKS_JSON"`, etc.). Values are the fully-formed strings ready for injection — JSON arrays should be serialized as strings.
+**1. Write the placeholders file** to `{icloud_path}/dashboards/.placeholders-{YYYY-MM-DD}.json` containing all 19 placeholder key-value pairs as a JSON object. Keys are the placeholder names without curly braces (e.g. `"WEEK_OF"`, `"BRIEF_CONTENT"`, `"PROPOSED_BLOCKS_JSON"`, `"UPDATE_BANNER_JSON"`, `"FAMILY_MESSAGES_JSON"`, `"DAY_TYPES_JSON"`, `"PROPOSED_FAM_MSGS_JSON"`, `"RUN_REPORT_JSON"`, etc.). Values are the fully-formed strings ready for injection — JSON arrays and objects should be serialized as strings.
 
 **2. Run this Python script via Bash:**
 
@@ -890,7 +1409,7 @@ print(f'Dashboard written to {out_path} ({os.path.getsize(out_path)} bytes)')
 
 **3. Verify** the script's stdout confirms the file was written and check the byte count is reasonable (should be ~100KB+).
 
-**Important:** The engine must produce all 13 placeholder values and write them to the JSON file BEFORE running the script. If any placeholder is missing, the template will render with raw `{{PLACEHOLDER}}` text. Double-check the JSON file has all keys from the table above.
+**Important:** The engine must produce all 19 placeholder values and write them to the JSON file BEFORE running the script. If any placeholder is missing, the template will render with raw `{{PLACEHOLDER}}` text. Double-check the JSON file has all keys from the table above. Use `null` for `UPDATE_BANNER_JSON` when no banner should display, and `[]` for the `*_JSON` arrays when their feature is disabled — never omit the key.
 
 ---
 
@@ -1409,11 +1928,153 @@ Surface these as a "Rhythm Insights" section in the brief when meaningful patter
 
 ---
 
+## Step 11d — Process Location Intelligence Actions
+
+When the user pastes the Confirm & Copy output back, check for these location-specific action sections:
+
+### TRAVEL ITINERARY actions
+If the output contains `TRAVEL ITINERARY:` with a confirmed itinerary:
+1. Create an Apple Note using `add_note` with the `appleNoteTitle` and `appleNoteBody` from the itinerary object
+2. If a pack/prep block was accepted, create the calendar event via `gcal_create_event`
+3. Store the itinerary in Memory MCP: `aim_memory_add_facts(entity: "Travel_History", contents: ["[date] Travel: origin → destination, departed HH:MM"])`
+4. **Family sync (if `family_sync_enabled` is true and the user checked `share_with_partner` on the itinerary card):** Write an outbound message to `{partner_icloud_path}/messages/inbox/{ISO}-{currentUser}-travel.md` with the itinerary summary, destination, dates, and R&B drop-off info. Frontmatter: `from: {currentUser}, category: travel, urgency: normal, subject: "{trip_name} itinerary"`. Body: human-readable itinerary (a markdown rendering of the steps array). Memory MCP log: `aim_memory_add_facts(entity: "Family_Message_Log", contents: ["[date] Sent travel itinerary to {partner}: {trip_name}"])`.
+
+### LUNCH CHOICE actions
+If the output contains `LUNCH CHOICE:` with a selected restaurant:
+1. Optionally create a 1-hour calendar event: title = "Lunch — {restaurant_name}", location = restaurant address, time = 12:00–1:00pm (or user-specified)
+2. This is informational — only create the event if the user explicitly checked "Add to calendar" on the lunch card
+
+### ERRAND ROUTE actions
+If the output contains `ERRAND ROUTE:` with a confirmed route:
+1. Create a single calendar event for the full errand block: title = "Errands — {stop_count} stops", start = departTime, end = returnTime, description = ordered stop list with drive times
+2. Mark each errand reminder as completed if the user checked them off
+
+### COMMUTE WARNING actions
+Commute warnings are informational only — no actions to process. They inform the user's scheduling decisions but don't create any events.
+
+---
+
 ## Step 12 — Feedback Loop
 
 > "Anything off? I can adjust."
 
 Classify feedback: immediate vs persistent. Show proposed config/memory changes before applying. Log to Memory MCP under the relevant project entity.
+
+---
+
+## Step 12b — Compose and Send Family Messages
+
+**Prerequisite:** `family_sync_enabled: true` in config.
+
+When the user pastes back the dashboard output and it contains a `FAMILY MESSAGE COMPOSE:` section (emitted by the dashboard's compose UI or the proposed-messages accept flow), parse each queued message and write it to the partner's inbox.
+
+**Format expected from dashboard:**
+```
+FAMILY MESSAGE COMPOSE:
+  to: Tiera
+  category: travel
+  urgency: normal
+  subject: Atlanta trip itinerary
+  action_items:
+    - Drop R&B at Mom's by 7:30am Thursday
+  body: |
+    Heads up — flying to Atlanta Thursday morning. R&B will go to Mom's at 7:30am.
+```
+
+**For each queued message:**
+1. Determine the partner's iCloud path. Check `family_partners[].icloud_path` in config. If missing, fall back to `~/Library/Mobile Documents/com~apple~CloudDocs/Kennedy Family Docs/Weekly Flow/{partner_name}/`.
+2. Ensure `{partner_path}/messages/inbox/` exists; create if needed.
+3. Generate the filename: `{ISO-timestamp}-{currentUser}-{category}.md` (e.g. `2026-04-14T08:42:00-kam-travel.md`).
+4. Write the file with frontmatter:
+   ```markdown
+   ---
+   from: {currentUser}
+   timestamp: {ISO-timestamp}
+   category: {category}
+   urgency: {urgency}
+   subject: {subject}
+   status: unread
+   read_at: null
+   action_items: {action_items_yaml_list}
+   ---
+
+   {body}
+   ```
+5. Log to Memory MCP:
+   ```
+   aim_memory_add_facts(entity: "Family_Message_Log", contents: [
+     "[{date}] Sent to {partner}: {subject} ({category})"
+   ])
+   ```
+6. If voice-triggered (the original prompt was spoken via Siri or a voice MCP), play a brief audio confirmation: "Message sent to {partner}."
+
+**Voice trigger detection:** The dashboard's compose UI may emit a `voice_confirm: true` field per message. If true, attempt audio confirmation via the macOS `say` command or any TTS MCP available.
+
+**Failure handling:** If the partner's inbox path is unwritable, store the message in Memory MCP under `Family_Message_Outbox` as a pending message and surface it in next run's brief: "1 family message couldn't be delivered last run — retry?"
+
+---
+
+## Step 13 — Write Run Report
+
+**Prerequisite:** `diagnostics_enabled: true` in config (default `true`).
+
+Throughout the pipeline, collect telemetry into a `runReport` accumulator. After Step 12 (feedback loop) completes, write the report to disk and emit it as `RUN_REPORT_JSON` for the dashboard's Run Health pill and diagnostics modal.
+
+**Telemetry collected during the run:**
+- `runId` — UUID generated at Step 1 start
+- `user` — from `config.name`
+- `timestamp` — ISO timestamp of run start
+- `environment` — `"desktop" | "cowork" | "claude_code"` (detected from working dir / agent context)
+- `versions` — all 5 version strings (drift detection compares them):
+  - `engineSpec` — from line 1 header of this file
+  - `dashboardTemplate` — from line 1 header of `dashboard-template.html`
+  - `skillWrapper` — from skill wrapper file header (or `"unknown"` if not embedded)
+  - `configTemplate` — from `template_version:` in config.md
+  - `fortAbodeApp` — from `Fort_Abode_App_Version` in Memory MCP if available, else `"unknown"`
+- `status` — `"ok" | "warning" | "error"`
+- `durationSeconds` — wall-clock time from Step 1 start to Step 12 end
+- `weekPlanned` — Sunday of the planned week, e.g. `"2026-04-12"`
+- `mcpHealth` — array from Step 2a probes:
+  ```json
+  [
+    {"name": "google-calendar", "status": "ok", "probeMs": 320},
+    {"name": "google-maps", "status": "ok", "probeMs": 215},
+    {"name": "imessage", "status": "missing", "probeMs": null}
+  ]
+  ```
+- `dataPulled` — counts:
+  ```json
+  {
+    "calendarEvents": 47,
+    "reminders": 23,
+    "gmailMessages": 18,
+    "notionTasks": 31,
+    "memoryFacts": 12,
+    "mapsApiCalls": 14,
+    "familyMessages": 3
+  }
+  ```
+- `errors` — array of `{step, message, recoverable}` for any non-fatal errors during the run
+- `warnings` — array of strings (e.g., "iMessages MCP unavailable — context enrichment skipped")
+
+**Write to disk:**
+1. `{icloud_path}/diagnostics/runs/{runId}.json` — full structured report
+2. `{icloud_path}/diagnostics/runs/{runId}.md` — short human-readable summary (1 paragraph + version table)
+
+Create `{icloud_path}/diagnostics/runs/` if it doesn't exist.
+
+**Set `RUN_REPORT_JSON`** = the full JSON object above for template substitution. The dashboard's Run Health pill reads this and shows:
+- Overall status (✓ green / ⚠ yellow / ✗ red)
+- All 5 versions with drift detection (any mismatch → "Version drift detected")
+- MCP health list
+- Data counts
+- Error / warning list
+
+**Drift detection:** If any of the 5 versions don't match the latest released version (from Fort Abode bundle or Memory MCP `Fort_Abode_App_Version` entity), the pill shows a "Version drift detected" warning naming each out-of-sync string.
+
+**Graceful degradation:** If `{icloud_path}/diagnostics/runs/` is not writable (Cowork sandbox), write the JSON to Memory MCP under `Run_Reports` entity instead. The dashboard still renders from `RUN_REPORT_JSON` regardless.
+
+**Cleanup policy:** Keep the last 30 run reports. Delete older `.json` and `.md` files in `diagnostics/runs/` when count exceeds 30.
 
 ---
 

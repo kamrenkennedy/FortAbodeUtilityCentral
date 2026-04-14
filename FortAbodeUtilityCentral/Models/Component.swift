@@ -33,6 +33,7 @@ enum VersionSource: Hashable {
     case packageJSON(path: String)
     case claudeDesktopConfig(serverKey: String)
     case icloudTemplateVersion(relativePath: String)
+    case keychainSecret(componentId: String, fieldName: String)
 }
 
 extension VersionSource: Codable {
@@ -41,9 +42,10 @@ extension VersionSource: Codable {
     private struct PackageJSONPayload: Codable { let path: String }
     private struct ClaudeDesktopPayload: Codable { let serverKey: String }
     private struct ICloudTemplatePayload: Codable { let relativePath: String }
+    private struct KeychainSecretPayload: Codable { let componentId: String; let fieldName: String }
 
     private enum CodingKeys: String, CodingKey {
-        case npxCache, localDirectory, packageJson, claudeDesktopConfig, icloudTemplateVersion
+        case npxCache, localDirectory, packageJson, claudeDesktopConfig, icloudTemplateVersion, keychainSecret
     }
 
     init(from decoder: Decoder) throws {
@@ -58,6 +60,8 @@ extension VersionSource: Codable {
             self = .claudeDesktopConfig(serverKey: payload.serverKey)
         } else if let payload = try container.decodeIfPresent(ICloudTemplatePayload.self, forKey: .icloudTemplateVersion) {
             self = .icloudTemplateVersion(relativePath: payload.relativePath)
+        } else if let payload = try container.decodeIfPresent(KeychainSecretPayload.self, forKey: .keychainSecret) {
+            self = .keychainSecret(componentId: payload.componentId, fieldName: payload.fieldName)
         } else {
             throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "Unknown VersionSource type"))
         }
@@ -76,6 +80,8 @@ extension VersionSource: Codable {
             try container.encode(ClaudeDesktopPayload(serverKey: serverKey), forKey: .claudeDesktopConfig)
         case .icloudTemplateVersion(let relativePath):
             try container.encode(ICloudTemplatePayload(relativePath: relativePath), forKey: .icloudTemplateVersion)
+        case .keychainSecret(let componentId, let fieldName):
+            try container.encode(KeychainSecretPayload(componentId: componentId, fieldName: fieldName), forKey: .keychainSecret)
         }
     }
 }

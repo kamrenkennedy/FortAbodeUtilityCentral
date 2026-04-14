@@ -17,6 +17,8 @@ actor VersionDetectionService {
             return checkClaudeDesktopConfig(serverKey: serverKey)
         case .icloudTemplateVersion(let relativePath):
             return parseICloudTemplateVersion(relativePath: relativePath)
+        case .keychainSecret(let componentId, let fieldName):
+            return SecureInputStorage.read(componentId: componentId, fieldName: fieldName) != nil ? "configured" : nil
         }
     }
 

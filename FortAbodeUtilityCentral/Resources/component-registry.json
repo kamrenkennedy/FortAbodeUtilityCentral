@@ -327,6 +327,71 @@
       ]
     },
     "marketplace": true,
-    "min_app_version": "3.4.0"
+    "min_app_version": "3.7.0"
+  },
+  {
+    "id": "travel-itinerary",
+    "display_name": "Travel Itinerary (Google Maps)",
+    "description": "Google Maps backend for Weekly Rhythm location intelligence",
+    "user_description": "Powers travel itineraries, commute conflict warnings, errand routing, and lunch suggestions in the Weekly Rhythm Engine. Uses Google Maps for traffic-aware drive times, geocoding, and place search.",
+    "usage_instructions": "Once configured, the Weekly Rhythm Engine will automatically use Google Maps when you run /weekly-rhythm-engine. No direct interaction needed \u2014 the key is read by the travel-itinerary plugin in Cowork.",
+    "type": "localMCPServer",
+    "icon": "airplane.departure",
+    "version_source": {
+      "keychainSecret": {
+        "componentId": "travel-itinerary",
+        "fieldName": "GOOGLE_MAPS_API_KEY"
+      }
+    },
+    "update_source": "none",
+    "update_command": "none",
+    "setup_flow": {
+      "id": "travel-itinerary-setup",
+      "title": "Set Up Travel Itinerary",
+      "subtitle": "Connect Google Maps for Weekly Rhythm location intelligence",
+      "steps": [
+        {
+          "id": "open-console",
+          "type": "instruction",
+          "title": "Open Google Cloud Console",
+          "body": "You need a Google Maps API key. Open Google Cloud Console, create a project (or pick an existing one), then enable these APIs: Directions API, Geocoding API, Places API, Distance Matrix API.",
+          "illustration": { "type": "sf_symbol", "name": "globe.americas.fill" },
+          "action_label": "Next",
+          "external_url": "https://console.cloud.google.com/google/maps-apis/start"
+        },
+        {
+          "id": "create-key",
+          "type": "instruction",
+          "title": "Create an API Key",
+          "body": "In the same console, go to Credentials \u2192 Create credentials \u2192 API key. Restrict the key to the four APIs you enabled above. Copy the key when it appears.",
+          "illustration": { "type": "sf_symbol", "name": "key.fill" },
+          "action_label": "I've Created It"
+        },
+        {
+          "id": "paste-key",
+          "type": "secure_input",
+          "title": "Paste the API Key",
+          "body": "Paste your Google Maps API key below. Fort Abode stores it securely in your macOS Keychain \u2014 it never goes into a config file or git repo.",
+          "illustration": { "type": "sf_symbol", "name": "lock.shield.fill" },
+          "action_label": "Next",
+          "input_config": {
+            "field_name": "GOOGLE_MAPS_API_KEY",
+            "placeholder": "AIzaSy...",
+            "validation": { "type": "regex", "pattern": "^AIza[A-Za-z0-9_-]{20,}$", "error_message": "Google Maps API keys start with AIza followed by ~35 characters" }
+          }
+        },
+        {
+          "id": "confirm",
+          "type": "completion",
+          "title": "Ready to Install",
+          "body": "Your Google Maps API key will be stored in Keychain. The Weekly Rhythm Engine will use it to plan travel itineraries, commute conflicts, errand routes, and lunch suggestions on your dashboard.\n\nNote: the travel-itinerary plugin in Cowork is a separate install. If you haven't already, upload the .plugin file to Cowork via the Claude desktop app.",
+          "illustration": { "type": "sf_symbol", "name": "checkmark.circle.fill" },
+          "action_label": "Install",
+          "summary_fields": ["GOOGLE_MAPS_API_KEY"]
+        }
+      ]
+    },
+    "marketplace": true,
+    "min_app_version": "3.7.0"
   }
 ]

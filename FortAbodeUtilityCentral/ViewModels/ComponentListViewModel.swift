@@ -273,7 +273,7 @@ final class ComponentListViewModel {
 
         // Step 2.5: Pin iCloud folders and set up CLAUDE.md if this is the memory component
         if component.id == "setup-claude-memory" {
-            await performMemoryPostInstall(component: component)
+            await performMemoryPostInstall(component: component, inputs: inputs)
         }
 
         // Step 2.6: Deploy Weekly Rhythm Engine files to iCloud
@@ -441,9 +441,11 @@ final class ComponentListViewModel {
                 }
             }
 
-            // Memory-specific: pin iCloud folders + CLAUDE.md sync (not key-dependent)
+            // Memory-specific: pin iCloud folders + CLAUDE.md sync (not key-dependent).
+            // Pass empty inputs so family setup does NOT re-run on every self-heal poll —
+            // family memory is an install-time opt-in, not a maintenance task.
             if component.id == "setup-claude-memory" {
-                await performMemoryPostInstall(component: component)
+                await performMemoryPostInstall(component: component, inputs: [:])
             }
         }
 
@@ -618,9 +620,18 @@ final class ComponentListViewModel {
         }
     }
 
-    /// Post-install tasks specific to the Memory component (iCloud pinning + CLAUDE.md sync).
-    private func performMemoryPostInstall(component: Component) async {
-        await filePinningService.pinClaudeMemoryFolder()
+    /// Pin the iCloud Claude folders so they stay downloaded locally.
+    /// Safe to call from app launch — runs in background, silent on success.
+    func pinICloudFolders() async {
+        await filePinningService.pinAll()
+    }
+
+    /// Post-install tasks specific to the Memory component:
+    /// 1. Pin iCloud folders
+    /// 2. Sync CLAUDE.md
+    /// 3. If user opted in, run `npx setup-claude-memory --family` to deploy family memory
+    private func performMemoryPostInstall(component: Component, inputs: [String: String]) async {
+        await filePinningService.pinAll()
 
         let claudeCodeService = ClaudeCodeConfigService()
         do {
@@ -633,13 +644,36 @@ final class ComponentListViewModel {
                 installedVersion: nil
             )
         }
+
+        // Family memory is opt-in during the setup wizard. When the user picks "yes",
+        // we run `npx setup-claude-memory --family` which deploys the Kennedy Family Docs/
+        // Claude/Family Memory/ structure and appends a routing block to ~/.claude/CLAUDE.md.
+        if inputs["ENABLE_FAMILY_MEMORY"] == "yes" {
+            await runFamilyMemorySetup(component: component)
+        }
     }
 
-    /// Post-install tasks for the Weekly Rhythm Engine (deploy files to iCloud + pin folder + register in Cowork).
+    /// Best-effort family memory setup via `npx -y setup-claude-memory --family`.
+    /// Non-fatal: if it fails, the main Memory install already succeeded.
+    private func runFamilyMemorySetup(component: Component) async {
+        let result = await updateExecutionService.executeFamilyMemorySetup()
+        if !result.success {
+            await ErrorLogger.shared.log(
+                componentId: component.id,
+                displayName: component.displayName,
+                error: "Family memory setup failed: \(result.errorOutput.isEmpty ? "unknown error" : result.errorOutput)",
+                installedVersion: nil
+            )
+        }
+    }
+
+    /// Post-install tasks for the Weekly Rhythm Engine (deploy files to iCloud + register in Cowork).
+    /// Note: iCloud pinning is now handled at app launch + via Memory post-install, so this
+    /// hook no longer calls filePinningService directly.
     private func performWeeklyRhythmPostInstall(userName: String) async {
         do {
             try await weeklyRhythmService.setupWeeklyFlow(userName: userName)
-            await filePinningService.pinClaudeMemoryFolder()
+            await filePinningService.pinAll()
         } catch {
             await ErrorLogger.shared.log(
                 componentId: "weekly-rhythm",

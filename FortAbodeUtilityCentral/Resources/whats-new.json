@@ -1,5 +1,13 @@
 [
   {
+    "version": "3.7.1",
+    "notes": [
+      "Memory component now offers family memory during setup — one person enables it, the other sees it automatically",
+      "Fixed a long-standing bug where iCloud folders weren't actually being kept downloaded on some machines",
+      "Claude Memory and Weekly Flow folders now re-pin every time the app opens"
+    ]
+  },
+  {
     "version": "3.6.0",
     "notes": [
       "Weekly Rhythm skill now auto-registers in Claude Code on install",

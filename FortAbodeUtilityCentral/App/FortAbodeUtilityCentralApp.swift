@@ -154,6 +154,7 @@ struct FortAbodeUtilityCentralApp: App {
                 }
                 handleLaunchMode()
                 checkWhatsNew()
+                pinICloudFoldersInBackground()
             }
             .onChange(of: isActivated) { _, activated in
                 guard activated else { return }
@@ -161,6 +162,7 @@ struct FortAbodeUtilityCentralApp: App {
                     viewModel = ComponentListViewModel(registry: registry)
                 }
                 handleLaunchMode()
+                pinICloudFoldersInBackground()
             }
         }
         .defaultSize(width: 600, height: 500)
@@ -247,6 +249,16 @@ struct FortAbodeUtilityCentralApp: App {
                 // Prompt for launch at login on first launch
                 promptLaunchAtLoginIfNeeded()
             }
+        }
+    }
+
+    /// Pin iCloud folders (Claude Memory + Kennedy Family Docs/Claude) at every launch.
+    /// Runs non-blocking so startup isn't delayed. Silent on success; errors go to ErrorLogger.
+    /// This undoes any macOS cache eviction that happened while Fort Abode was closed.
+    private func pinICloudFoldersInBackground() {
+        guard let viewModel else { return }
+        Task.detached(priority: .background) {
+            await viewModel.pinICloudFolders()
         }
     }
 

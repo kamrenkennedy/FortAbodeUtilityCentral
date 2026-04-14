@@ -3,8 +3,8 @@
     "id": "setup-claude-memory",
     "display_name": "Memory",
     "description": "Claude persistent memory via iCloud — knowledge graph + deep context archive",
-    "user_description": "Gives Claude a persistent memory so it remembers your preferences, projects, and past conversations across sessions and devices.",
-    "usage_instructions": "Memory works automatically once installed. Claude will remember things you tell it between conversations — your preferences, project details, and important context. You don't need to do anything special. If you want Claude to remember something specific, just say \"remember this\" in conversation.",
+    "user_description": "Gives Claude a persistent memory so it remembers your preferences, projects, and past conversations across sessions and devices. Optional family memory lets you share shared context (insurance, house, pets, vehicles) with your partner across their separate Claude install.",
+    "usage_instructions": "Memory works automatically once installed. Claude will remember things you tell it between conversations — your preferences, project details, and important context. If you enable family memory during setup, shared facts sync via iCloud between family members. You don't need to do anything special — just say \"remember this\" in conversation.",
     "type": "npmPackage",
     "icon": "brain",
     "included_servers": [
@@ -63,13 +63,28 @@
           }
         },
         {
+          "id": "family-memory",
+          "type": "multi_choice",
+          "title": "Enable Family Memory?",
+          "body": "Family memory is a shared space in iCloud where you and your partner can store facts you both need — insurance plans, house details, pet info, vehicle records. Only one person per household needs to enable it; the other family member will see it automatically once iCloud syncs.",
+          "illustration": { "type": "sf_symbol", "name": "person.2.fill" },
+          "action_label": "Next",
+          "input_config": {
+            "field_name": "ENABLE_FAMILY_MEMORY",
+            "options": [
+              { "value": "yes", "label": "Yes, set up family memory", "description": "Creates the shared iCloud folder and adds routing to Claude" },
+              { "value": "no", "label": "Skip — personal memory only", "description": "You can enable family memory later from the terminal" }
+            ]
+          }
+        },
+        {
           "id": "confirm",
           "type": "completion",
           "title": "Ready to Install",
-          "body": "Claude will get two memory servers:\n\n• {{user_input:DISPLAY_NAME}}-Memory — quick-access knowledge graph\n• {{user_input:DISPLAY_NAME}}-Deep-Context — session summaries and decision logs\n\nYour memory is stored in iCloud and syncs across devices.",
+          "body": "Claude will get two memory servers:\n\n• {{user_input:DISPLAY_NAME}}-Memory — quick-access knowledge graph\n• {{user_input:DISPLAY_NAME}}-Deep-Context — session summaries and decision logs\n\nYour memory is stored in iCloud and syncs across devices. If you enabled family memory, the shared family folder will be set up too.",
           "illustration": { "type": "sf_symbol", "name": "checkmark.circle.fill" },
           "action_label": "Install",
-          "summary_fields": ["DISPLAY_NAME"]
+          "summary_fields": ["DISPLAY_NAME", "ENABLE_FAMILY_MEMORY"]
         }
       ]
     },

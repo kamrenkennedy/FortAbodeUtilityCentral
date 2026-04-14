@@ -114,6 +114,63 @@ actor UpdateExecutionService {
         }
     }
 
+    // MARK: - Family Memory Setup
+
+    /// Runs `npx -y setup-claude-memory --family` to deploy the shared family memory
+    /// structure. The `--family` flag is the non-interactive entry point added in
+    /// setup-claude-memory v1.5.0 — it creates the iCloud folder and appends the
+    /// routing block to ~/.claude/CLAUDE.md without prompting.
+    func executeFamilyMemorySetup() async -> UpdateResult {
+        guard let nodePath = findNodePath() else {
+            let errorMsg = "Node.js not found on this machine. Please install Node.js."
+            return UpdateResult(success: false, output: "", errorOutput: errorMsg)
+        }
+
+        let npxPath = (nodePath as NSString).deletingLastPathComponent + "/npx"
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: npxPath)
+        process.arguments = ["-y", "setup-claude-memory@latest", "--family"]
+
+        // Same PATH construction as clearAndRefreshNpxCache so npx can find its tooling
+        var env = ProcessInfo.processInfo.environment
+        let binDir = (nodePath as NSString).deletingLastPathComponent
+        let extraPaths = "/usr/local/bin:/opt/homebrew/bin"
+        if let existingPath = env["PATH"] {
+            env["PATH"] = "\(binDir):\(extraPaths):\(existingPath)"
+        } else {
+            env["PATH"] = "\(binDir):\(extraPaths):/usr/bin:/bin"
+        }
+        // Force non-interactive mode in case any CLI tool reads this
+        env["CI"] = "1"
+        process.environment = env
+
+        let stdout = Pipe()
+        let stderr = Pipe()
+        process.standardOutput = stdout
+        process.standardError = stderr
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+
+            let outData = stdout.fileHandleForReading.readDataToEndOfFile()
+            let errData = stderr.fileHandleForReading.readDataToEndOfFile()
+
+            return UpdateResult(
+                success: process.terminationStatus == 0,
+                output: String(data: outData, encoding: .utf8) ?? "",
+                errorOutput: String(data: errData, encoding: .utf8) ?? ""
+            )
+        } catch {
+            return UpdateResult(
+                success: false,
+                output: "",
+                errorOutput: "Failed to run setup-claude-memory --family: \(error.localizedDescription)"
+            )
+        }
+    }
+
     // MARK: - Shell Command
 
     private func runShellCommand(_ command: String, args: [String]) async -> UpdateResult {

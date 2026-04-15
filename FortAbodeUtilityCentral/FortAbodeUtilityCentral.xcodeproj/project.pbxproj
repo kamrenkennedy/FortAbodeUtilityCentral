@@ -44,6 +44,7 @@
 		A7D447D032884F15F3EA762E /* BadgeTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32B9115221657AAE3B2B132 /* BadgeTracker.swift */; };
 		A97EBD40591158370B2039CC /* StepIllustrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED50D447877CF3DECD42F54F /* StepIllustrationView.swift */; };
 		ADE9797A2E5EE7EB3C461ED6 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D31AA9A8E09678D0693ACE38 /* SettingsView.swift */; };
+		B04C24F776D1BB9275500DB0 /* weekly-rhythm-plugin-bundle in Resources */ = {isa = PBXBuildFile; fileRef = 21A8F7C1C7370A480AA42749 /* weekly-rhythm-plugin-bundle */; };
 		B30AFA9528E558568F1FC9C0 /* gws-client-secret.json in Resources */ = {isa = PBXBuildFile; fileRef = B34078A97122C23C4D2D35E0 /* gws-client-secret.json */; };
 		B4F10EEE4625314A880D027D /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC40AFA45E29AF2DBF63CC15 /* SettingsViewModel.swift */; };
 		BCC20DC3968DB7047C53917E /* SetupWizardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00E7AF22AE310DA57B354CDA /* SetupWizardView.swift */; };
@@ -81,6 +82,7 @@
 		0C827BD5D498E86D1F3BEC2D /* GitHubService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubService.swift; sourceTree = "<group>"; };
 		16FB3766D3708E744FA90472 /* WhatsNewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewView.swift; sourceTree = "<group>"; };
 		1EB57DA95F7124E0519B2C86 /* ErrorLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorLogger.swift; sourceTree = "<group>"; };
+		21A8F7C1C7370A480AA42749 /* weekly-rhythm-plugin-bundle */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "weekly-rhythm-plugin-bundle"; path = "Resources/weekly-rhythm-plugin-bundle"; sourceTree = SOURCE_ROOT; };
 		26113857AC506F0780BBEE4C /* ComponentCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentCardView.swift; sourceTree = "<group>"; };
 		354B5DB8AEAB5C2C6F4D2DCE /* CoworkSkillService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoworkSkillService.swift; sourceTree = "<group>"; };
 		3757BEFBB847475D0690FF32 /* FeedbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackView.swift; sourceTree = "<group>"; };
@@ -192,6 +194,7 @@
 				750E9292C50A1D0B0C4EE603 /* dashboard-template.html */,
 				50C8FB18F4E77DC49B18BFA9 /* engine-spec.md */,
 				B34078A97122C23C4D2D35E0 /* gws-client-secret.json */,
+				21A8F7C1C7370A480AA42749 /* weekly-rhythm-plugin-bundle */,
 				CFEBF1AD73F4AD47132E5387 /* weekly-rhythm-skill-wrapper.md */,
 				CB4031837BBE075B7CEF1484 /* whats-new.json */,
 			);
@@ -367,6 +370,7 @@
 				11E72DFAD7010B08CCFA2023 /* dashboard-template.html in Resources */,
 				F89C6DB5F46AA0E2B5C06700 /* engine-spec.md in Resources */,
 				B30AFA9528E558568F1FC9C0 /* gws-client-secret.json in Resources */,
+				B04C24F776D1BB9275500DB0 /* weekly-rhythm-plugin-bundle in Resources */,
 				13B98C724D6580546B4A9F6C /* weekly-rhythm-skill-wrapper.md in Resources */,
 				C3404068D33521F15C9DAC34 /* whats-new.json in Resources */,
 			);
@@ -475,7 +479,7 @@
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 30;
 				DEVELOPMENT_TEAM = X6LBF9H7M5;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -485,7 +489,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 3.7.5;
+				MARKETING_VERSION = 3.7.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kamstudios.fortabodeutilitycentral;
 				PRODUCT_NAME = "Fort Abode Utility Central";
 				SDKROOT = macosx;
@@ -565,7 +569,7 @@
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 30;
 				DEVELOPMENT_TEAM = X6LBF9H7M5;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -575,7 +579,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 3.7.5;
+				MARKETING_VERSION = 3.7.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kamstudios.fortabodeutilitycentral;
 				PRODUCT_NAME = "Fort Abode Utility Central";
 				SDKROOT = macosx;

@@ -1,15 +1,16 @@
 import Foundation
 
-// MARK: - Registration Status
+// MARK: - Plugin Install Result
 
-/// Outcome of the most recent call to `registerWeeklyRhythmSkill()`. Exposed so the
-/// manual "Register in Claude Code" button in ComponentDetailView can surface a
-/// user-facing result inline, and so FeedbackService can include the state in bug
-/// reports.
-enum SkillRegistrationStatus: Sendable {
+/// Outcome of the most recent call to `installWeeklyRhythmPlugin()`. Exposed so the
+/// manual "Install Plugin in Claude Code" button in ComponentDetailView can surface
+/// a user-facing result inline, and so FeedbackService can include the state in
+/// bug reports.
+enum PluginInstallResult: Sendable, Equatable {
     case notYetAttempted
-    case succeeded(at: Date, skillsRoot: String)
-    case failed(at: Date, step: String, error: String)
+    case succeeded(at: Date, output: String)
+    case failed(at: Date, step: String, error: String, output: String)
+    case claudeCLINotFound
 
     var isSuccess: Bool {
         if case .succeeded = self { return true }
@@ -24,460 +25,406 @@ enum SkillRegistrationStatus: Sendable {
         case .notYetAttempted:
             return "Not yet attempted"
         case .succeeded(let at, _):
-            return "Registered successfully at \(formatter.string(from: at))"
-        case .failed(_, let step, let error):
+            return "Plugin installed at \(formatter.string(from: at)) — quit and relaunch Claude Code to activate"
+        case .failed(_, let step, let error, _):
             return "Failed at \(step): \(error)"
+        case .claudeCLINotFound:
+            return "Claude Code CLI not found — is Claude Code installed?"
+        }
+    }
+
+    /// Raw CLI output (stdout + stderr) for display in a disclosure region. Lets Kam see
+    /// exactly what the `claude plugin install` command printed when debugging.
+    var rawOutput: String? {
+        switch self {
+        case .notYetAttempted, .claudeCLINotFound:
+            return nil
+        case .succeeded(_, let output):
+            return output.isEmpty ? nil : output
+        case .failed(_, _, _, let output):
+            return output.isEmpty ? nil : output
         }
     }
 }
 
-/// Manages skill registration in Cowork (Claude Code).
-/// Discovers the skills-plugin directory, deploys SKILL.md wrappers,
-/// and registers/updates entries in Cowork's manifest.json.
+// MARK: - Cowork Skill Service (v3.7.6 plugin-system rewrite)
+
+/// Manages the Weekly Rhythm Engine's presence in Claude Code / Cowork.
 ///
-/// **v3.7.4 instrumentation overhaul:** every step of `registerWeeklyRhythmSkill()`
-/// logs a breadcrumb to `ErrorLogger`, the silent returns in `deploySkillFile` and
-/// `registerSkill` now throw specific errors, and every manifest write stamps a
-/// `fortAbodeLastWrite` marker so the debug report can prove (or disprove) whether
-/// Fort Abode actually wrote to the user's manifest.json.
+/// **v3.7.6 architectural shift:** previous versions tried to write directly to
+/// Cowork's `manifest.json` and `skills/<name>/SKILL.md` files to register the
+/// skill. That approach is fundamentally broken — Cowork owns those files and
+/// periodically rewrites them from its own internal state, clobbering Fort Abode's
+/// writes. On Kam's Mac it APPEARED to work because he had registered the skill
+/// via Cowork's own tools at some earlier point, so Cowork preserved it in its
+/// internal state. On Tiera's Mac, Cowork had never been told about the skill,
+/// and Fort Abode's writes had no lasting effect.
+///
+/// The correct path is to install the skill as a proper Claude Code plugin via
+/// the `claude plugin install` CLI. Fort Abode ships a bundled plugin marketplace
+/// inside its app bundle (`Resources/weekly-rhythm-plugin-bundle/`), copies it to
+/// a stable user-writable location, registers it with `claude plugin marketplace add`,
+/// and then installs the plugin with `claude plugin install`. Cowork picks up
+/// the plugin through its own plugin-discovery mechanism — no fighting, no clobbering.
 actor CoworkSkillService {
 
     private let fm = FileManager.default
 
     /// Most recent outcome — read by the UI and the debug report.
-    private(set) var lastRegistrationStatus: SkillRegistrationStatus = .notYetAttempted
+    private(set) var lastInstallResult: PluginInstallResult = .notYetAttempted
 
-    private var homePath: String {
-        fm.homeDirectoryForCurrentUser.path
+    // MARK: - Constants
+
+    private static let marketplaceName = "fort-abode-marketplace"
+    private static let pluginName = "weekly-rhythm-engine"
+    private static let pluginIdentifier = "weekly-rhythm-engine@fort-abode-marketplace"
+
+    /// Stable user-writable directory where Fort Abode copies the bundled marketplace.
+    /// We can't point `claude plugin marketplace add` at the path inside the app bundle
+    /// directly because that path changes on every Sparkle update (the .app lives in
+    /// a versioned location during the install flow). A stable path under
+    /// Application Support survives updates and gives the Claude CLI a fixed target.
+    private var stableMarketplacePath: URL {
+        let home = fm.homeDirectoryForCurrentUser
+        return home
+            .appendingPathComponent("Library/Application Support/FortAbodeUtilityCentral")
+            .appendingPathComponent("plugins")
+            .appendingPathComponent("fort-abode-marketplace")
     }
 
-    /// Base path for Cowork skills-plugin data
-    private var skillsPluginBase: String {
-        "\(homePath)/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin"
-    }
+    // MARK: - Public API
 
-    // MARK: - Weekly Rhythm Convenience
-
-    private static let weeklyRhythmName = "weekly-rhythm-engine"
-    private static let weeklyRhythmDescription = """
-        The strategic engine for Kam's week \u{2014} work and personal life in one unified rhythm. \
-        Runs on Fridays to plan the full coming week, and on-demand anytime something changes. \
-        Synthesizes all Google Calendars, Apple Reminders, and Gmail into a clean weekly brief \
-        shaped by day types, goals, errands, and milestone awareness.
-
-        Trigger this skill for: "run my weekly rhythm", "set up my week", \
-        "what's my plan for the week", "run the rhythm engine", "plan my week", \
-        "what do I have going on this week", "update my week", or any variation of \
-        wanting a structured weekly planning view. Also trigger for first-time setup \
-        when no user config exists.
-        """
-
-    /// Full Cowork registration: deploy thin SKILL.md + register in manifest.
-    /// Logs a breadcrumb at every step so the debug report reveals exactly which
-    /// phase succeeded or failed on a given machine.
-    func registerWeeklyRhythmSkill() async {
+    /// Install the bundled `weekly-rhythm-engine` plugin via `claude plugin install`.
+    /// Called both from the launch-time self-heal (once-per-machine via UserDefaults
+    /// guard) and from the manual "Install Plugin in Claude Code" button.
+    ///
+    /// Steps:
+    ///   1. Find the `claude` CLI binary on the user's PATH
+    ///   2. Copy the bundled marketplace from Fort Abode's app bundle to the stable
+    ///      user-writable path (always refresh so wrapper updates are picked up)
+    ///   3. `claude plugin marketplace add <path>` (idempotent — "already on disk" is success)
+    ///   4. `claude plugin install weekly-rhythm-engine@fort-abode-marketplace`
+    ///   5. Capture stdout/stderr, log breadcrumbs at every step, return structured result
+    @discardableResult
+    func installWeeklyRhythmPlugin() async -> PluginInstallResult {
         await ErrorLogger.shared.log(
-            area: "registerWeeklyRhythmSkill",
-            message: "STEP 1: starting"
+            area: "installWeeklyRhythmPlugin",
+            message: "STEP 1: starting plugin install via claude CLI"
         )
 
-        // STEP 2: discover the skills root (with diagnostics logged inline)
-        await ErrorLogger.shared.log(
-            area: "registerWeeklyRhythmSkill",
-            message: "STEP 2: discovering Cowork skills root"
-        )
-        guard let skillsRoot = await discoverSkillsRootWithDiagnostics() else {
-            // discoverSkillsRootWithDiagnostics already logged the specific failure reason
-            lastRegistrationStatus = .failed(
-                at: Date(),
-                step: "discoverSkillsRoot",
-                error: "Cowork skills-plugin directory could not be resolved"
+        // STEP 1: locate the claude CLI
+        guard let claudePath = await findClaudeCLI() else {
+            await ErrorLogger.shared.log(
+                area: "installWeeklyRhythmPlugin",
+                message: "FAILED at STEP 1: claude CLI not found on PATH or in common install locations"
             )
-            return
+            lastInstallResult = .claudeCLINotFound
+            return .claudeCLINotFound
         }
         await ErrorLogger.shared.log(
-            area: "registerWeeklyRhythmSkill",
-            message: "STEP 3: skillsRoot resolved",
-            context: ["skillsRoot": skillsRoot]
+            area: "installWeeklyRhythmPlugin",
+            message: "STEP 2: found claude CLI",
+            context: ["claudePath": claudePath]
         )
 
-        // STEP 4: deploy the thin SKILL.md wrapper
+        // STEP 3: copy bundled marketplace to the stable path
+        let marketplacePath: URL
         do {
+            marketplacePath = try copyBundledMarketplace()
             await ErrorLogger.shared.log(
-                area: "registerWeeklyRhythmSkill",
-                message: "STEP 4: calling deploySkillFile"
-            )
-            try deploySkillFile(
-                skillName: Self.weeklyRhythmName,
-                bundledResource: "weekly-rhythm-skill-wrapper",
-                bundledExtension: "md",
-                preResolvedSkillsRoot: skillsRoot
-            )
-            await ErrorLogger.shared.log(
-                area: "registerWeeklyRhythmSkill",
-                message: "STEP 5: deploySkillFile succeeded"
+                area: "installWeeklyRhythmPlugin",
+                message: "STEP 3: bundled marketplace copied to stable path",
+                context: ["path": marketplacePath.path]
             )
         } catch {
+            let message = "Failed to copy bundled marketplace: \(error.localizedDescription)"
             await ErrorLogger.shared.log(
-                area: "registerWeeklyRhythmSkill",
-                message: "FAILED at STEP 4 (deploySkillFile): \(error.localizedDescription)",
-                context: ["error": String(describing: error), "skillsRoot": skillsRoot]
+                area: "installWeeklyRhythmPlugin",
+                message: "FAILED at STEP 3: \(message)"
             )
-            lastRegistrationStatus = .failed(
+            let result = PluginInstallResult.failed(
                 at: Date(),
-                step: "deploySkillFile",
-                error: error.localizedDescription
+                step: "copyBundledMarketplace",
+                error: message,
+                output: ""
             )
-            return
+            lastInstallResult = result
+            return result
         }
 
-        // STEP 6: upsert the manifest.json entry
-        do {
+        // STEP 4: register the marketplace
+        await ErrorLogger.shared.log(
+            area: "installWeeklyRhythmPlugin",
+            message: "STEP 4: running claude plugin marketplace add"
+        )
+        let marketplaceResult = runClaudeCLI(
+            at: claudePath,
+            args: ["plugin", "marketplace", "add", marketplacePath.path]
+        )
+        if marketplaceResult.exitCode != 0 {
+            // `marketplace add` when the marketplace is already declared in user settings
+            // prints "already on disk" and exits 0, so a non-zero exit is a real failure.
+            let combined = "STDOUT:\n\(marketplaceResult.stdout)\n\nSTDERR:\n\(marketplaceResult.stderr)"
             await ErrorLogger.shared.log(
-                area: "registerWeeklyRhythmSkill",
-                message: "STEP 6: calling registerSkill"
+                area: "installWeeklyRhythmPlugin",
+                message: "FAILED at STEP 4: claude plugin marketplace add exited \(marketplaceResult.exitCode)",
+                context: ["stdout": marketplaceResult.stdout, "stderr": marketplaceResult.stderr]
             )
-            try registerSkill(
-                name: Self.weeklyRhythmName,
-                description: Self.weeklyRhythmDescription,
-                preResolvedSkillsRoot: skillsRoot
-            )
-            await ErrorLogger.shared.log(
-                area: "registerWeeklyRhythmSkill",
-                message: "STEP 7: registerSkill succeeded — DONE",
-                context: ["skillsRoot": skillsRoot]
-            )
-        } catch {
-            await ErrorLogger.shared.log(
-                area: "registerWeeklyRhythmSkill",
-                message: "FAILED at STEP 6 (registerSkill): \(error.localizedDescription)",
-                context: ["error": String(describing: error), "skillsRoot": skillsRoot]
-            )
-            lastRegistrationStatus = .failed(
+            let result = PluginInstallResult.failed(
                 at: Date(),
-                step: "registerSkill",
-                error: error.localizedDescription
+                step: "marketplace add",
+                error: marketplaceResult.stderr.isEmpty ? "exited with code \(marketplaceResult.exitCode)" : marketplaceResult.stderr,
+                output: combined
             )
-            return
+            lastInstallResult = result
+            return result
         }
+        await ErrorLogger.shared.log(
+            area: "installWeeklyRhythmPlugin",
+            message: "STEP 5: marketplace add succeeded",
+            context: ["stdout": marketplaceResult.stdout]
+        )
 
-        lastRegistrationStatus = .succeeded(at: Date(), skillsRoot: skillsRoot)
-    }
+        // STEP 6: install the plugin
+        await ErrorLogger.shared.log(
+            area: "installWeeklyRhythmPlugin",
+            message: "STEP 6: running claude plugin install"
+        )
+        let installResult = runClaudeCLI(
+            at: claudePath,
+            args: ["plugin", "install", Self.pluginIdentifier]
+        )
+        let combinedOutput = """
+            marketplace add stdout:
+            \(marketplaceResult.stdout)
+            marketplace add stderr:
+            \(marketplaceResult.stderr)
 
-    /// Wraps `discoverSkillsRoot()` and logs the precise failure mode when it returns nil.
-    /// Every silent-failure branch in `discoverSkillsRoot` has a matching log here so we
-    /// can tell from a bug report whether Cowork isn't installed, the session structure
-    /// is unexpected, or there's no manifest.json anywhere.
-    private func discoverSkillsRootWithDiagnostics() async -> String? {
-        // (1) Base path missing — Cowork was never launched / Claude Code not installed
-        guard fm.fileExists(atPath: skillsPluginBase) else {
+            plugin install stdout:
+            \(installResult.stdout)
+            plugin install stderr:
+            \(installResult.stderr)
+            """
+
+        if installResult.exitCode != 0 {
             await ErrorLogger.shared.log(
-                area: "discoverSkillsRoot",
-                message: "Cowork skills-plugin directory not found at \(skillsPluginBase). Claude Code has likely never been launched on this machine. Open Claude Code at least once, then reopen Fort Abode.",
-                componentDisplayName: "Weekly Rhythm Engine"
+                area: "installWeeklyRhythmPlugin",
+                message: "FAILED at STEP 6: claude plugin install exited \(installResult.exitCode)",
+                context: ["stdout": installResult.stdout, "stderr": installResult.stderr]
             )
-            return nil
-        }
-
-        // (2) Base exists but contains no session subdirectories
-        guard let sessionDirs = try? fm.contentsOfDirectory(atPath: skillsPluginBase)
-            .filter({ !$0.hasPrefix(".") }), !sessionDirs.isEmpty else {
-            await ErrorLogger.shared.log(
-                area: "discoverSkillsRoot",
-                message: "Cowork skills-plugin at \(skillsPluginBase) exists but contains no session directories. Launch Claude Code and start at least one agent-mode session, then reopen Fort Abode.",
-                componentDisplayName: "Weekly Rhythm Engine"
+            let result = PluginInstallResult.failed(
+                at: Date(),
+                step: "plugin install",
+                error: installResult.stderr.isEmpty ? "exited with code \(installResult.exitCode)" : installResult.stderr,
+                output: combinedOutput
             )
-            return nil
-        }
-
-        // (3) Pick the most recent session dir (matches discoverSkillsRoot logic)
-        let sessionPath: String
-        if sessionDirs.count == 1 {
-            sessionPath = "\(skillsPluginBase)/\(sessionDirs[0])"
-        } else {
-            guard let picked = sessionDirs
-                .map({ "\(skillsPluginBase)/\($0)" })
-                .max(by: { path1, path2 in
-                    let d1 = (try? fm.attributesOfItem(atPath: path1)[.modificationDate] as? Date) ?? .distantPast
-                    let d2 = (try? fm.attributesOfItem(atPath: path2)[.modificationDate] as? Date) ?? .distantPast
-                    return d1 < d2
-                }) else {
-                await ErrorLogger.shared.log(
-                    area: "discoverSkillsRoot",
-                    message: "Could not pick a session dir from \(sessionDirs.count) candidates under \(skillsPluginBase).",
-                    componentDisplayName: "Weekly Rhythm Engine"
-                )
-                return nil
-            }
-            sessionPath = picked
-        }
-
-        // (4) Session dir exists but has no user subdirs
-        guard let userDirs = try? fm.contentsOfDirectory(atPath: sessionPath)
-            .filter({ !$0.hasPrefix(".") }), !userDirs.isEmpty else {
-            await ErrorLogger.shared.log(
-                area: "discoverSkillsRoot",
-                message: "Cowork session dir \(sessionPath) has no user subdirectories. This usually means Claude Code hasn't completed initial agent-mode setup.",
-                componentDisplayName: "Weekly Rhythm Engine"
-            )
-            return nil
-        }
-
-        // (5) Resolve to final user dir — single case is trusted, multi needs manifest.json
-        if userDirs.count == 1 {
-            return "\(sessionPath)/\(userDirs[0])"
-        }
-
-        if let withManifest = userDirs
-            .map({ "\(sessionPath)/\($0)" })
-            .first(where: { fm.fileExists(atPath: "\($0)/manifest.json") }) {
-            return withManifest
+            lastInstallResult = result
+            return result
         }
 
         await ErrorLogger.shared.log(
-            area: "discoverSkillsRoot",
-            message: "Cowork session \(sessionPath) has \(userDirs.count) user dirs but none contain manifest.json. Launch Claude Code and open an agent-mode session to initialize the manifest.",
-            componentDisplayName: "Weekly Rhythm Engine"
+            area: "installWeeklyRhythmPlugin",
+            message: "STEP 7: plugin install succeeded — DONE",
+            context: ["stdout": installResult.stdout]
         )
-        return nil
+        let result = PluginInstallResult.succeeded(at: Date(), output: combinedOutput)
+        lastInstallResult = result
+        return result
     }
 
-    // MARK: - Skill File Deployment
+    /// Uninstall the `weekly-rhythm-engine` plugin via `claude plugin uninstall`.
+    /// Called from `ComponentListViewModel.uninstallComponent` for the weekly-rhythm
+    /// component. Best-effort — if the CLI call fails, the uninstall still proceeds
+    /// locally (engine-spec.md removal, config cleanup) so the user isn't stuck.
+    @discardableResult
+    func uninstallWeeklyRhythmPlugin() async -> Bool {
+        await ErrorLogger.shared.log(
+            area: "uninstallWeeklyRhythmPlugin",
+            message: "starting plugin uninstall via claude CLI"
+        )
+        guard let claudePath = await findClaudeCLI() else {
+            await ErrorLogger.shared.log(
+                area: "uninstallWeeklyRhythmPlugin",
+                message: "claude CLI not found — skipping CLI uninstall (rest of uninstall will proceed)"
+            )
+            return false
+        }
 
-    /// Deploy a bundled SKILL.md wrapper to the Cowork skills directory.
-    /// Overwrites existing SKILL.md but preserves all other files (evals/, user configs).
-    ///
-    /// **v3.7.4:** accepts an optional `preResolvedSkillsRoot` so `registerWeeklyRhythmSkill`
-    /// can pass the root it already resolved (via the diagnostic wrapper). When nil, falls
-    /// back to the sync `discoverSkillsRoot()` and THROWS on failure instead of silently
-    /// returning — this is the single most important change in this release.
-    func deploySkillFile(
-        skillName: String,
-        bundledResource: String,
-        bundledExtension: String,
-        preResolvedSkillsRoot: String? = nil
-    ) throws {
-        let skillsRoot: String
-        if let preResolved = preResolvedSkillsRoot {
-            skillsRoot = preResolved
-        } else if let discovered = discoverSkillsRoot() {
-            skillsRoot = discovered
+        let result = runClaudeCLI(
+            at: claudePath,
+            args: ["plugin", "uninstall", Self.pluginIdentifier]
+        )
+        if result.exitCode == 0 {
+            await ErrorLogger.shared.log(
+                area: "uninstallWeeklyRhythmPlugin",
+                message: "plugin uninstall succeeded",
+                context: ["stdout": result.stdout]
+            )
+            return true
         } else {
-            // v3.7.4: previously returned silently. Now throws so the caller sees the
-            // failure and it lands in the debug report.
-            throw CoworkSkillError.skillsRootNotFound
-        }
-
-        guard let url = Bundle.main.url(forResource: bundledResource, withExtension: bundledExtension) else {
-            throw CoworkSkillError.resourceNotFound(resource: "\(bundledResource).\(bundledExtension)")
-        }
-
-        let content = try String(contentsOf: url, encoding: .utf8)
-        let skillDir = "\(skillsRoot)/skills/\(skillName)"
-
-        // Create skill directory if needed
-        if !fm.fileExists(atPath: skillDir) {
-            try fm.createDirectory(atPath: skillDir, withIntermediateDirectories: true)
-        }
-
-        // Write SKILL.md (overwrite stale versions)
-        let skillFile = "\(skillDir)/SKILL.md"
-        if fm.fileExists(atPath: skillFile) {
-            try fm.removeItem(atPath: skillFile)
-        }
-        try content.write(toFile: skillFile, atomically: true, encoding: .utf8)
-    }
-
-    // MARK: - Manifest Registration
-
-    /// Register or update a skill entry in manifest.json.
-    /// Upserts by name — preserves existing skillId if found.
-    ///
-    /// **v3.7.4:** accepts `preResolvedSkillsRoot` to match `deploySkillFile`, and THROWS
-    /// on a nil skills root instead of silently returning.
-    func registerSkill(
-        name: String,
-        description: String,
-        preResolvedSkillsRoot: String? = nil
-    ) throws {
-        let skillsRoot: String
-        if let preResolved = preResolvedSkillsRoot {
-            skillsRoot = preResolved
-        } else if let discovered = discoverSkillsRoot() {
-            skillsRoot = discovered
-        } else {
-            // v3.7.4: previously returned silently. Now throws.
-            throw CoworkSkillError.skillsRootNotFound
-        }
-
-        let manifestPath = "\(skillsRoot)/manifest.json"
-        var manifest = readManifest(at: manifestPath) ?? ["skills": [[String: Any]](), "lastUpdated": 0]
-        var skills = manifest["skills"] as? [[String: Any]] ?? []
-
-        let now = ISO8601DateFormatter().string(from: Date())
-        let nowMillis = Int64(Date().timeIntervalSince1970 * 1000)
-
-        // Find existing entry by name
-        if let index = skills.firstIndex(where: { ($0["name"] as? String) == name }) {
-            // Update existing — preserve skillId and creatorType
-            skills[index]["description"] = description
-            skills[index]["updatedAt"] = now
-            skills[index]["enabled"] = true
-        } else {
-            // Add new entry
-            let skillId = "skill_\(UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(24))"
-            let entry: [String: Any] = [
-                "skillId": skillId,
-                "name": name,
-                "description": description,
-                "creatorType": "user",
-                "updatedAt": now,
-                "enabled": true
-            ]
-            skills.append(entry)
-        }
-
-        manifest["skills"] = skills
-        manifest["lastUpdated"] = nowMillis
-
-        try writeManifest(manifest, at: manifestPath)
-    }
-
-    // MARK: - Status
-
-    /// Whether a skill is registered in Cowork's manifest.
-    func isSkillRegistered(name: String) -> Bool {
-        guard let skillsRoot = discoverSkillsRoot() else { return false }
-        let manifestPath = "\(skillsRoot)/manifest.json"
-        guard let manifest = readManifest(at: manifestPath),
-              let skills = manifest["skills"] as? [[String: Any]] else { return false }
-        return skills.contains { ($0["name"] as? String) == name }
-    }
-
-    /// Whether the deployed SKILL.md is the thin wrapper (not the stale full spec).
-    func isSkillWrapperCurrent(name: String) -> Bool {
-        guard let skillsRoot = discoverSkillsRoot() else { return false }
-        let skillFile = "\(skillsRoot)/skills/\(name)/SKILL.md"
-
-        guard let attrs = try? fm.attributesOfItem(atPath: skillFile),
-              let size = attrs[.size] as? Int else { return false }
-
-        // Thin wrapper is ~2KB, stale full spec is ~33KB
-        return size < 5000
-    }
-
-    // MARK: - Unregistration
-
-    /// Remove a skill from manifest.json and delete its skill directory.
-    func unregisterSkill(name: String) throws {
-        guard let skillsRoot = discoverSkillsRoot() else { return }
-
-        // Remove from manifest
-        let manifestPath = "\(skillsRoot)/manifest.json"
-        if var manifest = readManifest(at: manifestPath),
-           var skills = manifest["skills"] as? [[String: Any]] {
-            skills.removeAll { ($0["name"] as? String) == name }
-            manifest["skills"] = skills
-            manifest["lastUpdated"] = Int64(Date().timeIntervalSince1970 * 1000)
-            try writeManifest(manifest, at: manifestPath)
-        }
-
-        // Remove skill directory
-        let skillDir = "\(skillsRoot)/skills/\(name)"
-        if fm.fileExists(atPath: skillDir) {
-            try fm.removeItem(atPath: skillDir)
+            await ErrorLogger.shared.log(
+                area: "uninstallWeeklyRhythmPlugin",
+                message: "plugin uninstall exited \(result.exitCode) — likely already uninstalled, continuing",
+                context: ["stdout": result.stdout, "stderr": result.stderr]
+            )
+            return false
         }
     }
 
-    // MARK: - Private: Discovery
+    // MARK: - Private: CLI Discovery
 
-    /// Discover the Cowork skills root by scanning the two-level UUID directory structure.
-    /// Returns nil if Cowork isn't installed or the structure is unexpected.
-    private func discoverSkillsRoot() -> String? {
-        guard fm.fileExists(atPath: skillsPluginBase) else { return nil }
-
-        guard let sessionDirs = try? fm.contentsOfDirectory(atPath: skillsPluginBase)
-            .filter({ !$0.hasPrefix(".") }) else { return nil }
-
-        // Use the most recently modified session directory
-        let sessionPath: String?
-        if sessionDirs.count == 1 {
-            sessionPath = "\(skillsPluginBase)/\(sessionDirs[0])"
-        } else if sessionDirs.count > 1 {
-            sessionPath = sessionDirs
-                .map { "\(skillsPluginBase)/\($0)" }
-                .max(by: { path1, path2 in
-                    let d1 = (try? fm.attributesOfItem(atPath: path1)[.modificationDate] as? Date) ?? .distantPast
-                    let d2 = (try? fm.attributesOfItem(atPath: path2)[.modificationDate] as? Date) ?? .distantPast
-                    return d1 < d2
-                })
-        } else {
-            return nil
+    /// Find the `claude` CLI binary. Uses a login shell's `which claude` first (picks
+    /// up user-local installs like `~/.local/bin/claude`), then falls back to common
+    /// static paths. Same pattern as `UpdateExecutionService.findNodePath()`.
+    private func findClaudeCLI() async -> String? {
+        // Method 1: Login-shell `which claude` — handles $PATH additions from dotfiles
+        if let path = runWhichClaude() {
+            return path
         }
 
-        guard let session = sessionPath else { return nil }
-
-        guard let userDirs = try? fm.contentsOfDirectory(atPath: session)
-            .filter({ !$0.hasPrefix(".") }) else { return nil }
-
-        if userDirs.count == 1 {
-            return "\(session)/\(userDirs[0])"
-        } else if userDirs.count > 1 {
-            // Use the one with a manifest.json
-            return userDirs
-                .map { "\(session)/\($0)" }
-                .first { fm.fileExists(atPath: "\($0)/manifest.json") }
-        }
-
-        return nil
-    }
-
-    // MARK: - Private: Manifest I/O
-
-    private func readManifest(at path: String) -> [String: Any]? {
-        guard let data = fm.contents(atPath: path),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            return nil
-        }
-        return json
-    }
-
-    /// Write the manifest, stamping a `fortAbodeLastWrite` marker so the debug report can
-    /// confirm Fort Abode actually touched this manifest (independent of filesystem mtime,
-    /// which is too noisy to trust).
-    private func writeManifest(_ manifest: [String: Any], at path: String) throws {
-        var mutableManifest = manifest
-        let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
-        mutableManifest["fortAbodeLastWrite"] = [
-            "timestamp": ISO8601DateFormatter().string(from: Date()),
-            "appVersion": appVersion,
-            "build": build
+        // Method 2: Common static locations
+        let home = fm.homeDirectoryForCurrentUser.path
+        let candidates = [
+            "\(home)/.local/bin/claude",
+            "/opt/homebrew/bin/claude",
+            "/usr/local/bin/claude",
+            "/usr/bin/claude"
         ]
+        for path in candidates {
+            if fm.fileExists(atPath: path) {
+                return path
+            }
+        }
 
-        let data = try JSONSerialization.data(
-            withJSONObject: mutableManifest,
-            options: [.prettyPrinted, .sortedKeys]
-        )
-        try data.write(to: URL(fileURLWithPath: path), options: .atomic)
+        return nil
+    }
+
+    private func runWhichClaude() -> String? {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/zsh")
+        process.arguments = ["-l", "-c", "which claude"]
+
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = Pipe()
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+            guard process.terminationStatus == 0 else { return nil }
+
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let path = String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            guard let path, !path.isEmpty, fm.fileExists(atPath: path) else { return nil }
+            return path
+        } catch {
+            return nil
+        }
+    }
+
+    // MARK: - Private: Bundled Marketplace
+
+    /// Copy the bundled marketplace from Fort Abode's app bundle to a stable
+    /// user-writable location. Always refreshes — if the stable path already
+    /// exists, we remove and recopy so app updates that change the plugin
+    /// content (e.g. a new wrapper version) are picked up.
+    ///
+    /// The bundled marketplace is declared in `project.yml` as a folder reference
+    /// at `Resources/weekly-rhythm-plugin-bundle/`. After build, it lives inside
+    /// the .app at `Contents/Resources/weekly-rhythm-plugin-bundle/`.
+    private func copyBundledMarketplace() throws -> URL {
+        // Bundle.main.url(forResource:withExtension:) works for individual files
+        // but NOT for folder references. We look up the folder by constructing the
+        // path manually from the bundle resource root.
+        guard let resourcePath = Bundle.main.resourceURL else {
+            throw CoworkSkillError.bundleResourceNotFound
+        }
+        let bundledDir = resourcePath.appendingPathComponent("weekly-rhythm-plugin-bundle")
+        guard fm.fileExists(atPath: bundledDir.path) else {
+            throw CoworkSkillError.bundleResourceNotFound
+        }
+
+        let destination = stableMarketplacePath
+
+        // Ensure the parent directory exists
+        let parent = destination.deletingLastPathComponent()
+        if !fm.fileExists(atPath: parent.path) {
+            try fm.createDirectory(at: parent, withIntermediateDirectories: true)
+        }
+
+        // Remove the existing copy (if any) so we're always picking up the latest
+        // wrapper content from the app bundle.
+        if fm.fileExists(atPath: destination.path) {
+            try fm.removeItem(at: destination)
+        }
+
+        try fm.copyItem(at: bundledDir, to: destination)
+        return destination
+    }
+
+    // MARK: - Private: CLI Invocation
+
+    /// Run the `claude` CLI with the given arguments and capture stdout/stderr.
+    /// Runs via a login shell so PATH entries from the user's dotfiles are available
+    /// (node, git, etc. might be needed by plugin install internals).
+    private func runClaudeCLI(
+        at claudePath: String,
+        args: [String]
+    ) -> (stdout: String, stderr: String, exitCode: Int32) {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: claudePath)
+        process.arguments = args
+
+        // Inherit the user's login-shell environment by running through zsh -l -c
+        // which picks up PATH additions from .zshrc / .zprofile. This matters for
+        // `claude plugin install` because it may invoke git or other tools.
+        var env = ProcessInfo.processInfo.environment
+        // Ensure HOME is set — Process can sometimes drop it
+        if env["HOME"] == nil {
+            env["HOME"] = fm.homeDirectoryForCurrentUser.path
+        }
+        process.environment = env
+
+        let stdoutPipe = Pipe()
+        let stderrPipe = Pipe()
+        process.standardOutput = stdoutPipe
+        process.standardError = stderrPipe
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+        } catch {
+            return (
+                stdout: "",
+                stderr: "Failed to run \(claudePath): \(error.localizedDescription)",
+                exitCode: -1
+            )
+        }
+
+        let stdout = String(
+            data: stdoutPipe.fileHandleForReading.readDataToEndOfFile(),
+            encoding: .utf8
+        ) ?? ""
+        let stderr = String(
+            data: stderrPipe.fileHandleForReading.readDataToEndOfFile(),
+            encoding: .utf8
+        ) ?? ""
+
+        return (stdout: stdout, stderr: stderr, exitCode: process.terminationStatus)
     }
 }
 
 // MARK: - Errors
 
 enum CoworkSkillError: LocalizedError {
-    case resourceNotFound(resource: String)
-    case manifestCorrupted
-    case skillsRootNotFound
+    case bundleResourceNotFound
 
     var errorDescription: String? {
         switch self {
-        case .resourceNotFound(let resource):
-            return "Cowork skill resource '\(resource)' not found in app bundle"
-        case .manifestCorrupted:
-            return "Cowork skills manifest.json is corrupted"
-        case .skillsRootNotFound:
-            return "Cowork skills-plugin directory not found — Claude Code has likely never been launched on this machine, or the initial agent-mode session has not been started. Open Claude Code, start an agent-mode session, then reopen Fort Abode."
+        case .bundleResourceNotFound:
+            return "Bundled weekly-rhythm-plugin-bundle directory not found inside the Fort Abode app bundle. The build may be corrupted — reinstall Fort Abode."
         }
     }
 }

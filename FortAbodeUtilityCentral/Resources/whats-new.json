@@ -1,5 +1,15 @@
 [
   {
+    "version": "3.7.6",
+    "notes": [
+      "Weekly Rhythm Engine now installs as a proper Claude Code plugin \u2014 it shows up natively in Claude's skills list and sticks around between restarts",
+      "Tap 'Install Plugin in Claude Code' on the Weekly Rhythm screen to install or reinstall. The raw CLI output is shown inline so you can see exactly what happened",
+      "Feedback reports moved to the shared 'Kennedy Family Docs/Claude/Fort Abode Feedback' folder so reports from both Kamren's and Tiera's Macs show up on both machines via iCloud",
+      "Existing feedback files from the old per-machine folder get migrated automatically on first launch",
+      "Under the hood: stopped writing directly to Claude Code's internal skill files \u2014 everything now goes through the official plugin CLI so updates won't get clobbered"
+    ]
+  },
+  {
     "version": "3.7.5",
     "notes": [
       "Feedback reports now save directly to your shared Fort Abode Logs folder in iCloud \u2014 no setup, no tokens, no character limits",

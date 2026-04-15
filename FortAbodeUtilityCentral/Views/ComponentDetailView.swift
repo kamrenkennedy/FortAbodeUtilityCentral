@@ -11,8 +11,9 @@ struct ComponentDetailView: View {
     @State private var isLoadingChangelog = false
     @State private var showWizard = false
     @State private var instances: [String] = []
-    @State private var manualRegistrationStatus: SkillRegistrationStatus = .notYetAttempted
-    @State private var isManuallyRegistering = false
+    @State private var manualInstallResult: PluginInstallResult = .notYetAttempted
+    @State private var isManuallyInstalling = false
+    @State private var showInstallOutput = false
 
     private var component: Component? {
         viewModel.registry.component(withId: componentId)
@@ -198,34 +199,33 @@ struct ComponentDetailView: View {
 
             Spacer()
 
-            // Manual "Register in Claude" button — kill-switch for Weekly Rhythm
-            // when automatic launch-time registration doesn't land on a machine.
-            // Shares the same code path as the launch-time self-heal but surfaces the
-            // result inline so the user can see success/failure without waiting for
-            // another Fort Abode release. The skill gets written to Claude's shared
-            // skills-plugin manifest, which Cowork AND Claude Code both consume —
-            // one write covers both apps, so the user-facing label just says "Claude".
+            // v3.7.6 "Install Plugin in Claude Code" button — replaces the broken
+            // "Register in Claude" path. Instead of writing to Cowork's manifest.json
+            // (which Cowork clobbers), this shells out to `claude plugin install` via
+            // the Claude Code CLI with a bundled plugin marketplace shipped inside
+            // Fort Abode's app bundle. Cowork then picks up the plugin through its
+            // own plugin-discovery mechanism on next restart.
             if component.id == "weekly-rhythm", status.installedVersion != nil {
                 Button {
                     Task {
-                        isManuallyRegistering = true
-                        manualRegistrationStatus = await viewModel.registerWeeklyRhythmSkillManually()
-                        isManuallyRegistering = false
+                        isManuallyInstalling = true
+                        manualInstallResult = await viewModel.installWeeklyRhythmPluginManually()
+                        isManuallyInstalling = false
                     }
                 } label: {
-                    if isManuallyRegistering {
+                    if isManuallyInstalling {
                         HStack(spacing: 6) {
                             ProgressView().controlSize(.small)
-                            Text("Registering…")
+                            Text("Installing…")
                         }
                     } else {
-                        Label("Register in Claude", systemImage: "arrow.triangle.2.circlepath")
+                        Label("Install Plugin in Claude Code", systemImage: "arrow.triangle.2.circlepath")
                     }
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.regular)
-                .disabled(isManuallyRegistering)
-                .help("Re-register the Weekly Rhythm skill with Claude. Use this if the skill ever stops appearing in your Claude skills list.")
+                .disabled(isManuallyInstalling)
+                .help("Install the Weekly Rhythm Engine as a Claude Code plugin. You'll need to quit and relaunch Claude Code after this completes.")
             }
 
             // Uninstall button — only for marketplace components that are installed
@@ -240,17 +240,41 @@ struct ComponentDetailView: View {
             }
         }
 
-        // Inline result of the manual register button (success or specific failure)
-        if component.id == "weekly-rhythm", case .notYetAttempted = manualRegistrationStatus {
+        // Inline result of the manual plugin install button.
+        // Shows a status line and a disclosure triangle with the raw CLI stdout/stderr
+        // so Kam (or anyone debugging) can see exactly what `claude plugin install`
+        // printed. The disclosure keeps the UI compact by default.
+        if component.id == "weekly-rhythm", case .notYetAttempted = manualInstallResult {
             EmptyView()
         } else if component.id == "weekly-rhythm" {
-            HStack(alignment: .top, spacing: 6) {
-                Image(systemName: manualRegistrationStatus.isSuccess ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                    .foregroundStyle(manualRegistrationStatus.isSuccess ? .green : .orange)
-                Text(manualRegistrationStatus.displayMessage)
-                    .font(.caption)
-                    .foregroundStyle(manualRegistrationStatus.isSuccess ? .green : .orange)
-                    .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .top, spacing: 6) {
+                    Image(systemName: manualInstallResult.isSuccess ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .foregroundStyle(manualInstallResult.isSuccess ? .green : .orange)
+                    Text(manualInstallResult.displayMessage)
+                        .font(.caption)
+                        .foregroundStyle(manualInstallResult.isSuccess ? .green : .orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                if let rawOutput = manualInstallResult.rawOutput {
+                    DisclosureGroup(isExpanded: $showInstallOutput) {
+                        ScrollView {
+                            Text(rawOutput)
+                                .font(.system(.caption2, design: .monospaced))
+                                .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(8)
+                        }
+                        .frame(maxHeight: 200)
+                        .background(.black.opacity(0.05), in: RoundedRectangle(cornerRadius: 6))
+                    } label: {
+                        Text("Show CLI output")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
             }
             .padding(.top, 4)
         }

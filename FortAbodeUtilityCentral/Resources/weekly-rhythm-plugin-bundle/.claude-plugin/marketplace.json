@@ -1,0 +1,19 @@
+{
+  "name": "fort-abode-marketplace",
+  "owner": {
+    "name": "Kam Studios",
+    "email": "support@kamstudios.com"
+  },
+  "metadata": {
+    "description": "Fort Abode Utility Central's bundled Claude Code plugin marketplace. Distributes the Weekly Rhythm Engine and other Kam Studios skills via the Fort Abode Mac app."
+  },
+  "plugins": [
+    {
+      "name": "weekly-rhythm-engine",
+      "description": "The strategic engine for Kam's week — work and personal life in one unified rhythm. Runs on Fridays to plan the full coming week, and on-demand anytime something changes. Synthesizes Google Calendar, Apple Reminders, and Gmail into a structured weekly brief shaped by day types, goals, errands, and milestone awareness.",
+      "source": "./plugins/weekly-rhythm-engine",
+      "category": "productivity",
+      "homepage": "https://github.com/kamrenkennedy/weekly-rhythm"
+    }
+  ]
+}

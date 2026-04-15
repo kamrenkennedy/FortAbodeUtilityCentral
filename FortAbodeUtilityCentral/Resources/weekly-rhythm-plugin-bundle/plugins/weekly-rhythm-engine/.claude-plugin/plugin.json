@@ -1,0 +1,9 @@
+{
+  "name": "weekly-rhythm-engine",
+  "version": "2.0.0",
+  "description": "The strategic engine for Kam's week — work and personal life in one unified rhythm. Synthesizes Google Calendar, Apple Reminders, and Gmail into a structured weekly brief.",
+  "author": {
+    "name": "Kam Kennedy",
+    "email": "kam@kamstudios.com"
+  }
+}

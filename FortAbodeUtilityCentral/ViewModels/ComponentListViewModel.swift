@@ -305,10 +305,15 @@ final class ComponentListViewModel {
     func uninstallComponent(_ id: String) async {
         guard let component = registry.component(withId: id) else { return }
 
-        // Skills manage their own files instead of claude_desktop_config.json
+        // Skills manage their own files instead of claude_desktop_config.json.
+        // v3.7.6: the old `coworkSkillService.unregisterSkill` path wrote directly
+        // to Cowork's manifest.json (which Cowork owns and rewrites), so we now
+        // use the proper `claude plugin uninstall` CLI path instead.
         if component.id == "weekly-rhythm" {
             try? await weeklyRhythmService.uninstall()
-            try? await coworkSkillService.unregisterSkill(name: "weekly-rhythm-engine")
+            await coworkSkillService.uninstallWeeklyRhythmPlugin()
+            // Clear the install flag so a future reinstall triggers the auto-install path
+            UserDefaults.standard.removeObject(forKey: "weeklyRhythmPluginInstalled_v1")
             clearPersistedInputs(for: id)
             statuses[id] = .notInstalled
             return
@@ -450,23 +455,20 @@ final class ComponentListViewModel {
         }
 
         // Weekly Rhythm launch-time self-heal.
-        // CRITICAL: Only runs when the user has *already installed* Weekly Rhythm on this
-        // machine — gated on `installed != nil`, which is the result of version detection
-        // via VersionDetectionService.parseICloudTemplateVersion. Fresh installs return
-        // nil (so the v3.7.1 auto-opt-in regression stays fixed — new users are NOT
-        // silently opted into components they never chose).
+        // v3.7.6: rewritten around the proper Claude Code plugin system. Previous
+        // versions wrote directly to `manifest.json` and `skills/<name>/SKILL.md`,
+        // but Cowork owns those files authoritatively and periodically rewrites
+        // them from its own internal state — our writes were noise. The correct
+        // path is `claude plugin install weekly-rhythm-engine@fort-abode-marketplace`
+        // via the Claude Code CLI, which installs a bundled plugin that ships
+        // inside Fort Abode's app bundle. Cowork then registers the skill through
+        // its own plugin-discovery mechanism.
         //
-        // v3.7.3: we previously gated on `weeklyRhythmService.isConfigured()`, which
-        // checked for BOTH engine-spec.md AND dashboard-template.html in iCloud. We
-        // switched to `installed != nil` on the theory that engine-spec.md was missing
-        // on Tiera's iMac. It turned out BOTH files existed on her machine and v3.7.3's
-        // one-line fix was a no-op — the actual failure was downstream in CoworkSkillService's
-        // silent returns, which v3.7.4 finally fixes with breadcrumb instrumentation.
-        //
-        // The re-register call is intentionally unconditional (no isSkillWrapperCurrent
-        // short-circuit): registerSkill() is idempotent (upserts by name), and on machines
-        // like Tiera's iMac where Cowork wasn't ready at install time, this is our only
-        // chance to self-heal the manifest entry on a future launch.
+        // We guard on `installed != nil` (iCloud engine-spec.md detection) so
+        // fresh installs aren't auto-enrolled, AND on a UserDefaults flag so the
+        // CLI invocation only runs once per machine per install. Subsequent
+        // launches skip unless the user manually triggers reinstall via the
+        // "Install Plugin in Claude Code" button.
         if component.id == "weekly-rhythm" {
             await ErrorLogger.shared.log(
                 area: "checkComponent.weeklyRhythmSelfHeal",
@@ -474,16 +476,12 @@ final class ComponentListViewModel {
                 context: ["installed": installed ?? "nil"]
             )
             if installed != nil {
-                await ErrorLogger.shared.log(
-                    area: "checkComponent.weeklyRhythmSelfHeal",
-                    message: "installed != nil — running updateManagedFiles + registerWeeklyRhythmSkill"
-                )
+                // Redeploy any managed files that might have been clobbered
+                // between launches. This path still writes only to the iCloud
+                // Weekly Flow folder (Fort Abode's own territory) — not to
+                // Cowork-managed paths.
                 do {
                     try await weeklyRhythmService.updateManagedFiles()
-                    await ErrorLogger.shared.log(
-                        area: "checkComponent.weeklyRhythmSelfHeal",
-                        message: "updateManagedFiles succeeded"
-                    )
                 } catch {
                     await ErrorLogger.shared.log(
                         area: "checkComponent.weeklyRhythmSelfHeal",
@@ -491,7 +489,31 @@ final class ComponentListViewModel {
                         context: ["error": String(describing: error)]
                     )
                 }
-                await coworkSkillService.registerWeeklyRhythmSkill()
+
+                // Install the plugin exactly once per machine. The UserDefaults
+                // flag tracks whether we've successfully run `claude plugin install`
+                // on this machine. If the user manually reinstalls via the UI,
+                // nothing clears this flag but `claude plugin install` is idempotent
+                // anyway so re-running is harmless.
+                let installedKey = "weeklyRhythmPluginInstalled_v1"
+                if UserDefaults.standard.bool(forKey: installedKey) {
+                    await ErrorLogger.shared.log(
+                        area: "checkComponent.weeklyRhythmSelfHeal",
+                        message: "Plugin already marked installed on this machine — skipping CLI install"
+                    )
+                } else {
+                    await ErrorLogger.shared.log(
+                        area: "checkComponent.weeklyRhythmSelfHeal",
+                        message: "Plugin not yet installed on this machine — running claude plugin install"
+                    )
+                    let result = await coworkSkillService.installWeeklyRhythmPlugin()
+                    if case .succeeded = result {
+                        UserDefaults.standard.set(true, forKey: installedKey)
+                        // Surface the success via the restart hint so the user
+                        // knows to quit and relaunch Claude Code.
+                        showRestartHint = true
+                    }
+                }
             } else {
                 await ErrorLogger.shared.log(
                     area: "checkComponent.weeklyRhythmSelfHeal",
@@ -668,38 +690,45 @@ final class ComponentListViewModel {
         await filePinningService.pinAll()
     }
 
-    // MARK: - Manual Register (kill-switch for Weekly Rhythm)
+    // MARK: - Manual Install (user-triggered plugin install)
 
-    /// Manually trigger Weekly Rhythm skill registration in Cowork. Used by the
-    /// "Register in Claude Code" button in ComponentDetailView as a kill-switch when
-    /// the automatic self-heal doesn't land on a machine. Forces a redeploy of the
-    /// managed iCloud files (so any missing engine-spec.md / dashboard-template.html
-    /// gets restored from the app bundle) and then calls the same registration path
-    /// as the launch-time self-heal — but the result is returned to the caller so the
-    /// UI can show success / failure inline without another ship cycle.
-    func registerWeeklyRhythmSkillManually() async -> SkillRegistrationStatus {
+    /// Manually trigger the Weekly Rhythm plugin install. Used by the
+    /// "Install Plugin in Claude Code" button in ComponentDetailView. Forces
+    /// a redeploy of the managed iCloud files (engine-spec.md, dashboard-template.html)
+    /// and then shells out to `claude plugin install weekly-rhythm-engine@fort-abode-marketplace`
+    /// via the Claude Code CLI — the same path as the launch-time self-heal, but
+    /// the result is returned so the UI can show success / failure inline.
+    ///
+    /// Idempotent — safe to re-run. `claude plugin install` treats an already-
+    /// installed plugin as a successful no-op.
+    func installWeeklyRhythmPluginManually() async -> PluginInstallResult {
         await ErrorLogger.shared.log(
-            area: "registerWeeklyRhythmSkillManually",
-            message: "User tapped the manual 'Register in Claude Code' button"
+            area: "installWeeklyRhythmPluginManually",
+            message: "User tapped the manual 'Install Plugin in Claude Code' button"
         )
         do {
             try await weeklyRhythmService.updateManagedFiles()
             await ErrorLogger.shared.log(
-                area: "registerWeeklyRhythmSkillManually",
-                message: "updateManagedFiles succeeded — proceeding to register"
+                area: "installWeeklyRhythmPluginManually",
+                message: "updateManagedFiles succeeded — proceeding to plugin install"
             )
         } catch {
             await ErrorLogger.shared.log(
-                area: "registerWeeklyRhythmSkillManually",
+                area: "installWeeklyRhythmPluginManually",
                 message: "updateManagedFiles FAILED: \(error.localizedDescription)",
                 context: ["error": String(describing: error)]
             )
-            // Continue anyway — registerWeeklyRhythmSkill will fail with a specific error
-            // if the bundled files aren't where it expects, and that's useful diagnostic
+            // Continue anyway — installWeeklyRhythmPlugin will report a specific
+            // error if anything else is missing, and that's useful diagnostic
             // info for the debug report.
         }
-        await coworkSkillService.registerWeeklyRhythmSkill()
-        return await coworkSkillService.lastRegistrationStatus
+        let result = await coworkSkillService.installWeeklyRhythmPlugin()
+        // Update the install flag so the self-heal doesn't re-run on next launch
+        if case .succeeded = result {
+            UserDefaults.standard.set(true, forKey: "weeklyRhythmPluginInstalled_v1")
+            showRestartHint = true
+        }
+        return result
     }
 
     /// Post-install tasks specific to the Memory component:
@@ -743,9 +772,11 @@ final class ComponentListViewModel {
         }
     }
 
-    /// Post-install tasks for the Weekly Rhythm Engine (deploy files to iCloud + register in Cowork).
-    /// Note: iCloud pinning is now handled at app launch + via Memory post-install, so this
-    /// hook no longer calls filePinningService directly.
+    /// Post-install tasks for the Weekly Rhythm Engine (deploy files to iCloud + install plugin via CLI).
+    /// v3.7.6: the old `coworkSkillService.registerWeeklyRhythmSkill` call wrote directly
+    /// to Cowork's manifest.json which got clobbered. The new path shells out to
+    /// `claude plugin install weekly-rhythm-engine@fort-abode-marketplace` via the
+    /// Claude Code CLI, which installs a proper plugin Cowork picks up natively.
     private func performWeeklyRhythmPostInstall(userName: String) async {
         do {
             try await weeklyRhythmService.setupWeeklyFlow(userName: userName)
@@ -759,7 +790,12 @@ final class ComponentListViewModel {
             )
         }
 
-        // Register skill in Cowork (best-effort — non-fatal if Cowork not installed)
-        await coworkSkillService.registerWeeklyRhythmSkill()
+        // Install the plugin via Claude Code CLI (best-effort — non-fatal if CLI not found).
+        // On success, mark the install flag so the launch self-heal doesn't re-run it.
+        let result = await coworkSkillService.installWeeklyRhythmPlugin()
+        if case .succeeded = result {
+            UserDefaults.standard.set(true, forKey: "weeklyRhythmPluginInstalled_v1")
+            showRestartHint = true
+        }
     }
 }

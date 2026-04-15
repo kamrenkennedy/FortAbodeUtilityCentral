@@ -35,6 +35,10 @@ actor FeedbackService {
 
     private let fm = FileManager.default
 
+    /// Session-scoped flag so the legacy feedback folder migration only runs once
+    /// per app launch (instead of on every submit).
+    private var hasMigratedLegacyFolder = false
+
     private var configPath: String {
         let home = fm.homeDirectoryForCurrentUser.path
         return "\(home)/Library/Mobile Documents/com~apple~CloudDocs/Kennedy Family Docs/Claude/feedback-config.json"
@@ -105,6 +109,14 @@ actor FeedbackService {
         appVersion: String,
         buildNumber: String
     ) async throws -> URL {
+        // v3.7.6: on first submit after upgrade, migrate any existing feedback
+        // files from the old per-machine path to the new shared path. Idempotent
+        // — subsequent runs find an empty source folder and do nothing.
+        if !hasMigratedLegacyFolder {
+            await migrateLegacyFeedbackFolder()
+            hasMigratedLegacyFolder = true
+        }
+
         let timestamp = Date()
         let filename = buildFilename(timestamp: timestamp, submitter: submittedBy, subject: subject)
         let markdown = renderMarkdown(
@@ -178,10 +190,32 @@ actor FeedbackService {
 
     // MARK: - Private: Feedback Save Helpers
 
-    /// Returns `Claude Memory/Fort Abode Logs/feedback/` as a URL, or nil if the Claude
-    /// Memory folder doesn't exist on this machine — we never create Claude Memory from
-    /// scratch just to drop feedback in it.
+    /// Returns `Kennedy Family Docs/Claude/Fort Abode Feedback/` — the v3.7.6 shared
+    /// iCloud folder that actually syncs between Kam and Tiera's Macs via iCloud
+    /// Folder Sharing. Returns nil if the Kennedy Family Docs shared folder doesn't
+    /// exist on this machine (third-party Mac without access), which falls through
+    /// to the local fallback. We never create the shared folder from scratch —
+    /// that's an explicit iCloud sharing action the user sets up out-of-band.
+    ///
+    /// v3.7.5 mistakenly used `Claude Memory/Fort Abode Logs/feedback/` which is
+    /// a per-machine folder (each person has their own copy at their own iCloud
+    /// root). Files written there never cross-sync. v3.7.6 moves to the shared
+    /// folder and migrates any existing files from the old path via
+    /// `migrateLegacyFeedbackFolder()`.
     private func iCloudFeedbackDir() -> URL? {
+        let home = fm.homeDirectoryForCurrentUser
+        let sharedRoot = home.appendingPathComponent(
+            "Library/Mobile Documents/com~apple~CloudDocs/Kennedy Family Docs/Claude"
+        )
+        guard fm.fileExists(atPath: sharedRoot.path) else {
+            return nil
+        }
+        return sharedRoot.appendingPathComponent("Fort Abode Feedback")
+    }
+
+    /// Legacy folder from v3.7.5. Used only by `migrateLegacyFeedbackFolder()`
+    /// to pick up any existing files on first run after upgrade.
+    private func legacyICloudFeedbackDir() -> URL? {
         let home = fm.homeDirectoryForCurrentUser
         let claudeMemory = home.appendingPathComponent(
             "Library/Mobile Documents/com~apple~CloudDocs/Claude Memory"
@@ -211,7 +245,9 @@ actor FeedbackService {
         let readme = dir.appendingPathComponent("README.txt")
         if !fm.fileExists(atPath: readme.path) {
             let contents = """
-                This folder contains Fort Abode Utility Central feedback reports.
+                This folder contains Fort Abode Utility Central feedback reports from
+                Kamren and Tiera's Macs. It lives inside Kennedy Family Docs/Claude/
+                so both Macs can see it via iCloud Folder Sharing.
 
                 Each .md file is one submission from the in-app "Send Feedback" screen,
                 containing the user's description and (for bug reports) a full debug
@@ -221,6 +257,53 @@ actor FeedbackService {
                 recreate it on the next submission.
                 """
             try? contents.write(to: readme, atomically: true, encoding: .utf8)
+        }
+    }
+
+    /// v3.7.6 one-time migration: move any existing feedback files from the old
+    /// per-machine path (v3.7.5's `Claude Memory/Fort Abode Logs/feedback/`) into
+    /// the new shared path (`Kennedy Family Docs/Claude/Fort Abode Feedback/`).
+    /// Safe to run repeatedly — once the source is empty, subsequent calls are
+    /// no-ops. Skips `README.txt` (the new folder has its own).
+    private func migrateLegacyFeedbackFolder() async {
+        guard let oldDir = legacyICloudFeedbackDir() else { return }
+        guard let newDir = iCloudFeedbackDir() else { return }
+
+        do {
+            let contents = try fm.contentsOfDirectory(at: oldDir, includingPropertiesForKeys: nil)
+            let mdFiles = contents.filter { $0.pathExtension == "md" }
+            guard !mdFiles.isEmpty else { return }
+
+            try ensureDirectoryWithReadme(newDir)
+
+            var movedCount = 0
+            for sourceURL in mdFiles {
+                let destURL = newDir.appendingPathComponent(sourceURL.lastPathComponent)
+                if fm.fileExists(atPath: destURL.path) {
+                    // Already migrated in a prior run — just remove the source
+                    try? fm.removeItem(at: sourceURL)
+                    continue
+                }
+                try fm.moveItem(at: sourceURL, to: destURL)
+                movedCount += 1
+            }
+
+            if movedCount > 0 {
+                await ErrorLogger.shared.log(
+                    area: "FeedbackService.migrateLegacyFeedbackFolder",
+                    message: "Migrated \(movedCount) feedback file(s) from old per-machine path to new shared path",
+                    context: ["from": oldDir.path, "to": newDir.path]
+                )
+            }
+        } catch {
+            // Best-effort — if migration fails, new writes still land in the
+            // new location and the old files stay where they are. Log so the
+            // failure surfaces in the next debug report.
+            await ErrorLogger.shared.log(
+                area: "FeedbackService.migrateLegacyFeedbackFolder",
+                message: "Migration failed: \(error.localizedDescription)",
+                context: ["from": oldDir.path]
+            )
         }
     }
 

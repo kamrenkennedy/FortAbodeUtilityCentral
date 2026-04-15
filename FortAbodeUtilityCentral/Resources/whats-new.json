@@ -1,5 +1,12 @@
 [
   {
+    "version": "3.7.7",
+    "notes": [
+      "Weekly Rhythm skill now deploys to Claude's user skills folder \u2014 say \"run my weekly rhythm\" in any Claude session to use it",
+      "Fort Abode keeps the skill wrapper up to date automatically on every launch"
+    ]
+  },
+  {
     "version": "3.7.6",
     "notes": [
       "Weekly Rhythm Engine now installs as a proper Claude Code plugin \u2014 it shows up natively in Claude's skills list and sticks around between restarts",

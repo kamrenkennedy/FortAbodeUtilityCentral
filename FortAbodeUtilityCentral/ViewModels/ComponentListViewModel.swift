@@ -449,13 +449,21 @@ final class ComponentListViewModel {
             }
         }
 
-        // Weekly Rhythm: silently update managed files if a newer version is bundled
-        if component.id == "weekly-rhythm" {
+        // Weekly Rhythm launch-time self-heal.
+        // CRITICAL: Only runs when the user has *already installed* Weekly Rhythm on this
+        // machine — gated on isConfigured() which checks for engine-spec.md + dashboard-
+        // template.html in iCloud. Without this guard, every new Fort Abode version would
+        // auto-deploy iCloud files and silently register the skill in Cowork's manifest,
+        // opting users in to components they never chose from the marketplace. (Regression
+        // observed in v3.7.1 — fixed in v3.7.2.)
+        //
+        // The re-register call is intentionally unconditional (no isSkillWrapperCurrent
+        // short-circuit): registerSkill() is idempotent (upserts by name), and on machines
+        // like Tiera's iMac where Cowork wasn't ready at install time, this is our only
+        // chance to self-heal the manifest entry on a future launch.
+        if component.id == "weekly-rhythm", await weeklyRhythmService.isConfigured() {
             try? await weeklyRhythmService.updateManagedFiles()
-            // Self-heal: ensure Cowork has the thin wrapper (replaces stale 33KB full spec)
-            if !(await coworkSkillService.isSkillWrapperCurrent(name: "weekly-rhythm-engine")) {
-                await coworkSkillService.registerWeeklyRhythmSkill()
-            }
+            await coworkSkillService.registerWeeklyRhythmSkill()
         }
 
         // Dual detection: also check if config entries exist (manual installs)

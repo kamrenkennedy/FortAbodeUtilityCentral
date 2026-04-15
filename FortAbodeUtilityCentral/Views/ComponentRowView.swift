@@ -29,7 +29,16 @@ struct ComponentRowView: View {
 
             VStack(alignment: .trailing, spacing: 2) {
                 if let version = status.installedVersion {
-                    Text("v\(version)")
+                    // Keychain-backed components (Travel Itinerary, etc.) return the
+                    // literal "configured" / "installed" as their "version". Prefixing
+                    // "v" would render as "vconfigured" — skip the prefix for those.
+                    let displayText: String = {
+                        if version == "configured" || version == "installed" {
+                            return version.capitalized
+                        }
+                        return "v\(version)"
+                    }()
+                    Text(displayText)
                         .font(.system(.body, design: .monospaced))
                         .foregroundStyle(.primary)
                 }

@@ -96,14 +96,24 @@ enum UpdateStatus: Equatable {
         switch self {
         case .unknown: return "unknown"
         case .checking: return "checking"
-        case .upToDate(let v): return "v\(v) (up to date)"
-        case .updateAvailable(let i, let l): return "v\(i) → v\(l) available"
+        case .upToDate(let v): return "\(Self.formatVersion(v)) (up to date)"
+        case .updateAvailable(let i, let l): return "\(Self.formatVersion(i)) → \(Self.formatVersion(l)) available"
         case .notInstalled: return "not installed"
         case .updating: return "updating"
-        case .updateComplete(let v): return "v\(v) (just updated)"
-        case .checkFailed(let v): return "v\(v) (check failed)"
+        case .updateComplete(let v): return "\(Self.formatVersion(v)) (just updated)"
+        case .checkFailed(let v): return "\(Self.formatVersion(v)) (check failed)"
         case .error(let m): return "error: \(m)"
         }
+    }
+
+    /// Format a version string for display. Keychain-backed components return literals
+    /// like "configured" / "installed" which should NOT be prefixed with "v" — that
+    /// would render as "vconfigured". Only prefix "v" when the value starts with a digit.
+    private static func formatVersion(_ v: String) -> String {
+        if let first = v.first, first.isNumber {
+            return "v\(v)"
+        }
+        return v
     }
 
     var isUpdateAvailable: Bool {

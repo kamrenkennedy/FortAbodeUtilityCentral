@@ -1,5 +1,14 @@
 [
   {
+    "version": "3.7.2",
+    "notes": [
+      "Weekly Rhythm skill now re-registers with Claude Code on every app launch \u2014 fixes the skill not appearing on some family machines after install",
+      "New components no longer auto-deploy on update \u2014 they stay in the marketplace until you explicitly install them",
+      "Clearer error logging when Claude Code isn't ready for skill registration \u2014 bug reports now capture exactly what went wrong",
+      "Fixed a display bug where the Travel Itinerary component showed \"vconfigured\" instead of \"Configured\""
+    ]
+  },
+  {
     "version": "3.7.1",
     "notes": [
       "Memory component now offers family memory during setup — one person enables it, the other sees it automatically",

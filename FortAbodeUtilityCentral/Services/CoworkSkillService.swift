@@ -33,9 +33,13 @@ actor CoworkSkillService {
         """
 
     /// Full Cowork registration: deploy thin SKILL.md + register in manifest.
-    /// Skips gracefully if Cowork isn't installed.
+    /// Skips gracefully if Cowork isn't installed, but logs exactly why via ErrorLogger
+    /// so silent failures (like Tiera's iMac in v3.7.1) leave a debuggable trail.
     func registerWeeklyRhythmSkill() async {
-        guard discoverSkillsRoot() != nil else { return }
+        if await discoverSkillsRootWithDiagnostics() == nil {
+            // discoverSkillsRootWithDiagnostics already logged the specific failure reason
+            return
+        }
 
         do {
             try deploySkillFile(
@@ -55,6 +59,89 @@ actor CoworkSkillService {
                 installedVersion: nil
             )
         }
+    }
+
+    /// Wraps `discoverSkillsRoot()` and logs the precise failure mode when it returns nil.
+    /// Every silent-failure branch in `discoverSkillsRoot` has a matching log here so we
+    /// can tell from a bug report whether Cowork isn't installed, the session structure
+    /// is unexpected, or there's no manifest.json anywhere.
+    private func discoverSkillsRootWithDiagnostics() async -> String? {
+        // (1) Base path missing — Cowork was never launched / Claude Code not installed
+        guard fm.fileExists(atPath: skillsPluginBase) else {
+            await ErrorLogger.shared.log(
+                componentId: "weekly-rhythm",
+                displayName: "Weekly Rhythm Engine",
+                error: "Cowork skills-plugin directory not found at \(skillsPluginBase). Claude Code has likely never been launched on this machine. Open Claude Code at least once, then reopen Fort Abode.",
+                installedVersion: nil
+            )
+            return nil
+        }
+
+        // (2) Base exists but contains no session subdirectories
+        guard let sessionDirs = try? fm.contentsOfDirectory(atPath: skillsPluginBase)
+            .filter({ !$0.hasPrefix(".") }), !sessionDirs.isEmpty else {
+            await ErrorLogger.shared.log(
+                componentId: "weekly-rhythm",
+                displayName: "Weekly Rhythm Engine",
+                error: "Cowork skills-plugin at \(skillsPluginBase) exists but contains no session directories. Launch Claude Code and start at least one agent-mode session, then reopen Fort Abode.",
+                installedVersion: nil
+            )
+            return nil
+        }
+
+        // (3) Pick the most recent session dir (matches discoverSkillsRoot logic)
+        let sessionPath: String
+        if sessionDirs.count == 1 {
+            sessionPath = "\(skillsPluginBase)/\(sessionDirs[0])"
+        } else {
+            guard let picked = sessionDirs
+                .map({ "\(skillsPluginBase)/\($0)" })
+                .max(by: { path1, path2 in
+                    let d1 = (try? fm.attributesOfItem(atPath: path1)[.modificationDate] as? Date) ?? .distantPast
+                    let d2 = (try? fm.attributesOfItem(atPath: path2)[.modificationDate] as? Date) ?? .distantPast
+                    return d1 < d2
+                }) else {
+                await ErrorLogger.shared.log(
+                    componentId: "weekly-rhythm",
+                    displayName: "Weekly Rhythm Engine",
+                    error: "Could not pick a session dir from \(sessionDirs.count) candidates under \(skillsPluginBase).",
+                    installedVersion: nil
+                )
+                return nil
+            }
+            sessionPath = picked
+        }
+
+        // (4) Session dir exists but has no user subdirs
+        guard let userDirs = try? fm.contentsOfDirectory(atPath: sessionPath)
+            .filter({ !$0.hasPrefix(".") }), !userDirs.isEmpty else {
+            await ErrorLogger.shared.log(
+                componentId: "weekly-rhythm",
+                displayName: "Weekly Rhythm Engine",
+                error: "Cowork session dir \(sessionPath) has no user subdirectories. This usually means Claude Code hasn't completed initial agent-mode setup.",
+                installedVersion: nil
+            )
+            return nil
+        }
+
+        // (5) Resolve to final user dir — single case is trusted, multi needs manifest.json
+        if userDirs.count == 1 {
+            return "\(sessionPath)/\(userDirs[0])"
+        }
+
+        if let withManifest = userDirs
+            .map({ "\(sessionPath)/\($0)" })
+            .first(where: { fm.fileExists(atPath: "\($0)/manifest.json") }) {
+            return withManifest
+        }
+
+        await ErrorLogger.shared.log(
+            componentId: "weekly-rhythm",
+            displayName: "Weekly Rhythm Engine",
+            error: "Cowork session \(sessionPath) has \(userDirs.count) user dirs but none contain manifest.json. Launch Claude Code and open an agent-mode session to initialize the manifest.",
+            installedVersion: nil
+        )
+        return nil
     }
 
     // MARK: - Skill File Deployment

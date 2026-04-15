@@ -154,6 +154,7 @@ struct FortAbodeUtilityCentralApp: App {
                 }
                 handleLaunchMode()
                 checkWhatsNew()
+                logLauncherHeartbeat()
                 pinICloudFoldersInBackground()
             }
             .onChange(of: isActivated) { _, activated in
@@ -259,6 +260,17 @@ struct FortAbodeUtilityCentralApp: App {
         guard let viewModel else { return }
         Task.detached(priority: .background) {
             await viewModel.pinICloudFolders()
+        }
+    }
+
+    /// Write a single heartbeat line to the error log on every app launch so we can tell
+    /// from a debug report whether the logger itself is functional on a given machine.
+    /// If this line appears in the log, the logger works — every downstream failure will
+    /// be visible. If it does NOT appear, the logger itself is broken and needs fixing
+    /// before we trust any other debug output.
+    private func logLauncherHeartbeat() {
+        Task.detached(priority: .background) {
+            await ErrorLogger.shared.logHeartbeat()
         }
     }
 

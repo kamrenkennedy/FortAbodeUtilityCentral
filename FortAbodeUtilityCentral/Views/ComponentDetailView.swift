@@ -11,6 +11,8 @@ struct ComponentDetailView: View {
     @State private var isLoadingChangelog = false
     @State private var showWizard = false
     @State private var instances: [String] = []
+    @State private var manualRegistrationStatus: SkillRegistrationStatus = .notYetAttempted
+    @State private var isManuallyRegistering = false
 
     private var component: Component? {
         viewModel.registry.component(withId: componentId)
@@ -196,6 +198,36 @@ struct ComponentDetailView: View {
 
             Spacer()
 
+            // Manual "Register in Claude" button — kill-switch for Weekly Rhythm
+            // when automatic launch-time registration doesn't land on a machine.
+            // Shares the same code path as the launch-time self-heal but surfaces the
+            // result inline so the user can see success/failure without waiting for
+            // another Fort Abode release. The skill gets written to Claude's shared
+            // skills-plugin manifest, which Cowork AND Claude Code both consume —
+            // one write covers both apps, so the user-facing label just says "Claude".
+            if component.id == "weekly-rhythm", status.installedVersion != nil {
+                Button {
+                    Task {
+                        isManuallyRegistering = true
+                        manualRegistrationStatus = await viewModel.registerWeeklyRhythmSkillManually()
+                        isManuallyRegistering = false
+                    }
+                } label: {
+                    if isManuallyRegistering {
+                        HStack(spacing: 6) {
+                            ProgressView().controlSize(.small)
+                            Text("Registering…")
+                        }
+                    } else {
+                        Label("Register in Claude", systemImage: "arrow.triangle.2.circlepath")
+                    }
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.regular)
+                .disabled(isManuallyRegistering)
+                .help("Re-register the Weekly Rhythm skill with Claude. Use this if the skill ever stops appearing in your Claude skills list.")
+            }
+
             // Uninstall button — only for marketplace components that are installed
             if component.showInMarketplace, status.installedVersion != nil {
                 Button(role: .destructive) {
@@ -206,6 +238,21 @@ struct ComponentDetailView: View {
                 .buttonStyle(.bordered)
                 .controlSize(.regular)
             }
+        }
+
+        // Inline result of the manual register button (success or specific failure)
+        if component.id == "weekly-rhythm", case .notYetAttempted = manualRegistrationStatus {
+            EmptyView()
+        } else if component.id == "weekly-rhythm" {
+            HStack(alignment: .top, spacing: 6) {
+                Image(systemName: manualRegistrationStatus.isSuccess ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                    .foregroundStyle(manualRegistrationStatus.isSuccess ? .green : .orange)
+                Text(manualRegistrationStatus.displayMessage)
+                    .font(.caption)
+                    .foregroundStyle(manualRegistrationStatus.isSuccess ? .green : .orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.top, 4)
         }
 
         // Restart hint after install/uninstall

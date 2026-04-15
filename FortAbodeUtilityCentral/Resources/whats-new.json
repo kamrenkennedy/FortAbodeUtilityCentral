@@ -1,5 +1,14 @@
 [
   {
+    "version": "3.7.4",
+    "notes": [
+      "New \"Register in Claude\" button on the Weekly Rhythm screen — tap it if the skill ever stops appearing in your Claude skills list and see the result inline",
+      "Fort Abode now logs every step of skill registration so bug reports show exactly what happened — no more guessing",
+      "More reliable error logging — messages save to both iCloud and your Mac, so nothing gets dropped when iCloud is slow or offline",
+      "Fort Abode logs now live in their own \"Fort Abode Logs\" folder inside Claude Memory instead of loose at the top level"
+    ]
+  },
+  {
     "version": "3.7.3",
     "notes": [
       "Fixed Weekly Rhythm skill silently failing to register on machines with partial iCloud state — the self-heal now runs whenever the app detects an existing install, instead of requiring every managed file to be present",

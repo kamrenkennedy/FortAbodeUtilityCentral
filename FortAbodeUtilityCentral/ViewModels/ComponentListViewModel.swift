@@ -456,24 +456,48 @@ final class ComponentListViewModel {
         // nil (so the v3.7.1 auto-opt-in regression stays fixed — new users are NOT
         // silently opted into components they never chose).
         //
-        // v3.7.3 fix: we previously gated on `weeklyRhythmService.isConfigured()`, which
-        // checked for BOTH engine-spec.md AND dashboard-template.html in iCloud. That
-        // was too strict: on Tiera's iMac the dashboard template existed (so version
-        // detection reported "v2.0.0 up to date") but engine-spec.md was missing, so
-        // isConfigured() returned false and this entire self-heal block silently skipped,
-        // leaving Cowork with no manifest entry for the skill. Using the version-detection
-        // result as the install-state signal keeps both checks consistent and lets
-        // partial-install states recover. updateManagedFiles() already has partial-state
-        // recovery (redeploys both files from bundle if either is missing), so missing
-        // files get restored before registerWeeklyRhythmSkill() fires.
+        // v3.7.3: we previously gated on `weeklyRhythmService.isConfigured()`, which
+        // checked for BOTH engine-spec.md AND dashboard-template.html in iCloud. We
+        // switched to `installed != nil` on the theory that engine-spec.md was missing
+        // on Tiera's iMac. It turned out BOTH files existed on her machine and v3.7.3's
+        // one-line fix was a no-op — the actual failure was downstream in CoworkSkillService's
+        // silent returns, which v3.7.4 finally fixes with breadcrumb instrumentation.
         //
         // The re-register call is intentionally unconditional (no isSkillWrapperCurrent
         // short-circuit): registerSkill() is idempotent (upserts by name), and on machines
         // like Tiera's iMac where Cowork wasn't ready at install time, this is our only
         // chance to self-heal the manifest entry on a future launch.
-        if component.id == "weekly-rhythm", installed != nil {
-            try? await weeklyRhythmService.updateManagedFiles()
-            await coworkSkillService.registerWeeklyRhythmSkill()
+        if component.id == "weekly-rhythm" {
+            await ErrorLogger.shared.log(
+                area: "checkComponent.weeklyRhythmSelfHeal",
+                message: "Reached weekly-rhythm block",
+                context: ["installed": installed ?? "nil"]
+            )
+            if installed != nil {
+                await ErrorLogger.shared.log(
+                    area: "checkComponent.weeklyRhythmSelfHeal",
+                    message: "installed != nil — running updateManagedFiles + registerWeeklyRhythmSkill"
+                )
+                do {
+                    try await weeklyRhythmService.updateManagedFiles()
+                    await ErrorLogger.shared.log(
+                        area: "checkComponent.weeklyRhythmSelfHeal",
+                        message: "updateManagedFiles succeeded"
+                    )
+                } catch {
+                    await ErrorLogger.shared.log(
+                        area: "checkComponent.weeklyRhythmSelfHeal",
+                        message: "updateManagedFiles FAILED: \(error.localizedDescription)",
+                        context: ["error": String(describing: error)]
+                    )
+                }
+                await coworkSkillService.registerWeeklyRhythmSkill()
+            } else {
+                await ErrorLogger.shared.log(
+                    area: "checkComponent.weeklyRhythmSelfHeal",
+                    message: "installed == nil — skipping self-heal (component not installed on this machine)"
+                )
+            }
         }
 
         // Dual detection: also check if config entries exist (manual installs)
@@ -642,6 +666,40 @@ final class ComponentListViewModel {
     /// Safe to call from app launch — runs in background, silent on success.
     func pinICloudFolders() async {
         await filePinningService.pinAll()
+    }
+
+    // MARK: - Manual Register (kill-switch for Weekly Rhythm)
+
+    /// Manually trigger Weekly Rhythm skill registration in Cowork. Used by the
+    /// "Register in Claude Code" button in ComponentDetailView as a kill-switch when
+    /// the automatic self-heal doesn't land on a machine. Forces a redeploy of the
+    /// managed iCloud files (so any missing engine-spec.md / dashboard-template.html
+    /// gets restored from the app bundle) and then calls the same registration path
+    /// as the launch-time self-heal — but the result is returned to the caller so the
+    /// UI can show success / failure inline without another ship cycle.
+    func registerWeeklyRhythmSkillManually() async -> SkillRegistrationStatus {
+        await ErrorLogger.shared.log(
+            area: "registerWeeklyRhythmSkillManually",
+            message: "User tapped the manual 'Register in Claude Code' button"
+        )
+        do {
+            try await weeklyRhythmService.updateManagedFiles()
+            await ErrorLogger.shared.log(
+                area: "registerWeeklyRhythmSkillManually",
+                message: "updateManagedFiles succeeded — proceeding to register"
+            )
+        } catch {
+            await ErrorLogger.shared.log(
+                area: "registerWeeklyRhythmSkillManually",
+                message: "updateManagedFiles FAILED: \(error.localizedDescription)",
+                context: ["error": String(describing: error)]
+            )
+            // Continue anyway — registerWeeklyRhythmSkill will fail with a specific error
+            // if the bundled files aren't where it expects, and that's useful diagnostic
+            // info for the debug report.
+        }
+        await coworkSkillService.registerWeeklyRhythmSkill()
+        return await coworkSkillService.lastRegistrationStatus
     }
 
     /// Post-install tasks specific to the Memory component:

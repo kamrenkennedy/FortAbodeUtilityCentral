@@ -118,17 +118,45 @@ actor VersionDetectionService {
         let fullPath = "\(home)/Library/Mobile Documents/com~apple~CloudDocs/\(relativePath)"
 
         guard let content = try? String(contentsOfFile: fullPath, encoding: .utf8) else {
+            // v3.7.4: previously silent. Log so debug reports show why detection failed
+            // (e.g. file missing, permission denied, iCloud offline). Fire-and-forget Task
+            // so this function stays synchronous and nil-returning for its callers.
+            Task {
+                await ErrorLogger.shared.log(
+                    area: "VersionDetectionService.parseICloudTemplateVersion",
+                    message: "Could not read template at \(fullPath) — file missing or unreadable. Detection returning nil (component will be marked 'not installed').",
+                    context: ["relativePath": relativePath]
+                )
+            }
             return nil
         }
 
         let lines = content.components(separatedBy: "\n").prefix(5)
         let pattern = "Weekly Rhythm Dashboard v([0-9.]+)"
-        guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+        guard let regex = try? NSRegularExpression(pattern: pattern) else {
+            Task {
+                await ErrorLogger.shared.log(
+                    area: "VersionDetectionService.parseICloudTemplateVersion",
+                    message: "Regex compilation failed for pattern '\(pattern)' — should never happen.",
+                    context: ["relativePath": relativePath]
+                )
+            }
+            return nil
+        }
         for line in lines {
             if let match = regex.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)),
                let range = Range(match.range(at: 1), in: line) {
                 return String(line[range])
             }
+        }
+
+        // File exists but version header is missing — probably a custom or corrupted template
+        Task {
+            await ErrorLogger.shared.log(
+                area: "VersionDetectionService.parseICloudTemplateVersion",
+                message: "Template at \(fullPath) exists but does not contain 'Weekly Rhythm Dashboard v<x.y.z>' in the first 5 lines. Detection returning nil.",
+                context: ["relativePath": relativePath, "firstLine": lines.first ?? ""]
+            )
         }
         return nil
     }

@@ -1,11 +1,51 @@
 import Foundation
 
+// MARK: - Registration Status
+
+/// Outcome of the most recent call to `registerWeeklyRhythmSkill()`. Exposed so the
+/// manual "Register in Claude Code" button in ComponentDetailView can surface a
+/// user-facing result inline, and so FeedbackService can include the state in bug
+/// reports.
+enum SkillRegistrationStatus: Sendable {
+    case notYetAttempted
+    case succeeded(at: Date, skillsRoot: String)
+    case failed(at: Date, step: String, error: String)
+
+    var isSuccess: Bool {
+        if case .succeeded = self { return true }
+        return false
+    }
+
+    var displayMessage: String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .none
+        formatter.timeStyle = .short
+        switch self {
+        case .notYetAttempted:
+            return "Not yet attempted"
+        case .succeeded(let at, _):
+            return "Registered successfully at \(formatter.string(from: at))"
+        case .failed(_, let step, let error):
+            return "Failed at \(step): \(error)"
+        }
+    }
+}
+
 /// Manages skill registration in Cowork (Claude Code).
 /// Discovers the skills-plugin directory, deploys SKILL.md wrappers,
 /// and registers/updates entries in Cowork's manifest.json.
+///
+/// **v3.7.4 instrumentation overhaul:** every step of `registerWeeklyRhythmSkill()`
+/// logs a breadcrumb to `ErrorLogger`, the silent returns in `deploySkillFile` and
+/// `registerSkill` now throw specific errors, and every manifest write stamps a
+/// `fortAbodeLastWrite` marker so the debug report can prove (or disprove) whether
+/// Fort Abode actually wrote to the user's manifest.json.
 actor CoworkSkillService {
 
     private let fm = FileManager.default
+
+    /// Most recent outcome — read by the UI and the debug report.
+    private(set) var lastRegistrationStatus: SkillRegistrationStatus = .notYetAttempted
 
     private var homePath: String {
         fm.homeDirectoryForCurrentUser.path
@@ -33,32 +73,95 @@ actor CoworkSkillService {
         """
 
     /// Full Cowork registration: deploy thin SKILL.md + register in manifest.
-    /// Skips gracefully if Cowork isn't installed, but logs exactly why via ErrorLogger
-    /// so silent failures (like Tiera's iMac in v3.7.1) leave a debuggable trail.
+    /// Logs a breadcrumb at every step so the debug report reveals exactly which
+    /// phase succeeded or failed on a given machine.
     func registerWeeklyRhythmSkill() async {
-        if await discoverSkillsRootWithDiagnostics() == nil {
+        await ErrorLogger.shared.log(
+            area: "registerWeeklyRhythmSkill",
+            message: "STEP 1: starting"
+        )
+
+        // STEP 2: discover the skills root (with diagnostics logged inline)
+        await ErrorLogger.shared.log(
+            area: "registerWeeklyRhythmSkill",
+            message: "STEP 2: discovering Cowork skills root"
+        )
+        guard let skillsRoot = await discoverSkillsRootWithDiagnostics() else {
             // discoverSkillsRootWithDiagnostics already logged the specific failure reason
+            lastRegistrationStatus = .failed(
+                at: Date(),
+                step: "discoverSkillsRoot",
+                error: "Cowork skills-plugin directory could not be resolved"
+            )
             return
         }
+        await ErrorLogger.shared.log(
+            area: "registerWeeklyRhythmSkill",
+            message: "STEP 3: skillsRoot resolved",
+            context: ["skillsRoot": skillsRoot]
+        )
 
+        // STEP 4: deploy the thin SKILL.md wrapper
         do {
+            await ErrorLogger.shared.log(
+                area: "registerWeeklyRhythmSkill",
+                message: "STEP 4: calling deploySkillFile"
+            )
             try deploySkillFile(
                 skillName: Self.weeklyRhythmName,
                 bundledResource: "weekly-rhythm-skill-wrapper",
-                bundledExtension: "md"
+                bundledExtension: "md",
+                preResolvedSkillsRoot: skillsRoot
             )
-            try registerSkill(
-                name: Self.weeklyRhythmName,
-                description: Self.weeklyRhythmDescription
+            await ErrorLogger.shared.log(
+                area: "registerWeeklyRhythmSkill",
+                message: "STEP 5: deploySkillFile succeeded"
             )
         } catch {
             await ErrorLogger.shared.log(
-                componentId: "weekly-rhythm",
-                displayName: "Weekly Rhythm Engine",
-                error: "Cowork skill registration failed: \(error.localizedDescription)",
-                installedVersion: nil
+                area: "registerWeeklyRhythmSkill",
+                message: "FAILED at STEP 4 (deploySkillFile): \(error.localizedDescription)",
+                context: ["error": String(describing: error), "skillsRoot": skillsRoot]
             )
+            lastRegistrationStatus = .failed(
+                at: Date(),
+                step: "deploySkillFile",
+                error: error.localizedDescription
+            )
+            return
         }
+
+        // STEP 6: upsert the manifest.json entry
+        do {
+            await ErrorLogger.shared.log(
+                area: "registerWeeklyRhythmSkill",
+                message: "STEP 6: calling registerSkill"
+            )
+            try registerSkill(
+                name: Self.weeklyRhythmName,
+                description: Self.weeklyRhythmDescription,
+                preResolvedSkillsRoot: skillsRoot
+            )
+            await ErrorLogger.shared.log(
+                area: "registerWeeklyRhythmSkill",
+                message: "STEP 7: registerSkill succeeded — DONE",
+                context: ["skillsRoot": skillsRoot]
+            )
+        } catch {
+            await ErrorLogger.shared.log(
+                area: "registerWeeklyRhythmSkill",
+                message: "FAILED at STEP 6 (registerSkill): \(error.localizedDescription)",
+                context: ["error": String(describing: error), "skillsRoot": skillsRoot]
+            )
+            lastRegistrationStatus = .failed(
+                at: Date(),
+                step: "registerSkill",
+                error: error.localizedDescription
+            )
+            return
+        }
+
+        lastRegistrationStatus = .succeeded(at: Date(), skillsRoot: skillsRoot)
     }
 
     /// Wraps `discoverSkillsRoot()` and logs the precise failure mode when it returns nil.
@@ -69,10 +172,9 @@ actor CoworkSkillService {
         // (1) Base path missing — Cowork was never launched / Claude Code not installed
         guard fm.fileExists(atPath: skillsPluginBase) else {
             await ErrorLogger.shared.log(
-                componentId: "weekly-rhythm",
-                displayName: "Weekly Rhythm Engine",
-                error: "Cowork skills-plugin directory not found at \(skillsPluginBase). Claude Code has likely never been launched on this machine. Open Claude Code at least once, then reopen Fort Abode.",
-                installedVersion: nil
+                area: "discoverSkillsRoot",
+                message: "Cowork skills-plugin directory not found at \(skillsPluginBase). Claude Code has likely never been launched on this machine. Open Claude Code at least once, then reopen Fort Abode.",
+                componentDisplayName: "Weekly Rhythm Engine"
             )
             return nil
         }
@@ -81,10 +183,9 @@ actor CoworkSkillService {
         guard let sessionDirs = try? fm.contentsOfDirectory(atPath: skillsPluginBase)
             .filter({ !$0.hasPrefix(".") }), !sessionDirs.isEmpty else {
             await ErrorLogger.shared.log(
-                componentId: "weekly-rhythm",
-                displayName: "Weekly Rhythm Engine",
-                error: "Cowork skills-plugin at \(skillsPluginBase) exists but contains no session directories. Launch Claude Code and start at least one agent-mode session, then reopen Fort Abode.",
-                installedVersion: nil
+                area: "discoverSkillsRoot",
+                message: "Cowork skills-plugin at \(skillsPluginBase) exists but contains no session directories. Launch Claude Code and start at least one agent-mode session, then reopen Fort Abode.",
+                componentDisplayName: "Weekly Rhythm Engine"
             )
             return nil
         }
@@ -102,10 +203,9 @@ actor CoworkSkillService {
                     return d1 < d2
                 }) else {
                 await ErrorLogger.shared.log(
-                    componentId: "weekly-rhythm",
-                    displayName: "Weekly Rhythm Engine",
-                    error: "Could not pick a session dir from \(sessionDirs.count) candidates under \(skillsPluginBase).",
-                    installedVersion: nil
+                    area: "discoverSkillsRoot",
+                    message: "Could not pick a session dir from \(sessionDirs.count) candidates under \(skillsPluginBase).",
+                    componentDisplayName: "Weekly Rhythm Engine"
                 )
                 return nil
             }
@@ -116,10 +216,9 @@ actor CoworkSkillService {
         guard let userDirs = try? fm.contentsOfDirectory(atPath: sessionPath)
             .filter({ !$0.hasPrefix(".") }), !userDirs.isEmpty else {
             await ErrorLogger.shared.log(
-                componentId: "weekly-rhythm",
-                displayName: "Weekly Rhythm Engine",
-                error: "Cowork session dir \(sessionPath) has no user subdirectories. This usually means Claude Code hasn't completed initial agent-mode setup.",
-                installedVersion: nil
+                area: "discoverSkillsRoot",
+                message: "Cowork session dir \(sessionPath) has no user subdirectories. This usually means Claude Code hasn't completed initial agent-mode setup.",
+                componentDisplayName: "Weekly Rhythm Engine"
             )
             return nil
         }
@@ -136,10 +235,9 @@ actor CoworkSkillService {
         }
 
         await ErrorLogger.shared.log(
-            componentId: "weekly-rhythm",
-            displayName: "Weekly Rhythm Engine",
-            error: "Cowork session \(sessionPath) has \(userDirs.count) user dirs but none contain manifest.json. Launch Claude Code and open an agent-mode session to initialize the manifest.",
-            installedVersion: nil
+            area: "discoverSkillsRoot",
+            message: "Cowork session \(sessionPath) has \(userDirs.count) user dirs but none contain manifest.json. Launch Claude Code and open an agent-mode session to initialize the manifest.",
+            componentDisplayName: "Weekly Rhythm Engine"
         )
         return nil
     }
@@ -148,9 +246,26 @@ actor CoworkSkillService {
 
     /// Deploy a bundled SKILL.md wrapper to the Cowork skills directory.
     /// Overwrites existing SKILL.md but preserves all other files (evals/, user configs).
-    func deploySkillFile(skillName: String, bundledResource: String, bundledExtension: String) throws {
-        guard let skillsRoot = discoverSkillsRoot() else {
-            return // Cowork not installed — skip silently
+    ///
+    /// **v3.7.4:** accepts an optional `preResolvedSkillsRoot` so `registerWeeklyRhythmSkill`
+    /// can pass the root it already resolved (via the diagnostic wrapper). When nil, falls
+    /// back to the sync `discoverSkillsRoot()` and THROWS on failure instead of silently
+    /// returning — this is the single most important change in this release.
+    func deploySkillFile(
+        skillName: String,
+        bundledResource: String,
+        bundledExtension: String,
+        preResolvedSkillsRoot: String? = nil
+    ) throws {
+        let skillsRoot: String
+        if let preResolved = preResolvedSkillsRoot {
+            skillsRoot = preResolved
+        } else if let discovered = discoverSkillsRoot() {
+            skillsRoot = discovered
+        } else {
+            // v3.7.4: previously returned silently. Now throws so the caller sees the
+            // failure and it lands in the debug report.
+            throw CoworkSkillError.skillsRootNotFound
         }
 
         guard let url = Bundle.main.url(forResource: bundledResource, withExtension: bundledExtension) else {
@@ -177,8 +292,23 @@ actor CoworkSkillService {
 
     /// Register or update a skill entry in manifest.json.
     /// Upserts by name — preserves existing skillId if found.
-    func registerSkill(name: String, description: String) throws {
-        guard let skillsRoot = discoverSkillsRoot() else { return }
+    ///
+    /// **v3.7.4:** accepts `preResolvedSkillsRoot` to match `deploySkillFile`, and THROWS
+    /// on a nil skills root instead of silently returning.
+    func registerSkill(
+        name: String,
+        description: String,
+        preResolvedSkillsRoot: String? = nil
+    ) throws {
+        let skillsRoot: String
+        if let preResolved = preResolvedSkillsRoot {
+            skillsRoot = preResolved
+        } else if let discovered = discoverSkillsRoot() {
+            skillsRoot = discovered
+        } else {
+            // v3.7.4: previously returned silently. Now throws.
+            throw CoworkSkillError.skillsRootNotFound
+        }
 
         let manifestPath = "\(skillsRoot)/manifest.json"
         var manifest = readManifest(at: manifestPath) ?? ["skills": [[String: Any]](), "lastUpdated": 0]
@@ -312,8 +442,23 @@ actor CoworkSkillService {
         return json
     }
 
+    /// Write the manifest, stamping a `fortAbodeLastWrite` marker so the debug report can
+    /// confirm Fort Abode actually touched this manifest (independent of filesystem mtime,
+    /// which is too noisy to trust).
     private func writeManifest(_ manifest: [String: Any], at path: String) throws {
-        let data = try JSONSerialization.data(withJSONObject: manifest, options: [.prettyPrinted, .sortedKeys])
+        var mutableManifest = manifest
+        let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
+        mutableManifest["fortAbodeLastWrite"] = [
+            "timestamp": ISO8601DateFormatter().string(from: Date()),
+            "appVersion": appVersion,
+            "build": build
+        ]
+
+        let data = try JSONSerialization.data(
+            withJSONObject: mutableManifest,
+            options: [.prettyPrinted, .sortedKeys]
+        )
         try data.write(to: URL(fileURLWithPath: path), options: .atomic)
     }
 }
@@ -323,6 +468,7 @@ actor CoworkSkillService {
 enum CoworkSkillError: LocalizedError {
     case resourceNotFound(resource: String)
     case manifestCorrupted
+    case skillsRootNotFound
 
     var errorDescription: String? {
         switch self {
@@ -330,6 +476,8 @@ enum CoworkSkillError: LocalizedError {
             return "Cowork skill resource '\(resource)' not found in app bundle"
         case .manifestCorrupted:
             return "Cowork skills manifest.json is corrupted"
+        case .skillsRootNotFound:
+            return "Cowork skills-plugin directory not found — Claude Code has likely never been launched on this machine, or the initial agent-mode session has not been started. Open Claude Code, start an agent-mode session, then reopen Fort Abode."
         }
     }
 }

@@ -3,6 +3,15 @@
     <channel>
         <title>Fort Abode Utility Central</title>
         <item>
+    <title>3.7.2</title>
+    <pubDate>Tue, 14 Apr 2026 19:36:24 -0500</pubDate>
+    <sparkle:version>26</sparkle:version>
+    <sparkle:shortVersionString>3.7.2</sparkle:shortVersionString>
+    <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+    <sparkle:releaseNotesLink>https://github.com/kamrenkennedy/FortAbodeUtilityCentral/releases/tag/v3.7.2</sparkle:releaseNotesLink>
+    <enclosure url="https://github.com/kamrenkennedy/FortAbodeUtilityCentral/releases/download/v3.7.2/FortAbodeUtilityCentral-v3.7.2.zip" sparkle:edSignature="hicAIATf+kb8q792nXmbcN83Gd9foIM1FpaVzdyZvbStDW6in7d1DKouV7e0PCM4jv2Rt61La5KP4dDg4rBjAw==" length="3910316" type="application/octet-stream"/>
+</item>
+        <item>
     <title>3.7.1</title>
     <pubDate>Tue, 14 Apr 2026 18:46:44 -0500</pubDate>
     <sparkle:version>25</sparkle:version>

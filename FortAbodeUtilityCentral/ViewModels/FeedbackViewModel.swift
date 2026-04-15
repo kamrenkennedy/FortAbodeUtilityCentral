@@ -13,12 +13,19 @@ final class FeedbackViewModel {
     var descriptionText = ""
     var isSubmitting = false
     var submitResult: SubmitResult?
+    /// v3.7.5: `FeedbackService.isConfigured()` now always returns true because the file-write
+    /// path has no preconditions. Kept as state for backwards compat with FeedbackView's
+    /// (now unreachable) notConfiguredView branch.
     var isConfigured = false
 
     private let feedbackService = FeedbackService.shared
 
     enum SubmitResult: Equatable {
-        case success
+        /// v3.7.5: carries the saved file path so the success banner can show the user
+        /// exactly where the report was written. File lives under `Claude Memory/Fort Abode Logs/feedback/`
+        /// on iCloud, or `~/Library/Logs/FortAbodeUtilityCentral/feedback/` if iCloud is
+        /// unavailable.
+        case success(savedPath: String)
         case error(String)
     }
 
@@ -51,19 +58,21 @@ final class FeedbackViewModel {
             }
 
             let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
+            let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
             let submittedBy = UserDefaults.standard.string(forKey: "feedbackDisplayName") ?? NSFullUserName()
 
-            try await feedbackService.submitFeedback(
+            let savedURL = try await feedbackService.saveFeedbackReport(
                 type: feedbackType,
                 component: componentName,
                 subject: subject,
                 description: descriptionText,
                 debugReport: debugReport,
                 submittedBy: submittedBy,
-                appVersion: appVersion
+                appVersion: appVersion,
+                buildNumber: buildNumber
             )
 
-            submitResult = .success
+            submitResult = .success(savedPath: savedURL.path)
             subject = ""
             descriptionText = ""
             selectedComponentId = nil

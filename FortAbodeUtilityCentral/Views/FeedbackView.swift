@@ -26,7 +26,11 @@ struct FeedbackView: View {
         }
     }
 
-    // MARK: - Not Configured
+    // MARK: - Not Configured (unreachable as of v3.7.5)
+    //
+    // FeedbackService.isConfigured() now always returns true because the file-write
+    // path has no preconditions. Kept for compile-time compatibility and in case a
+    // future release adds an optional API destination that can be "not configured."
 
     private var notConfiguredView: some View {
         VStack(spacing: 16) {
@@ -163,12 +167,34 @@ struct FeedbackView: View {
     @ViewBuilder
     private func resultBanner(_ result: FeedbackViewModel.SubmitResult) -> some View {
         switch result {
-        case .success:
-            HStack(spacing: 8) {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
-                Text("Feedback submitted — thank you!")
-                    .font(.callout)
+        case .success(let savedPath):
+            // v3.7.5: feedback now writes to a shared iCloud folder (or a local fallback).
+            // Show the saved path explicitly so the user can verify where it went, grab it
+            // out of Finder, or paste it somewhere if iCloud sync is slow. The copy button
+            // puts the path on the clipboard for fast sharing.
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                    Text("Feedback saved — Kam will pick it up from iCloud")
+                        .font(.callout)
+                }
+                HStack(spacing: 8) {
+                    Text(savedPath)
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .truncationMode(.middle)
+                    Spacer(minLength: 8)
+                    Button {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(savedPath, forType: .string)
+                    } label: {
+                        Image(systemName: "doc.on.doc")
+                    }
+                    .buttonStyle(.plain)
+                    .help("Copy file path to clipboard")
+                }
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)

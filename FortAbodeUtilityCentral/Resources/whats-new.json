@@ -1,5 +1,13 @@
 [
   {
+    "version": "3.7.5",
+    "notes": [
+      "Feedback reports now save directly to your shared Fort Abode Logs folder in iCloud \u2014 no setup, no tokens, no character limits",
+      "Fixed a bug where feedback submissions failed silently when the debug report was long",
+      "After submitting, Fort Abode shows you the exact file path so you can grab the report or share it yourself"
+    ]
+  },
+  {
     "version": "3.7.4",
     "notes": [
       "New \"Register in Claude\" button on the Weekly Rhythm screen — tap it if the skill ever stops appearing in your Claude skills list and see the result inline",

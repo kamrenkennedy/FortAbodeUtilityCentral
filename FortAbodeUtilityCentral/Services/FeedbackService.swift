@@ -1,7 +1,12 @@
 import Foundation
 
-// MARK: - Feedback Config (iCloud shared)
+// MARK: - Feedback Config (dormant since v3.7.5)
 
+/// Unused as of v3.7.5 — feedback reports now write directly to an iCloud folder
+/// (`Claude Memory/Fort Abode Logs/feedback/`) via `FeedbackService.saveFeedbackReport`.
+/// This struct is kept so `SettingsView`'s feedback config UI compiles unchanged. It
+/// can be deleted in v3.8.0 or revived if a future release adds an API destination as
+/// an optional side channel (see the preflight skill — file-write is always the primary).
 struct FeedbackConfig: Codable {
     let notionToken: String
     let databaseId: String
@@ -37,10 +42,18 @@ actor FeedbackService {
 
     // MARK: - Configuration
 
+    /// As of v3.7.5, the feedback path no longer requires any configuration — reports
+    /// save directly to the shared iCloud folder with no token, no database ID, no API.
+    /// This method always returns `true` so the `FeedbackView.notConfiguredView` gate
+    /// is unreachable. The method is kept (vs. deleted) so `SettingsView` keeps
+    /// compiling without changes and the underlying `loadConfig` / `saveConfig` methods
+    /// can be revived if a future release adds Notion back as an optional side channel.
     func isConfigured() -> Bool {
-        loadConfig() != nil
+        true
     }
 
+    /// Dormant since v3.7.5 — still used by `SettingsView` to display the (now unused)
+    /// Notion token + database fields. Do not call from the feedback submission path.
     func loadConfig() -> FeedbackConfig? {
         guard fm.fileExists(atPath: configPath),
               let data = try? Data(contentsOf: URL(fileURLWithPath: configPath)),
@@ -52,6 +65,7 @@ actor FeedbackService {
         return config
     }
 
+    /// Dormant since v3.7.5 — see `loadConfig` note.
     func saveConfig(token: String, databaseId: String) throws {
         let config = FeedbackConfig(notionToken: token, databaseId: databaseId)
         let encoder = JSONEncoder()
@@ -65,80 +79,239 @@ actor FeedbackService {
         try data.write(to: URL(fileURLWithPath: configPath))
     }
 
-    // MARK: - Submit Feedback
+    // MARK: - Save Feedback Report (v3.7.5 — file-based, replaces Notion path)
 
-    func submitFeedback(
+    /// Save a feedback report as a markdown file in the shared `Fort Abode Logs/feedback/`
+    /// folder (iCloud primary, local fallback). Returns the URL of the saved file so the
+    /// UI can show the user exactly where it went.
+    ///
+    /// Why file-based: v3.7.4's Notion-based submission failed on Tiera's Mac with a
+    /// `body.children[0].paragraph.rich_text[0].text.content.length should be ≤ 2000,
+    /// instead was 6458` error — the expanded debug report exceeded Notion's per-block
+    /// character limit and every submission silently bounced. Writing to a shared iCloud
+    /// folder has none of those limits and puts the reports where Kam can read them
+    /// directly (same pattern as the Weekly Flow engine files).
+    ///
+    /// Dual-write: tries iCloud first, falls back to `~/Library/Logs/FortAbodeUtilityCentral/feedback/`
+    /// if iCloud is unavailable or the write fails. Throws `saveFailed` only when both
+    /// paths fail — a single filesystem error never drops the report.
+    func saveFeedbackReport(
         type: FeedbackType,
         component: String?,
         subject: String,
         description: String,
         debugReport: String?,
         submittedBy: String,
-        appVersion: String
-    ) async throws {
-        guard let config = loadConfig() else {
-            throw FeedbackError.notConfigured
+        appVersion: String,
+        buildNumber: String
+    ) async throws -> URL {
+        let timestamp = Date()
+        let filename = buildFilename(timestamp: timestamp, submitter: submittedBy, subject: subject)
+        let markdown = renderMarkdown(
+            timestamp: timestamp,
+            type: type,
+            component: component,
+            subject: subject,
+            description: description,
+            debugReport: debugReport,
+            submittedBy: submittedBy,
+            appVersion: appVersion,
+            buildNumber: buildNumber
+        )
+
+        // Attempt iCloud write first. The primary reason we're writing to iCloud is so
+        // Kam can pick up reports from Tiera's Mac on his own Mac without any API.
+        var icloudError: String?
+        if let icloudDir = iCloudFeedbackDir() {
+            do {
+                try ensureDirectoryWithReadme(icloudDir)
+                let url = icloudDir.appendingPathComponent(filename)
+                try markdown.write(to: url, atomically: true, encoding: .utf8)
+                await ErrorLogger.shared.log(
+                    area: "FeedbackService.saveFeedbackReport",
+                    message: "Saved feedback report to iCloud",
+                    context: ["path": url.path, "bytes": "\(markdown.utf8.count)"]
+                )
+                return url
+            } catch {
+                icloudError = error.localizedDescription
+                await ErrorLogger.shared.log(
+                    area: "FeedbackService.saveFeedbackReport",
+                    message: "iCloud write failed, falling back to local",
+                    context: ["error": error.localizedDescription, "path": icloudDir.path]
+                )
+            }
+        } else {
+            await ErrorLogger.shared.log(
+                area: "FeedbackService.saveFeedbackReport",
+                message: "iCloud path unavailable (Claude Memory folder missing), falling back to local"
+            )
         }
 
-        let url = URL(string: "https://api.notion.com/v1/pages")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(config.notionToken)", forHTTPHeaderField: "Authorization")
-        request.setValue("2022-06-28", forHTTPHeaderField: "Notion-Version")
-
-        var properties: [String: Any] = [
-            "Title": [
-                "title": [["text": ["content": subject]]]
-            ],
-            "Type": [
-                "select": ["name": type.rawValue]
-            ],
-            "Submitted By": [
-                "rich_text": [["text": ["content": submittedBy]]]
-            ],
-            "App Version": [
-                "rich_text": [["text": ["content": appVersion]]]
-            ]
-        ]
-
-        if let component, !component.isEmpty {
-            properties["Component"] = [
-                "select": ["name": component]
-            ]
-        }
-
-        var bodyText = description
-        if let debugReport, !debugReport.isEmpty {
-            bodyText += "\n\n--- Debug Report ---\n" + debugReport
-        }
-
-        let body: [String: Any] = [
-            "parent": ["database_id": config.databaseId],
-            "properties": properties,
-            "children": [
-                [
-                    "object": "block",
-                    "type": "paragraph",
-                    "paragraph": [
-                        "rich_text": [["type": "text", "text": ["content": bodyText]]]
-                    ]
+        // Local fallback — always available, auto-created on first write
+        let localDir = localFeedbackDir()
+        do {
+            try ensureDirectoryWithReadme(localDir)
+            let url = localDir.appendingPathComponent(filename)
+            try markdown.write(to: url, atomically: true, encoding: .utf8)
+            await ErrorLogger.shared.log(
+                area: "FeedbackService.saveFeedbackReport",
+                message: "Saved feedback report to local fallback",
+                context: ["path": url.path, "bytes": "\(markdown.utf8.count)"]
+            )
+            return url
+        } catch {
+            await ErrorLogger.shared.log(
+                area: "FeedbackService.saveFeedbackReport",
+                message: "Both iCloud and local writes FAILED",
+                context: [
+                    "icloudError": icloudError ?? "path-unavailable",
+                    "localError": error.localizedDescription
                 ]
-            ]
-        ]
+            )
+            throw FeedbackError.saveFailed(
+                icloudError: icloudError,
+                localError: error.localizedDescription
+            )
+        }
+    }
 
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+    // MARK: - Private: Feedback Save Helpers
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+    /// Returns `Claude Memory/Fort Abode Logs/feedback/` as a URL, or nil if the Claude
+    /// Memory folder doesn't exist on this machine — we never create Claude Memory from
+    /// scratch just to drop feedback in it.
+    private func iCloudFeedbackDir() -> URL? {
+        let home = fm.homeDirectoryForCurrentUser
+        let claudeMemory = home.appendingPathComponent(
+            "Library/Mobile Documents/com~apple~CloudDocs/Claude Memory"
+        )
+        guard fm.fileExists(atPath: claudeMemory.path) else {
+            return nil
+        }
+        return claudeMemory
+            .appendingPathComponent("Fort Abode Logs")
+            .appendingPathComponent("feedback")
+    }
 
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw FeedbackError.networkError("Invalid response")
+    /// Local fallback path — always available, auto-created on first write.
+    private func localFeedbackDir() -> URL {
+        let home = fm.homeDirectoryForCurrentUser
+        return home
+            .appendingPathComponent("Library/Logs/FortAbodeUtilityCentral")
+            .appendingPathComponent("feedback")
+    }
+
+    /// Create the directory if needed and drop a README.txt once so a human browsing
+    /// the folder in Finder understands what it is.
+    private func ensureDirectoryWithReadme(_ dir: URL) throws {
+        if !fm.fileExists(atPath: dir.path) {
+            try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        }
+        let readme = dir.appendingPathComponent("README.txt")
+        if !fm.fileExists(atPath: readme.path) {
+            let contents = """
+                This folder contains Fort Abode Utility Central feedback reports.
+
+                Each .md file is one submission from the in-app "Send Feedback" screen,
+                containing the user's description and (for bug reports) a full debug
+                report from the machine that submitted it.
+
+                Safe to delete individual files or the whole folder — Fort Abode will
+                recreate it on the next submission.
+                """
+            try? contents.write(to: readme, atomically: true, encoding: .utf8)
+        }
+    }
+
+    /// Build the filename: `{timestamp}-{submitter-slug}-{subject-slug}.md`.
+    /// ISO 8601 local time with colons replaced by hyphens (filesystem-safe).
+    private func buildFilename(timestamp: Date, submitter: String, subject: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH-mm-ss"
+        formatter.timeZone = TimeZone.current
+        let ts = formatter.string(from: timestamp)
+
+        let submitterSlug = slugify(submitter, maxLength: 30)
+        let subjectSlug = slugify(subject, maxLength: 40)
+
+        // Handle edge case where slugs are empty (e.g., CJK-only subjects)
+        let submitterPart = submitterSlug.isEmpty ? "user" : submitterSlug
+        let subjectPart = subjectSlug.isEmpty ? "feedback" : subjectSlug
+
+        return "\(ts)-\(submitterPart)-\(subjectPart).md"
+    }
+
+    /// Lowercase, strip non-alphanumerics, collapse runs of hyphens, trim ends. Produces
+    /// filesystem-safe slugs. Returns empty string if the input contains no valid chars.
+    private func slugify(_ s: String, maxLength: Int) -> String {
+        let lowered = s.lowercased()
+        let mapped = lowered.map { char -> Character in
+            if char.isLetter || char.isNumber {
+                return char
+            }
+            return "-"
+        }
+        var result = String(mapped)
+        // Collapse runs of hyphens
+        while result.contains("--") {
+            result = result.replacingOccurrences(of: "--", with: "-")
+        }
+        // Trim leading/trailing hyphens
+        result = result.trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+        // Truncate
+        if result.count > maxLength {
+            let end = result.index(result.startIndex, offsetBy: maxLength)
+            result = String(result[result.startIndex..<end])
+            result = result.trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+        }
+        return result
+    }
+
+    /// Build the full markdown document: YAML-ish frontmatter + heading + description
+    /// + debug report fenced in a code block. No chunking — the file is a file.
+    private func renderMarkdown(
+        timestamp: Date,
+        type: FeedbackType,
+        component: String?,
+        subject: String,
+        description: String,
+        debugReport: String?,
+        submittedBy: String,
+        appVersion: String,
+        buildNumber: String
+    ) -> String {
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime]
+        let stamp = iso.string(from: timestamp)
+
+        var lines: [String] = []
+        lines.append("---")
+        lines.append("submitted: \(stamp)")
+        lines.append("submitter: \(submittedBy)")
+        lines.append("type: \(type.rawValue)")
+        if let component, !component.isEmpty {
+            lines.append("component: \(component)")
+        }
+        lines.append("subject: \(subject)")
+        lines.append("appVersion: \(appVersion)")
+        lines.append("build: \(buildNumber)")
+        lines.append("---")
+        lines.append("")
+        lines.append("# \(subject)")
+        lines.append("")
+        lines.append(description.isEmpty ? "_(no description provided)_" : description)
+
+        if let debugReport, !debugReport.isEmpty {
+            lines.append("")
+            lines.append("## Debug Report")
+            lines.append("")
+            lines.append("```")
+            lines.append(debugReport)
+            lines.append("```")
         }
 
-        guard (200...299).contains(httpResponse.statusCode) else {
-            let errorBody = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw FeedbackError.apiError(statusCode: httpResponse.statusCode, message: errorBody)
-        }
+        return lines.joined(separator: "\n") + "\n"
     }
 
     // MARK: - Debug Report
@@ -310,18 +483,18 @@ actor FeedbackService {
 // MARK: - Errors
 
 enum FeedbackError: LocalizedError {
-    case notConfigured
-    case networkError(String)
-    case apiError(statusCode: Int, message: String)
+    /// v3.7.5: both iCloud primary AND local fallback writes failed. Surface both error
+    /// messages to the user so they can tell at a glance whether it's an iCloud-only
+    /// issue (rare) or a filesystem-wide problem (very rare).
+    case saveFailed(icloudError: String?, localError: String)
 
     var errorDescription: String? {
         switch self {
-        case .notConfigured:
-            return "Feedback isn't set up yet — ask Kam to configure it on his machine."
-        case .networkError(let msg):
-            return "Network error: \(msg)"
-        case .apiError(let code, let msg):
-            return "Notion API error (\(code)): \(msg)"
+        case .saveFailed(let icloudError, let localError):
+            if let icloudError {
+                return "Couldn't save feedback report. iCloud: \(icloudError). Local: \(localError)."
+            }
+            return "Couldn't save feedback report to local folder: \(localError)."
         }
     }
 }

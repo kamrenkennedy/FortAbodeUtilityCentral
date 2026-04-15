@@ -451,17 +451,27 @@ final class ComponentListViewModel {
 
         // Weekly Rhythm launch-time self-heal.
         // CRITICAL: Only runs when the user has *already installed* Weekly Rhythm on this
-        // machine — gated on isConfigured() which checks for engine-spec.md + dashboard-
-        // template.html in iCloud. Without this guard, every new Fort Abode version would
-        // auto-deploy iCloud files and silently register the skill in Cowork's manifest,
-        // opting users in to components they never chose from the marketplace. (Regression
-        // observed in v3.7.1 — fixed in v3.7.2.)
+        // machine — gated on `installed != nil`, which is the result of version detection
+        // via VersionDetectionService.parseICloudTemplateVersion. Fresh installs return
+        // nil (so the v3.7.1 auto-opt-in regression stays fixed — new users are NOT
+        // silently opted into components they never chose).
+        //
+        // v3.7.3 fix: we previously gated on `weeklyRhythmService.isConfigured()`, which
+        // checked for BOTH engine-spec.md AND dashboard-template.html in iCloud. That
+        // was too strict: on Tiera's iMac the dashboard template existed (so version
+        // detection reported "v2.0.0 up to date") but engine-spec.md was missing, so
+        // isConfigured() returned false and this entire self-heal block silently skipped,
+        // leaving Cowork with no manifest entry for the skill. Using the version-detection
+        // result as the install-state signal keeps both checks consistent and lets
+        // partial-install states recover. updateManagedFiles() already has partial-state
+        // recovery (redeploys both files from bundle if either is missing), so missing
+        // files get restored before registerWeeklyRhythmSkill() fires.
         //
         // The re-register call is intentionally unconditional (no isSkillWrapperCurrent
         // short-circuit): registerSkill() is idempotent (upserts by name), and on machines
         // like Tiera's iMac where Cowork wasn't ready at install time, this is our only
         // chance to self-heal the manifest entry on a future launch.
-        if component.id == "weekly-rhythm", await weeklyRhythmService.isConfigured() {
+        if component.id == "weekly-rhythm", installed != nil {
             try? await weeklyRhythmService.updateManagedFiles()
             await coworkSkillService.registerWeeklyRhythmSkill()
         }

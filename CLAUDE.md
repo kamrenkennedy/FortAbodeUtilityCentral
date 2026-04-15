@@ -11,6 +11,12 @@ Native macOS SwiftUI app that manages Kam's Claude infrastructure — MCP server
 - **Updates**: Sparkle 2 (EdDSA signed)
 - **Project generation**: xcodegen (`/opt/homebrew/bin/xcodegen`)
 
+## Preflight is mandatory
+
+**Before staging any commit that touches `FortAbodeUtilityCentral/`, invoke the `fort-abode-preflight` skill** (at `skills/fort-abode-preflight/SKILL.md`). It walks a conditional checklist keyed to the paths in your diff and catches the bug classes that have historically shipped broken updates to Kam's or Tiera's Mac. This is not optional — every session that ships code must run through it.
+
+If the preflight surfaces a failure, fix it before committing. If you discover a new bug class that preflight didn't catch, add a new check to the skill file in the same changeset as the fix. The skill is self-replicating — it grows every time we learn something the hard way.
+
 ## Repository Structure
 
 The **git repo root** is `Fort Abode Utility Central/` — NOT the `FortAbodeUtilityCentral/` subdirectory. This matters for paths in git commands and for the appcast.

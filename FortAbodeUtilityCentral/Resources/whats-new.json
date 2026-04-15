@@ -1,5 +1,12 @@
 [
   {
+    "version": "3.7.3",
+    "notes": [
+      "Fixed Weekly Rhythm skill silently failing to register on machines with partial iCloud state — the self-heal now runs whenever the app detects an existing install, instead of requiring every managed file to be present",
+      "Partial installs self-repair on launch: missing engine-spec.md or dashboard-template.html get redeployed from the app bundle before the skill registers with Claude Code"
+    ]
+  },
+  {
     "version": "3.7.2",
     "notes": [
       "Weekly Rhythm skill now re-registers with Claude Code on every app launch \u2014 fixes the skill not appearing on some family machines after install",

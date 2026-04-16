@@ -308,7 +308,6 @@ final class ComponentListViewModel {
         // Skills manage their own files instead of claude_desktop_config.json.
         if component.id == "weekly-rhythm" {
             try? await weeklyRhythmService.uninstall()
-            await coworkSkillService.removeWeeklyRhythmSkill()
             clearPersistedInputs(for: id)
             statuses[id] = .notInstalled
             return
@@ -450,27 +449,19 @@ final class ComponentListViewModel {
         }
 
         // Weekly Rhythm launch-time self-heal.
-        // v3.7.7: writes SKILL.md to ~/.claude/skills/weekly-rhythm-engine/ on every
-        // launch. That's the user-level skills directory Cowork reads from — same
-        // path that skill-creator uses. The skill triggers via natural language
-        // ("run my weekly rhythm") rather than slash-command autocomplete. Verified
-        // working on Tiera's Mac 2026-04-15.
-        //
-        // Runs on every launch (not gated by a one-time flag) because:
-        // - The file write is idempotent (overwrite with same content is a no-op)
-        // - Fort Abode wrapper updates need to propagate immediately
-        // - The write is fast (<1ms, local filesystem, no network)
-        if component.id == "weekly-rhythm" {
-            if installed != nil {
-                do {
-                    try await weeklyRhythmService.updateManagedFiles()
-                } catch {
-                    await ErrorLogger.shared.log(
-                        area: "checkComponent.weeklyRhythmSelfHeal",
-                        message: "updateManagedFiles FAILED: \(error.localizedDescription)"
-                    )
-                }
-                await coworkSkillService.deployWeeklyRhythmSkill()
+        // v3.7.9: Fort Abode only manages the iCloud files (engine-spec.md +
+        // dashboard-template.html). Skill registration in Cowork is handled by
+        // the user pasting setup instructions into a Cowork session — Cowork's
+        // own tools write the SKILL.md. Direct file writes from Fort Abode to
+        // ~/.claude/skills/ don't work (Cowork ignores files written by external apps).
+        if component.id == "weekly-rhythm", installed != nil {
+            do {
+                try await weeklyRhythmService.updateManagedFiles()
+            } catch {
+                await ErrorLogger.shared.log(
+                    area: "checkComponent.weeklyRhythmSelfHeal",
+                    message: "updateManagedFiles FAILED: \(error.localizedDescription)"
+                )
             }
         }
 
@@ -642,21 +633,13 @@ final class ComponentListViewModel {
         await filePinningService.pinAll()
     }
 
-    // MARK: - Manual Deploy (user-triggered skill deploy)
+    // MARK: - Skill Setup Instructions (clipboard)
 
-    /// Manually deploy the Weekly Rhythm SKILL.md to `~/.claude/skills/`.
-    /// Used by the "Deploy Skill" button in ComponentDetailView.
-    /// Same path as the launch-time self-heal, but result surfaces in the UI.
-    func deployWeeklyRhythmSkillManually() async -> SkillDeployResult {
-        do {
-            try await weeklyRhythmService.updateManagedFiles()
-        } catch {
-            await ErrorLogger.shared.log(
-                area: "deployWeeklyRhythmSkillManually",
-                message: "updateManagedFiles FAILED: \(error.localizedDescription)"
-            )
-        }
-        return await coworkSkillService.deployWeeklyRhythmSkill()
+    /// Copy the Weekly Rhythm setup prompt to the clipboard. The user pastes it
+    /// into a Cowork session, and Cowork's own Claude handles the skill registration.
+    @MainActor
+    func copyWeeklyRhythmSetupInstructions() {
+        _ = coworkSkillService.copySetupInstructionsToClipboard()
     }
 
     /// Post-install tasks specific to the Memory component:
@@ -700,9 +683,9 @@ final class ComponentListViewModel {
         }
     }
 
-    /// Post-install tasks for the Weekly Rhythm Engine (deploy files to iCloud + deploy skill).
-    /// v3.7.7: writes SKILL.md to ~/.claude/skills/weekly-rhythm-engine/ — the user-level
-    /// skills directory that Cowork reads from via natural language matching.
+    /// Post-install tasks for the Weekly Rhythm Engine (deploy files to iCloud).
+    /// v3.7.9: Fort Abode only manages iCloud files. Skill registration in Cowork
+    /// is handled by the user pasting setup instructions from the clipboard.
     private func performWeeklyRhythmPostInstall(userName: String) async {
         do {
             try await weeklyRhythmService.setupWeeklyFlow(userName: userName)
@@ -715,7 +698,5 @@ final class ComponentListViewModel {
                 installedVersion: nil
             )
         }
-
-        await coworkSkillService.deployWeeklyRhythmSkill()
     }
 }

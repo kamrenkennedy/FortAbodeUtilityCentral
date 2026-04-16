@@ -3,24 +3,6 @@
     <channel>
         <title>Fort Abode Utility Central</title>
         <item>
-    <title>3.7.8</title>
-    <pubDate>Wed, 15 Apr 2026 19:10:43 -0500</pubDate>
-    <sparkle:version>32</sparkle:version>
-    <sparkle:shortVersionString>3.7.8</sparkle:shortVersionString>
-    <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-    <sparkle:releaseNotesLink>https://github.com/kamrenkennedy/FortAbodeUtilityCentral/releases/tag/v3.7.8</sparkle:releaseNotesLink>
-    <enclosure url="https://github.com/kamrenkennedy/FortAbodeUtilityCentral/releases/download/v3.7.8/FortAbodeUtilityCentral-v3.7.8.zip" sparkle:edSignature="unqrfNJmvs0I6BjQstPBYRBKpPiOAZFEp3v4zk00x3vCn7hC3zIb/iHsPjxOSP7BrpOpr/l7ZDsFP4ecKybGBg==" length="3948402" type="application/octet-stream"/>
-</item>
-        <item>
-    <title>3.7.7</title>
-    <pubDate>Wed, 15 Apr 2026 18:58:58 -0500</pubDate>
-    <sparkle:version>31</sparkle:version>
-    <sparkle:shortVersionString>3.7.7</sparkle:shortVersionString>
-    <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-    <sparkle:releaseNotesLink>https://github.com/kamrenkennedy/FortAbodeUtilityCentral/releases/tag/v3.7.7</sparkle:releaseNotesLink>
-    <enclosure url="https://github.com/kamrenkennedy/FortAbodeUtilityCentral/releases/download/v3.7.7/FortAbodeUtilityCentral-v3.7.7.zip" sparkle:edSignature="kE0KJtBUOPmgS6Q/Du9aPao68ZvL+tJ/+8eUpQUPf3uGZZWCpEOr9Au4C1eldjJo16F0+n+WTeh/BtB3A/SyDg==" length="3947781" type="application/octet-stream"/>
-</item>
-        <item>
     <title>3.7.6</title>
     <pubDate>Wed, 15 Apr 2026 17:10:15 -0500</pubDate>
     <sparkle:version>30</sparkle:version>

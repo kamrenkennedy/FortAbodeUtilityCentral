@@ -11,8 +11,7 @@ struct ComponentDetailView: View {
     @State private var isLoadingChangelog = false
     @State private var showWizard = false
     @State private var instances: [String] = []
-    @State private var deployResult: SkillDeployResult = .notYetAttempted
-    @State private var isDeploying = false
+    @State private var copiedToClipboard = false
 
     private var component: Component? {
         viewModel.registry.component(withId: componentId)
@@ -198,31 +197,24 @@ struct ComponentDetailView: View {
 
             Spacer()
 
-            // v3.7.7: deploy SKILL.md to ~/.claude/skills/weekly-rhythm-engine/.
-            // This is the user-level skills directory Cowork reads from via natural
-            // language matching. Same path that skill-creator uses. The skill
-            // triggers when users say "run my weekly rhythm" or similar phrases.
+            // v3.7.9: copy setup instructions to clipboard. The user pastes them
+            // into a Cowork session, and Cowork's own Claude handles the skill
+            // registration by reading engine-spec.md from iCloud and writing
+            // SKILL.md to ~/.claude/skills/. This is the only approach that works
+            // — Cowork ignores files written by external apps.
             if component.id == "weekly-rhythm", status.installedVersion != nil {
                 Button {
-                    Task {
-                        isDeploying = true
-                        deployResult = await viewModel.deployWeeklyRhythmSkillManually()
-                        isDeploying = false
-                    }
+                    viewModel.copyWeeklyRhythmSetupInstructions()
+                    copiedToClipboard = true
                 } label: {
-                    if isDeploying {
-                        HStack(spacing: 6) {
-                            ProgressView().controlSize(.small)
-                            Text("Deploying…")
-                        }
-                    } else {
-                        Label("Deploy Skill to Claude", systemImage: "arrow.triangle.2.circlepath")
-                    }
+                    Label(
+                        copiedToClipboard ? "Copied!" : "Copy Setup Instructions",
+                        systemImage: copiedToClipboard ? "checkmark" : "doc.on.clipboard"
+                    )
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.regular)
-                .disabled(isDeploying)
-                .help("Deploy the Weekly Rhythm skill to Claude's user skills folder. Say \"run my weekly rhythm\" in Claude to use it.")
+                .help("Copy skill setup instructions to clipboard. Paste into a Claude session to register the Weekly Rhythm skill.")
             }
 
             // Uninstall button — only for marketplace components that are installed
@@ -237,16 +229,14 @@ struct ComponentDetailView: View {
             }
         }
 
-        // Inline result of the manual deploy button.
-        if component.id == "weekly-rhythm", case .notYetAttempted = deployResult {
-            EmptyView()
-        } else if component.id == "weekly-rhythm" {
+        // Inline hint after copying setup instructions.
+        if component.id == "weekly-rhythm", copiedToClipboard {
             HStack(alignment: .top, spacing: 6) {
-                Image(systemName: deployResult.isSuccess ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                    .foregroundStyle(deployResult.isSuccess ? .green : .orange)
-                Text(deployResult.displayMessage)
+                Image(systemName: "info.circle.fill")
+                    .foregroundStyle(.blue)
+                Text("Open Claude, start a new task, and paste with ⌘V. Claude will set up the skill for you.")
                     .font(.caption)
-                    .foregroundStyle(deployResult.isSuccess ? .green : .orange)
+                    .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.top, 4)

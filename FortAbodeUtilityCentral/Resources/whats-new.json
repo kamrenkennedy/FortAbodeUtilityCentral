@@ -1,5 +1,12 @@
 [
   {
+    "version": "3.7.9",
+    "notes": [
+      "New 'Copy Setup Instructions' button on Weekly Rhythm \u2014 copies a ready-to-paste prompt for registering the skill in Claude",
+      "Open Claude, start a new task, paste with \u2318V \u2014 Claude sets up the skill using its own tools"
+    ]
+  },
+  {
     "version": "3.7.8",
     "notes": [
       "Weekly Rhythm skill now deploys the full engine specification \u2014 first-run setup, MCP health checks, and the complete Step 1-12 pipeline all work correctly",

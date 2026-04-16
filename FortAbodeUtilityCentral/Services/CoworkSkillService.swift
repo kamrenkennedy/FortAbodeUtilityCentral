@@ -1,193 +1,62 @@
+import AppKit
 import Foundation
 
-// MARK: - Skill Deploy Result
+// MARK: - Cowork Skill Service (v3.7.9 — clipboard-based setup)
 
-/// Outcome of deploying the Weekly Rhythm SKILL.md to the user skills directory.
-enum SkillDeployResult: Sendable, Equatable {
-    case notYetAttempted
-    case succeeded(at: Date, path: String)
-    case failed(at: Date, error: String)
-
-    var isSuccess: Bool {
-        if case .succeeded = self { return true }
-        return false
-    }
-
-    var displayMessage: String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .none
-        formatter.timeStyle = .short
-        switch self {
-        case .notYetAttempted:
-            return "Not yet attempted"
-        case .succeeded(let at, _):
-            return "Skill deployed at \(formatter.string(from: at)) — say \"run my weekly rhythm\" in Claude to use it"
-        case .failed(_, let error):
-            return "Deploy failed: \(error)"
-        }
-    }
-}
-
-// MARK: - Cowork Skill Service (v3.7.7 — write to ~/.claude/skills/)
-
-/// Deploys the Weekly Rhythm Engine skill to Claude's user skills directory.
+/// Provides the Weekly Rhythm Engine setup prompt for users to paste into Cowork.
 ///
-/// **v3.7.7 rewrite — the simplest version yet.** After six releases trying to get
-/// the skill into Cowork's internal state (v3.7.1-v3.7.5 wrote directly to
-/// `manifest.json` which Cowork clobbered; v3.7.6 used `claude plugin install`
-/// which targets a parallel system Cowork doesn't read), we discovered that
-/// Cowork's own `skill-creator` tool writes skills to `~/.claude/skills/<name>/SKILL.md`.
-/// That's a simple user-level skills directory that Cowork picks up via natural
-/// language matching. When Tiera ran skill-creator manually on her Mac and then
-/// typed "run my weekly rhythm", the skill worked perfectly — full engine spec
-/// loaded from iCloud, day types recognized, personalized output generated.
+/// **v3.7.9 rewrite — the simplest version yet.** After eight releases trying to
+/// auto-register the skill (direct manifest writes, CLI plugin install, direct
+/// file writes to ~/.claude/skills/), we discovered that Cowork only properly
+/// loads skills written by its OWN tools — not by external apps. The approach
+/// that works: copy a ready-to-paste prompt to the clipboard, user pastes it
+/// into a Cowork session, and Cowork's own Claude reads the engine spec from
+/// iCloud and writes the SKILL.md using Cowork's native file tools.
 ///
-/// v3.7.7 does exactly what skill-creator did: write SKILL.md to
-/// `~/.claude/skills/weekly-rhythm-engine/SKILL.md`. One directory creation +
-/// one file write. No CLI, no marketplace, no manifest, no plugin system.
-/// Fort Abode overwrites this file on every install/update so the wrapper
-/// stays current when the engine spec evolves.
-///
-/// The skill triggers via natural language ("run my weekly rhythm", "plan my week",
-/// etc.) rather than slash-command autocomplete. Slash commands are for embedded
-/// plugin skills; user-level skills at `~/.claude/skills/` trigger via description
-/// matching. Both work — it's just a different invocation style.
+/// Verified on Tiera's Mac 2026-04-15: Cowork read the full engine-spec.md,
+/// wrote ~39,568 chars to ~/.claude/skills/weekly-rhythm-engine/SKILL.md, and
+/// loaded the correct connectors (Tiera-Deep-Context, Tiera-Memory).
 actor CoworkSkillService {
 
-    private let fm = FileManager.default
+    /// The setup prompt that users paste into a Cowork session to register the skill.
+    /// This is the exact prompt that worked on Tiera's Mac.
+    static let setupPrompt = """
+        I need you to set up my Weekly Rhythm Engine skill. Please do the following:
 
-    /// Most recent outcome — read by the UI and the debug report.
-    private(set) var lastDeployResult: SkillDeployResult = .notYetAttempted
+        1. Read the full engine specification from: ~/Library/Mobile Documents/com~apple~CloudDocs/Kennedy Family Docs/Claude/Weekly Flow/engine-spec.md
 
-    /// The user-level skills directory that Cowork reads from.
-    /// This is where skill-creator writes when creating user skills.
-    private var userSkillsDir: URL {
-        fm.homeDirectoryForCurrentUser.appendingPathComponent(".claude/skills")
-    }
+        2. Create the skill directory and file at ~/.claude/skills/weekly-rhythm-engine/SKILL.md with:
+           - Start with this exact YAML frontmatter:
+             ---
+             name: weekly-rhythm-engine
+             model: opus
+             description: >
+               The strategic engine for my week — work and personal life in one unified rhythm.
+               Trigger for: "run my weekly rhythm", "set up my week", "plan my week",
+               "what's my plan for the week", "run the rhythm engine"
+             ---
+           - Then paste the ENTIRE contents of engine-spec.md after the closing ---
 
-    /// The specific skill directory for weekly-rhythm-engine.
-    private var weeklyRhythmSkillDir: URL {
-        userSkillsDir.appendingPathComponent("weekly-rhythm-engine")
-    }
+        3. Confirm the file was written successfully.
+        """
 
-    /// The SKILL.md file path.
-    private var weeklyRhythmSkillFile: URL {
-        weeklyRhythmSkillDir.appendingPathComponent("SKILL.md")
-    }
+    /// Copy the setup prompt to the system clipboard.
+    /// Returns true if the copy succeeded (it always does on macOS, but the
+    /// return value is there for completeness).
+    @MainActor
+    func copySetupInstructionsToClipboard() -> Bool {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        let success = pasteboard.setString(Self.setupPrompt, forType: .string)
 
-    // MARK: - Public API
-
-    /// Deploy the full engine spec to `~/.claude/skills/weekly-rhythm-engine/SKILL.md`.
-    ///
-    /// **v3.7.8:** deploys the FULL engine-spec.md (not the thin wrapper). The thin
-    /// wrapper said "Step 0: Read engine-spec.md from iCloud" but Cowork's user-level
-    /// skills system doesn't execute those Read: instructions as literal tool calls —
-    /// it treats SKILL.md as description/context and improvises. On Tiera's Mac, this
-    /// meant Cowork offered generic options instead of running the actual Step 1-12
-    /// pipeline with the first-run setup questionnaire.
-    ///
-    /// The fix: inline the complete engine spec as the SKILL.md content. YAML
-    /// frontmatter is prepended so Cowork recognizes the skill name, description,
-    /// and trigger phrases. Fort Abode overwrites on every launch so engine spec
-    /// updates propagate automatically.
-    @discardableResult
-    func deployWeeklyRhythmSkill() async -> SkillDeployResult {
-        await ErrorLogger.shared.log(
-            area: "deployWeeklyRhythmSkill",
-            message: "Starting skill deploy to ~/.claude/skills/ (full engine spec)"
-        )
-
-        // Read the full engine spec from the app bundle
-        guard let specURL = Bundle.main.url(
-            forResource: "engine-spec",
-            withExtension: "md"
-        ) else {
-            let error = "engine-spec.md not found in app bundle"
+        Task {
             await ErrorLogger.shared.log(
-                area: "deployWeeklyRhythmSkill",
-                message: "FAILED: \(error)"
+                area: "CoworkSkillService.copySetupInstructions",
+                message: "Setup instructions copied to clipboard",
+                context: ["promptLength": "\(Self.setupPrompt.count)"]
             )
-            let result = SkillDeployResult.failed(at: Date(), error: error)
-            lastDeployResult = result
-            return result
         }
 
-        do {
-            let specContent = try String(contentsOf: specURL, encoding: .utf8)
-
-            // Prepend YAML frontmatter so Cowork recognizes the skill.
-            // The frontmatter provides the name (used as the skill identifier),
-            // the description (used for natural-language trigger matching),
-            // and the model preference.
-            let frontmatter = """
-                ---
-                name: weekly-rhythm-engine
-                model: opus
-                description: >
-                  The strategic engine for Kam's week — work and personal life in one unified rhythm.
-                  Runs on Fridays to plan the full coming week, and on-demand anytime something changes.
-                  Synthesizes all Google Calendars, Apple Reminders, and Gmail into a clean weekly brief
-                  shaped by day types, goals, errands, and milestone awareness.
-
-                  Trigger this skill for: "run my weekly rhythm", "set up my week",
-                  "what's my plan for the week", "run the rhythm engine", "plan my week",
-                  "what do I have going on this week", "update my week", or any variation of
-                  wanting a structured weekly planning view. Also trigger for first-time setup
-                  when no user config exists.
-                ---
-
-                """
-
-            let content = frontmatter + specContent
-
-            // Create the skill directory if needed
-            if !fm.fileExists(atPath: weeklyRhythmSkillDir.path) {
-                try fm.createDirectory(
-                    at: weeklyRhythmSkillDir,
-                    withIntermediateDirectories: true
-                )
-            }
-
-            // Write SKILL.md (overwrite any existing version)
-            try content.write(to: weeklyRhythmSkillFile, atomically: true, encoding: .utf8)
-
-            let path = weeklyRhythmSkillFile.path
-            await ErrorLogger.shared.log(
-                area: "deployWeeklyRhythmSkill",
-                message: "Skill deployed successfully",
-                context: ["path": path, "bytes": "\(content.utf8.count)"]
-            )
-
-            let result = SkillDeployResult.succeeded(at: Date(), path: path)
-            lastDeployResult = result
-            return result
-        } catch {
-            let message = error.localizedDescription
-            await ErrorLogger.shared.log(
-                area: "deployWeeklyRhythmSkill",
-                message: "FAILED: \(message)",
-                context: ["error": String(describing: error)]
-            )
-            let result = SkillDeployResult.failed(at: Date(), error: message)
-            lastDeployResult = result
-            return result
-        }
-    }
-
-    /// Remove the skill from the user skills directory.
-    /// Called from `ComponentListViewModel.uninstallComponent` for weekly-rhythm.
-    func removeWeeklyRhythmSkill() async {
-        await ErrorLogger.shared.log(
-            area: "removeWeeklyRhythmSkill",
-            message: "Removing skill from ~/.claude/skills/"
-        )
-        if fm.fileExists(atPath: weeklyRhythmSkillDir.path) {
-            try? fm.removeItem(at: weeklyRhythmSkillDir)
-        }
-    }
-
-    /// Whether the skill file currently exists at the user skills path.
-    func isSkillDeployed() -> Bool {
-        fm.fileExists(atPath: weeklyRhythmSkillFile.path)
+        return success
     }
 }

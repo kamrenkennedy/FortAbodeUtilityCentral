@@ -1,5 +1,12 @@
 [
   {
+    "version": "3.7.8",
+    "notes": [
+      "Weekly Rhythm skill now deploys the full engine specification \u2014 first-run setup, MCP health checks, and the complete Step 1-12 pipeline all work correctly",
+      "Previously only a thin wrapper was deployed, which caused Claude to improvise instead of following the actual engine instructions"
+    ]
+  },
+  {
     "version": "3.7.7",
     "notes": [
       "Weekly Rhythm skill now deploys to Claude's user skills folder \u2014 say \"run my weekly rhythm\" in any Claude session to use it",

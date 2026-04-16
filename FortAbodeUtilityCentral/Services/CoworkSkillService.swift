@@ -77,22 +77,32 @@ actor CoworkSkillService {
 
     // MARK: - Public API
 
-    /// Deploy the bundled SKILL.md wrapper to `~/.claude/skills/weekly-rhythm-engine/SKILL.md`.
-    /// Overwrites on every call so Fort Abode updates to the wrapper are picked up.
-    /// Returns the deploy result for UI display.
+    /// Deploy the full engine spec to `~/.claude/skills/weekly-rhythm-engine/SKILL.md`.
+    ///
+    /// **v3.7.8:** deploys the FULL engine-spec.md (not the thin wrapper). The thin
+    /// wrapper said "Step 0: Read engine-spec.md from iCloud" but Cowork's user-level
+    /// skills system doesn't execute those Read: instructions as literal tool calls —
+    /// it treats SKILL.md as description/context and improvises. On Tiera's Mac, this
+    /// meant Cowork offered generic options instead of running the actual Step 1-12
+    /// pipeline with the first-run setup questionnaire.
+    ///
+    /// The fix: inline the complete engine spec as the SKILL.md content. YAML
+    /// frontmatter is prepended so Cowork recognizes the skill name, description,
+    /// and trigger phrases. Fort Abode overwrites on every launch so engine spec
+    /// updates propagate automatically.
     @discardableResult
     func deployWeeklyRhythmSkill() async -> SkillDeployResult {
         await ErrorLogger.shared.log(
             area: "deployWeeklyRhythmSkill",
-            message: "Starting skill deploy to ~/.claude/skills/"
+            message: "Starting skill deploy to ~/.claude/skills/ (full engine spec)"
         )
 
-        // Read the bundled wrapper from the app bundle
-        guard let bundledURL = Bundle.main.url(
-            forResource: "weekly-rhythm-skill-wrapper",
+        // Read the full engine spec from the app bundle
+        guard let specURL = Bundle.main.url(
+            forResource: "engine-spec",
             withExtension: "md"
         ) else {
-            let error = "weekly-rhythm-skill-wrapper.md not found in app bundle"
+            let error = "engine-spec.md not found in app bundle"
             await ErrorLogger.shared.log(
                 area: "deployWeeklyRhythmSkill",
                 message: "FAILED: \(error)"
@@ -103,7 +113,32 @@ actor CoworkSkillService {
         }
 
         do {
-            let content = try String(contentsOf: bundledURL, encoding: .utf8)
+            let specContent = try String(contentsOf: specURL, encoding: .utf8)
+
+            // Prepend YAML frontmatter so Cowork recognizes the skill.
+            // The frontmatter provides the name (used as the skill identifier),
+            // the description (used for natural-language trigger matching),
+            // and the model preference.
+            let frontmatter = """
+                ---
+                name: weekly-rhythm-engine
+                model: opus
+                description: >
+                  The strategic engine for Kam's week — work and personal life in one unified rhythm.
+                  Runs on Fridays to plan the full coming week, and on-demand anytime something changes.
+                  Synthesizes all Google Calendars, Apple Reminders, and Gmail into a clean weekly brief
+                  shaped by day types, goals, errands, and milestone awareness.
+
+                  Trigger this skill for: "run my weekly rhythm", "set up my week",
+                  "what's my plan for the week", "run the rhythm engine", "plan my week",
+                  "what do I have going on this week", "update my week", or any variation of
+                  wanting a structured weekly planning view. Also trigger for first-time setup
+                  when no user config exists.
+                ---
+
+                """
+
+            let content = frontmatter + specContent
 
             // Create the skill directory if needed
             if !fm.fileExists(atPath: weeklyRhythmSkillDir.path) {

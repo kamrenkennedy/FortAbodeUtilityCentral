@@ -5,6 +5,7 @@ import SwiftUI
 struct ContentView: View {
 
     @Environment(ComponentListViewModel.self) private var viewModel
+    @Environment(AppUpdaterService.self) private var updaterService
     @State private var migrationName = ""
 
     private let columns = [
@@ -48,6 +49,14 @@ struct ContentView: View {
                         }
                         .padding(32)
                     }
+                }
+
+                if updaterService.updateIsReady && !updaterService.dismissedForSession {
+                    UpdateBannerView(
+                        pendingVersion: updaterService.pendingVersion,
+                        onInstall: { updaterService.installAndRelaunch() },
+                        onLater: { updaterService.dismissForSession() }
+                    )
                 }
 
                 Divider()

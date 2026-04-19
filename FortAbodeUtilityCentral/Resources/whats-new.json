@@ -1,5 +1,13 @@
 [
   {
+    "version": "3.8.0",
+    "notes": [
+      "New 'Install Now' banner when an app update is ready \u2014 hit the button to apply it right away instead of waiting for the next quit/relaunch",
+      "Closing the window now tucks Fort Abode away quietly in the background \u2014 the Dock icon disappears so the app keeps running for background update checks",
+      "To bring the window back, click Fort Abode in Spotlight or open it from Launchpad"
+    ]
+  },
+  {
     "version": "3.7.9",
     "notes": [
       "New 'Copy Setup Instructions' button on Weekly Rhythm \u2014 copies a ready-to-paste prompt for registering the skill in Claude",

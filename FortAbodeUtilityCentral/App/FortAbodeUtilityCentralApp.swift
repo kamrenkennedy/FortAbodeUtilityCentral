@@ -4,7 +4,7 @@ import Sparkle
 // MARK: - App Delegate
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Keep the app alive when the last window closes
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -20,11 +20,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Window configuration moved to SwiftUI onAppear (configureMainWindow)
-        // to guarantee the window exists — Release builds may not have it yet here.
+        // If launched by LaunchAgent for a background check, start as .accessory so
+        // the Dock icon doesn't flash while we run through the component check loop.
+        // Normal launches stay .regular (default) so the Dock icon appears as expected.
+        if BackgroundTaskService.isBackgroundCheck {
+            NSApp.setActivationPolicy(.accessory)
+        }
     }
 
-    func windowWillClose(_ notification: Notification) {
+    /// Drop the Dock icon and menu bar. Called when the main window closes so the
+    /// process stays alive for background Sparkle updates without a user-visible
+    /// quit target.
+    static func hideApp() {
         NSApp.setActivationPolicy(.accessory)
     }
 
@@ -52,25 +59,43 @@ struct WindowAppearanceModifier: NSViewRepresentable {
 
 @MainActor
 private final class WindowConfigView: NSView {
-    private nonisolated(unsafe) var observation: NSObjectProtocol?
+    private nonisolated(unsafe) var keyObservation: NSObjectProtocol?
+    private nonisolated(unsafe) var closeObservation: NSObjectProtocol?
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         applyStyle()
 
         // Re-apply whenever the window becomes key (SwiftUI can reset properties)
-        if let obs = observation {
+        if let obs = keyObservation {
             NotificationCenter.default.removeObserver(obs)
-            observation = nil
+            keyObservation = nil
+        }
+        if let obs = closeObservation {
+            NotificationCenter.default.removeObserver(obs)
+            closeObservation = nil
         }
         if let window {
-            observation = NotificationCenter.default.addObserver(
+            keyObservation = NotificationCenter.default.addObserver(
                 forName: NSWindow.didBecomeKeyNotification,
                 object: window,
                 queue: .main
             ) { [weak self] _ in
                 MainActor.assumeIsolated {
                     self?.applyStyle()
+                }
+            }
+
+            // When the user closes the main window, drop the Dock icon so the process
+            // stays alive for background Sparkle checks but has no visible quit target.
+            // applicationShouldHandleReopen restores the Dock icon via AppDelegate.showApp().
+            closeObservation = NotificationCenter.default.addObserver(
+                forName: NSWindow.willCloseNotification,
+                object: window,
+                queue: .main
+            ) { _ in
+                MainActor.assumeIsolated {
+                    AppDelegate.hideApp()
                 }
             }
         }
@@ -83,7 +108,8 @@ private final class WindowConfigView: NSView {
     }
 
     deinit {
-        if let observation { NotificationCenter.default.removeObserver(observation) }
+        if let keyObservation { NotificationCenter.default.removeObserver(keyObservation) }
+        if let closeObservation { NotificationCenter.default.removeObserver(closeObservation) }
     }
 }
 
@@ -96,14 +122,17 @@ struct FortAbodeUtilityCentralApp: App {
     @State private var viewModel: ComponentListViewModel?
     @State private var isActivated = KeychainService.isActivated
     @State private var whatsNewReleases: [WhatsNewRelease]?
+    @State private var updaterService: AppUpdaterService
 
     // Sparkle updater controller — starts checking for updates automatically
     private let updaterController: SPUStandardUpdaterController
 
     init() {
+        let service = AppUpdaterService()
+        _updaterService = State(initialValue: service)
         updaterController = SPUStandardUpdaterController(
             startingUpdater: true,
-            updaterDelegate: nil,
+            updaterDelegate: service,
             userDriverDelegate: nil
         )
     }
@@ -130,6 +159,7 @@ struct FortAbodeUtilityCentralApp: App {
                             }
                     }
                     .environment(viewModel)
+                    .environment(updaterService)
                 } else {
                     ProgressView("Loading...")
                         .frame(minWidth: 500, minHeight: 400)

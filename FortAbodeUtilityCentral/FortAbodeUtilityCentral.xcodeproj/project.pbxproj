@@ -33,6 +33,7 @@
 		63DF7D1C11E3A188E94C469F /* ComponentRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 782EFED7B8F2AD1265BCF690 /* ComponentRegistry.swift */; };
 		64CA5B5EAAFCDA5C06236011 /* FortAbodeUtilityCentralApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F9DE0077075CA77D29FF77 /* FortAbodeUtilityCentralApp.swift */; };
 		84EF3894AB836BBA01A7FB6A /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA1C59FBAA6BF53EE5F93CE0 /* NotificationService.swift */; };
+		850ED6CD3D14A5BD8BE09770 /* UpdateBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9FFF0BD57095AE67A3B4618 /* UpdateBannerView.swift */; };
 		864D70FCF7B97D190269DDFF /* UpdateProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 782D8AD84007D35B5B0DB9CD /* UpdateProgressView.swift */; };
 		8C46F547DCED96736E019D49 /* ComponentRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB0B45EFBB7DD5A133107515 /* ComponentRegistryTests.swift */; };
 		8FEB14627351680D4959D1BF /* MarketplaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FB63D56853D1FFB0742D448 /* MarketplaceView.swift */; };
@@ -43,6 +44,7 @@
 		A5D861B2D8E9BA0284E7ECF6 /* UpdateStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754EF798D1DADA467A6A6D84 /* UpdateStatus.swift */; };
 		A7D447D032884F15F3EA762E /* BadgeTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32B9115221657AAE3B2B132 /* BadgeTracker.swift */; };
 		A97EBD40591158370B2039CC /* StepIllustrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED50D447877CF3DECD42F54F /* StepIllustrationView.swift */; };
+		AC16ED65C6F3F4D772013284 /* AppUpdaterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032C293DBDA62F6DEA4FCB24 /* AppUpdaterService.swift */; };
 		ADE9797A2E5EE7EB3C461ED6 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D31AA9A8E09678D0693ACE38 /* SettingsView.swift */; };
 		B04C24F776D1BB9275500DB0 /* weekly-rhythm-plugin-bundle in Resources */ = {isa = PBXBuildFile; fileRef = 21A8F7C1C7370A480AA42749 /* weekly-rhythm-plugin-bundle */; };
 		B30AFA9528E558568F1FC9C0 /* gws-client-secret.json in Resources */ = {isa = PBXBuildFile; fileRef = B34078A97122C23C4D2D35E0 /* gws-client-secret.json */; };
@@ -78,6 +80,7 @@
 		00E7940EB3A6AD0DB6A38C2F /* SetupWizardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupWizardViewModel.swift; sourceTree = "<group>"; };
 		00E7AF22AE310DA57B354CDA /* SetupWizardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupWizardView.swift; sourceTree = "<group>"; };
 		02B29456AE09E75239846438 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
+		032C293DBDA62F6DEA4FCB24 /* AppUpdaterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdaterService.swift; sourceTree = "<group>"; };
 		04657FBC8960E17F4E585ECA /* StepContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StepContentView.swift; sourceTree = "<group>"; };
 		0C827BD5D498E86D1F3BEC2D /* GitHubService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubService.swift; sourceTree = "<group>"; };
 		16FB3766D3708E744FA90472 /* WhatsNewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewView.swift; sourceTree = "<group>"; };
@@ -130,6 +133,7 @@
 		EC09EC9C57BA66F1650B44A0 /* ComponentListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentListViewModel.swift; sourceTree = "<group>"; };
 		ED50D447877CF3DECD42F54F /* StepIllustrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StepIllustrationView.swift; sourceTree = "<group>"; };
 		EE892C2183E7CF82B548E18D /* BackgroundTaskService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundTaskService.swift; sourceTree = "<group>"; };
+		F9FFF0BD57095AE67A3B4618 /* UpdateBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateBannerView.swift; sourceTree = "<group>"; };
 		FE4CB53B5CB04DACA0FDC375 /* VersionDetectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionDetectionTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -148,6 +152,7 @@
 		15E77D64ABA66073AF28090E /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				032C293DBDA62F6DEA4FCB24 /* AppUpdaterService.swift */,
 				EE892C2183E7CF82B548E18D /* BackgroundTaskService.swift */,
 				67CBAA3E68AE042FD8F6FFDF /* ClaudeCodeConfigService.swift */,
 				A49ABEA06B33CB1666AD17A0 /* ClaudeDesktopConfigService.swift */,
@@ -213,6 +218,7 @@
 				3757BEFBB847475D0690FF32 /* FeedbackView.swift */,
 				7FB63D56853D1FFB0742D448 /* MarketplaceView.swift */,
 				D31AA9A8E09678D0693ACE38 /* SettingsView.swift */,
+				F9FFF0BD57095AE67A3B4618 /* UpdateBannerView.swift */,
 				782D8AD84007D35B5B0DB9CD /* UpdateProgressView.swift */,
 				16FB3766D3708E744FA90472 /* WhatsNewView.swift */,
 				2A30269D269741003D221D42 /* SetupWizard */,
@@ -419,6 +425,7 @@
 				047B461FE0B2A7A81E4BC469 /* ActivationView.swift in Sources */,
 				BE31F2E9C53C3C01AF59B9E0 /* AppNavigation.swift in Sources */,
 				156C48CEA34E68406BE574C7 /* AppSettings.swift in Sources */,
+				AC16ED65C6F3F4D772013284 /* AppUpdaterService.swift in Sources */,
 				BFFC39B7F0DEE48815EB2481 /* BackgroundTaskService.swift in Sources */,
 				A7D447D032884F15F3EA762E /* BadgeTracker.swift in Sources */,
 				DF4E9A21418662B5D610866B /* ChangelogEntry.swift in Sources */,
@@ -451,6 +458,7 @@
 				1BE2080AB4AF9C0D5DDF3A05 /* SetupWizardViewModel.swift in Sources */,
 				EF6A84B87BF7C01CF51F88F6 /* StepContentView.swift in Sources */,
 				A97EBD40591158370B2039CC /* StepIllustrationView.swift in Sources */,
+				850ED6CD3D14A5BD8BE09770 /* UpdateBannerView.swift in Sources */,
 				112863CDD6F3C554DAF8C3A9 /* UpdateExecutionService.swift in Sources */,
 				864D70FCF7B97D190269DDFF /* UpdateProgressView.swift in Sources */,
 				A5D861B2D8E9BA0284E7ECF6 /* UpdateStatus.swift in Sources */,
@@ -479,7 +487,7 @@
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 33;
+				CURRENT_PROJECT_VERSION = 34;
 				DEVELOPMENT_TEAM = X6LBF9H7M5;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -489,7 +497,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 3.7.9;
+				MARKETING_VERSION = 3.8.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kamstudios.fortabodeutilitycentral;
 				PRODUCT_NAME = "Fort Abode Utility Central";
 				SDKROOT = macosx;
@@ -569,7 +577,7 @@
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 33;
+				CURRENT_PROJECT_VERSION = 34;
 				DEVELOPMENT_TEAM = X6LBF9H7M5;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -579,7 +587,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 3.7.9;
+				MARKETING_VERSION = 3.8.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kamstudios.fortabodeutilitycentral;
 				PRODUCT_NAME = "Fort Abode Utility Central";
 				SDKROOT = macosx;

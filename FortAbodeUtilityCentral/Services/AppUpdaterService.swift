@@ -44,9 +44,14 @@ final class AppUpdaterService: NSObject, SPUUpdaterDelegate {
     /// fresh updates without waiting for the daily Sparkle schedule.
     private let foregroundCheckCooldown: TimeInterval = 600
 
-    /// Long-lived Task that bridges the AppKit notification stream into MainActor
-    /// context. Lives for the app's lifetime; cancellation isn't required.
-    private var activationObserverTask: Task<Void, Never>?
+    /// NotificationCenter observer token for the bring-to-front check. Held for
+    /// the app's lifetime; explicit removal isn't required because the observer
+    /// is torn down with the app process.
+    private var activationObserver: NSObjectProtocol?
+
+    /// First activation after launch is skipped because Sparkle's startup check
+    /// has already fired by then; this tracks whether we've passed it.
+    private var seenFirstActivation: Bool = false
 
     /// Called by the banner's "Install Now" button.
     func installAndRelaunch() {
@@ -64,14 +69,20 @@ final class AppUpdaterService: NSObject, SPUUpdaterDelegate {
     /// has already run by then; subsequent activations trigger a debounced
     /// background check so the window opening picks up fresh updates fast.
     func startObservingActivation() {
-        guard activationObserverTask == nil else { return }
-        activationObserverTask = Task { @MainActor [weak self] in
-            var seenFirstActivation = false
-            for await _ in NotificationCenter.default.notifications(named: NSApplication.didBecomeActiveNotification) {
+        guard activationObserver == nil else { return }
+        activationObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            // queue: .main guarantees the closure runs on the main thread,
+            // so MainActor.assumeIsolated is safe under Swift 6 strict
+            // concurrency. Same pattern as willInstallUpdateOnQuit above.
+            MainActor.assumeIsolated {
                 guard let self else { return }
-                if !seenFirstActivation {
-                    seenFirstActivation = true
-                    continue
+                if !self.seenFirstActivation {
+                    self.seenFirstActivation = true
+                    return
                 }
                 self.checkForUpdatesIfDebouncePassed()
             }

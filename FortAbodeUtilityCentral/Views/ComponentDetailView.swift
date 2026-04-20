@@ -29,6 +29,14 @@ struct ComponentDetailView: View {
                         // Header: icon + name + description
                         headerSection(component)
 
+                        // Operational health (e.g. Full Disk Access for iMessage).
+                        // Only renders when the component declares health checks.
+                        if let checks = viewModel.healthChecks[componentId], !checks.isEmpty {
+                            Divider().opacity(0.3)
+                            sectionHeader("Status")
+                            ComponentHealthCard(checks: checks)
+                        }
+
                         Divider().opacity(0.3)
 
                         // How to Use

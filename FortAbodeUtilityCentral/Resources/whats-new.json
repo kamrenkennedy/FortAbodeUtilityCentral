@@ -1,5 +1,14 @@
 [
   {
+    "version": "3.9.0",
+    "notes": [
+      "iMessage now has a status card on its detail view \u2014 shows whether the component is installed, configured in Claude, and whether Full Disk Access looks right",
+      "Installing iMessage from the Marketplace now walks you through granting Full Disk Access first, so the integration works the moment install finishes",
+      "If Full Disk Access gets revoked mid-session, you'll get a notification and a red badge on the iMessage tile \u2014 one click takes you to System Settings to fix it",
+      "The same status-card + revocation-prompt flow will be reused by future Apple-data integrations (Calendar, Mail, etc.)"
+    ]
+  },
+  {
     "version": "3.8.0",
     "notes": [
       "New 'Install Now' banner when an app update is ready \u2014 hit the button to apply it right away instead of waiting for the next quit/relaunch",

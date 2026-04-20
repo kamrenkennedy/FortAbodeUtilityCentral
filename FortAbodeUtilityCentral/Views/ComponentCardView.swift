@@ -31,8 +31,17 @@ struct ComponentCardView: View {
                     .foregroundStyle(iconForeground)
                     .symbolEffect(.pulse, isActive: status == .checking || status == .updating)
 
-                // Update available badge (orange dot)
-                if status.isUpdateAvailable {
+                // Health-failure badge (red exclamation) takes precedence over
+                // update-available — a missing permission is a hard block.
+                if hasHealthFailure {
+                    Image(systemName: "exclamationmark.circle.fill")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.white, .red)
+                        .shadow(color: .red.opacity(0.5), radius: 4)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                        .padding(6)
+                } else if status.isUpdateAvailable {
+                    // Update available badge (orange dot)
                     Circle()
                         .fill(.orange)
                         .frame(width: 12, height: 12)
@@ -76,6 +85,12 @@ struct ComponentCardView: View {
                 .lineLimit(1)
         }
         .frame(width: 110)
+    }
+
+    // MARK: - Health
+
+    private var hasHealthFailure: Bool {
+        viewModel.healthChecks[component.id]?.contains(where: { $0.state == .missing }) == true
     }
 
     // MARK: - Styling

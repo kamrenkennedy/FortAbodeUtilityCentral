@@ -10,8 +10,13 @@ final class ComponentListViewModel {
     // MARK: - State
 
     var statuses: [String: UpdateStatus] = [:]
+    var healthChecks: [String: [HealthCheck]] = [:]
     var isCheckingAll = false
     var lastChecked: Date?
+
+    /// Tracks last-seen FDA state per component to fire a one-shot notification
+    /// when FDA flips from granted -> missing within a session.
+    private var lastFDAState: [String: HealthState] = [:]
 
     // MARK: - Dependencies
 
@@ -494,6 +499,8 @@ final class ComponentListViewModel {
             configPresent = false
         }
 
+        await evaluateHealthChecks(for: component, installed: installed, configPresent: configPresent)
+
         // If no npx cache version but config IS present, treat as "configured"
         guard let installed else {
             if configPresent {
@@ -518,6 +525,76 @@ final class ComponentListViewModel {
         } else {
             return .upToDate(version: installed)
         }
+    }
+
+    // MARK: - Health Checks
+
+    /// Build the per-component health-check rows after install/config state has
+    /// been determined. Currently covers components that need Full Disk Access;
+    /// future opt-in fields (`requires_automation`, `requires_screen_recording`)
+    /// would extend this method.
+    private func evaluateHealthChecks(for component: Component, installed: String?, configPresent: Bool) async {
+        guard component.requiresFullDiskAccess else {
+            healthChecks[component.id] = nil
+            return
+        }
+
+        // Only surface the health card for components the user has actually
+        // installed — pre-install, the install wizard handles the FDA prompt
+        // and a 3-row red card on the marketplace detail view would be noise.
+        guard installed != nil || configPresent else {
+            healthChecks[component.id] = nil
+            lastFDAState[component.id] = nil
+            return
+        }
+
+        // Fort Abode checks FDA via its own chat.db read attempt — a proxy for
+        // whether Claude has FDA, not a direct query. Three outcomes:
+        //   .granted  — Fort Abode can read chat.db; FDA is definitely working for
+        //               at least one app on this account.
+        //   .missing  — We saw .granted earlier in this session and it just went
+        //               away. Real revocation signal; fire a notification.
+        //   .unknown  — Fort Abode can't read chat.db and we never saw it work.
+        //               Could be because Fort Abode itself wasn't granted FDA
+        //               (Claude may still have it, we can't tell). Show a gray
+        //               "verify manually" state rather than a misleading red.
+        let fdaGranted = FullDiskAccessService.isGrantedForChatDB()
+        let previous = lastFDAState[component.id]
+        let fdaState: HealthState
+        if fdaGranted {
+            fdaState = .granted
+        } else if previous == .granted {
+            fdaState = .missing
+            await NotificationService.shared.postFDARevokedNotification(componentName: component.displayName)
+        } else {
+            fdaState = .unknown
+        }
+        lastFDAState[component.id] = fdaState
+
+        let fdaLabel = fdaState == .unknown
+            ? "Full Disk Access (verify Claude is granted access)"
+            : "Full Disk Access"
+
+        healthChecks[component.id] = [
+            HealthCheck(
+                id: "installed",
+                label: "Component installed",
+                state: installed != nil ? .granted : .missing,
+                actionDeepLink: nil
+            ),
+            HealthCheck(
+                id: "configured",
+                label: "Configured in Claude Desktop",
+                state: configPresent ? .granted : .missing,
+                actionDeepLink: nil
+            ),
+            HealthCheck(
+                id: "fda",
+                label: fdaLabel,
+                state: fdaState,
+                actionDeepLink: fdaState == .granted ? nil : FullDiskAccessService.systemSettingsDeepLink
+            )
+        ]
     }
 
     // MARK: - Helpers

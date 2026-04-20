@@ -152,6 +152,31 @@
         "args": ["-y", "@kamk95/imessage-mcp"]
       }
     ],
+    "requires_fda": true,
+    "setup_flow": {
+      "id": "imessage-setup",
+      "title": "Set Up iMessage",
+      "subtitle": "Grant Claude access to your Messages",
+      "steps": [
+        {
+          "id": "grant-fda",
+          "type": "instruction",
+          "title": "Grant Full Disk Access to Claude",
+          "body": "macOS protects your iMessages with Full Disk Access. Claude needs this permission to read your message history.\n\nClick Open below to jump straight to the right pane in System Settings (Privacy & Security → Full Disk Access). Then click +, navigate to /Applications/Claude.app, and toggle it on.\n\nLook for Full Disk Access — not Screen & System Audio Recording. They're easy to confuse.",
+          "illustration": { "type": "sf_symbol", "name": "lock.shield.fill" },
+          "action_label": "I've Granted Access",
+          "external_url": "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_AllFiles"
+        },
+        {
+          "id": "confirm",
+          "type": "completion",
+          "title": "Ready to Install",
+          "body": "Fort Abode will install the iMessage MCP and configure Claude. After install, fully quit Claude Desktop with \u2318Q and reopen so it picks up the new permission.\n\nYou can re-check Full Disk Access anytime from the iMessage tile — Fort Abode will warn you if it gets revoked by a future macOS or Claude update.",
+          "illustration": { "type": "sf_symbol", "name": "checkmark.circle.fill" },
+          "action_label": "Install"
+        }
+      ]
+    },
     "marketplace": true
   },
   {

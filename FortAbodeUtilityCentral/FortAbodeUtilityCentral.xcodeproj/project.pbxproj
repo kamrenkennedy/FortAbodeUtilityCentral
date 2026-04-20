@@ -30,8 +30,11 @@
 		527E21E6BC0AA688C00FA4E9 /* GitHubServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ED7ECBE41703B1FC4EB0791 /* GitHubServiceTests.swift */; };
 		5AB3F1610DB5361CAC618ECC /* SecureInputStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88614DCA2B0E6155C755D3C /* SecureInputStorage.swift */; };
 		61D6E60947EC0AEB30BF7D97 /* WhatsNewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16FB3766D3708E744FA90472 /* WhatsNewView.swift */; };
+		639646812B867787DB59AD83 /* FullDiskAccessService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D874D5A2A3528B406492C6B /* FullDiskAccessService.swift */; };
+		63B0BCA2036A45DF148B3C37 /* HealthCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = F67306E0D4DE7A228BD944B8 /* HealthCheck.swift */; };
 		63DF7D1C11E3A188E94C469F /* ComponentRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 782EFED7B8F2AD1265BCF690 /* ComponentRegistry.swift */; };
 		64CA5B5EAAFCDA5C06236011 /* FortAbodeUtilityCentralApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F9DE0077075CA77D29FF77 /* FortAbodeUtilityCentralApp.swift */; };
+		78A108105A88096647C68196 /* ComponentHealthCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EB2DD0D3E1CBC8A343C150 /* ComponentHealthCard.swift */; };
 		84EF3894AB836BBA01A7FB6A /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA1C59FBAA6BF53EE5F93CE0 /* NotificationService.swift */; };
 		850ED6CD3D14A5BD8BE09770 /* UpdateBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9FFF0BD57095AE67A3B4618 /* UpdateBannerView.swift */; };
 		864D70FCF7B97D190269DDFF /* UpdateProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 782D8AD84007D35B5B0DB9CD /* UpdateProgressView.swift */; };
@@ -89,6 +92,7 @@
 		26113857AC506F0780BBEE4C /* ComponentCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentCardView.swift; sourceTree = "<group>"; };
 		354B5DB8AEAB5C2C6F4D2DCE /* CoworkSkillService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoworkSkillService.swift; sourceTree = "<group>"; };
 		3757BEFBB847475D0690FF32 /* FeedbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackView.swift; sourceTree = "<group>"; };
+		37EB2DD0D3E1CBC8A343C150 /* ComponentHealthCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentHealthCard.swift; sourceTree = "<group>"; };
 		3DACD2838A1C216461103AE6 /* FeedbackService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackService.swift; sourceTree = "<group>"; };
 		48EB2A999B000B9AC11BB0DD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		50C8FB18F4E77DC49B18BFA9 /* engine-spec.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "engine-spec.md"; sourceTree = "<group>"; };
@@ -104,6 +108,7 @@
 		754EF798D1DADA467A6A6D84 /* UpdateStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateStatus.swift; sourceTree = "<group>"; };
 		782D8AD84007D35B5B0DB9CD /* UpdateProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateProgressView.swift; sourceTree = "<group>"; };
 		782EFED7B8F2AD1265BCF690 /* ComponentRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentRegistry.swift; sourceTree = "<group>"; };
+		7D874D5A2A3528B406492C6B /* FullDiskAccessService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullDiskAccessService.swift; sourceTree = "<group>"; };
 		7FB63D56853D1FFB0742D448 /* MarketplaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketplaceView.swift; sourceTree = "<group>"; };
 		8BECADF7B96CB7D3842E642F /* ActivationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivationView.swift; sourceTree = "<group>"; };
 		8ED7ECBE41703B1FC4EB0791 /* GitHubServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubServiceTests.swift; sourceTree = "<group>"; };
@@ -133,6 +138,7 @@
 		EC09EC9C57BA66F1650B44A0 /* ComponentListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentListViewModel.swift; sourceTree = "<group>"; };
 		ED50D447877CF3DECD42F54F /* StepIllustrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StepIllustrationView.swift; sourceTree = "<group>"; };
 		EE892C2183E7CF82B548E18D /* BackgroundTaskService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundTaskService.swift; sourceTree = "<group>"; };
+		F67306E0D4DE7A228BD944B8 /* HealthCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthCheck.swift; sourceTree = "<group>"; };
 		F9FFF0BD57095AE67A3B4618 /* UpdateBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateBannerView.swift; sourceTree = "<group>"; };
 		FE4CB53B5CB04DACA0FDC375 /* VersionDetectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionDetectionTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -160,6 +166,7 @@
 				1EB57DA95F7124E0519B2C86 /* ErrorLogger.swift */,
 				3DACD2838A1C216461103AE6 /* FeedbackService.swift */,
 				72B3F9599ED98BC09073C78C /* FilePinningService.swift */,
+				7D874D5A2A3528B406492C6B /* FullDiskAccessService.swift */,
 				0C827BD5D498E86D1F3BEC2D /* GitHubService.swift */,
 				02B29456AE09E75239846438 /* KeychainService.swift */,
 				BA1C59FBAA6BF53EE5F93CE0 /* NotificationService.swift */,
@@ -213,6 +220,7 @@
 				69E67AB0BE82AA7AE5E6F418 /* CheckForUpdatesView.swift */,
 				26113857AC506F0780BBEE4C /* ComponentCardView.swift */,
 				D1A394C02034C7CEDA5FA603 /* ComponentDetailView.swift */,
+				37EB2DD0D3E1CBC8A343C150 /* ComponentHealthCard.swift */,
 				6938E7B668180CBA05772572 /* ComponentRowView.swift */,
 				968811C1D0945F5BE9B6F0A8 /* ContentView.swift */,
 				3757BEFBB847475D0690FF32 /* FeedbackView.swift */,
@@ -249,6 +257,7 @@
 				91BE7F2F52EFF582932E8B9D /* ChangelogEntry.swift */,
 				6F7E990CE834E05B52EAF553 /* Component.swift */,
 				782EFED7B8F2AD1265BCF690 /* ComponentRegistry.swift */,
+				F67306E0D4DE7A228BD944B8 /* HealthCheck.swift */,
 				754EF798D1DADA467A6A6D84 /* UpdateStatus.swift */,
 			);
 			path = Models;
@@ -435,6 +444,7 @@
 				E39F0B6F301568824A772E71 /* Component.swift in Sources */,
 				33743BBEA6592F741CB5A22B /* ComponentCardView.swift in Sources */,
 				EB1961D3A6B1297856EF3C69 /* ComponentDetailView.swift in Sources */,
+				78A108105A88096647C68196 /* ComponentHealthCard.swift in Sources */,
 				F37E0647A0A8D347473AA752 /* ComponentListViewModel.swift in Sources */,
 				63DF7D1C11E3A188E94C469F /* ComponentRegistry.swift in Sources */,
 				24FDEC144817A4CB5E3EFB24 /* ComponentRowView.swift in Sources */,
@@ -446,7 +456,9 @@
 				39ACD4EE2996FF40E684E287 /* FeedbackViewModel.swift in Sources */,
 				A2B2C6005EF42A9C341F8826 /* FilePinningService.swift in Sources */,
 				64CA5B5EAAFCDA5C06236011 /* FortAbodeUtilityCentralApp.swift in Sources */,
+				639646812B867787DB59AD83 /* FullDiskAccessService.swift in Sources */,
 				06CB33690CC14595E2E99291 /* GitHubService.swift in Sources */,
+				63B0BCA2036A45DF148B3C37 /* HealthCheck.swift in Sources */,
 				05E6CAD0B79916E67AD9C87D /* KeychainService.swift in Sources */,
 				8FEB14627351680D4959D1BF /* MarketplaceView.swift in Sources */,
 				84EF3894AB836BBA01A7FB6A /* NotificationService.swift in Sources */,
@@ -487,7 +499,7 @@
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 34;
+				CURRENT_PROJECT_VERSION = 35;
 				DEVELOPMENT_TEAM = X6LBF9H7M5;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -497,7 +509,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 3.8.0;
+				MARKETING_VERSION = 3.9.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kamstudios.fortabodeutilitycentral;
 				PRODUCT_NAME = "Fort Abode Utility Central";
 				SDKROOT = macosx;
@@ -577,7 +589,7 @@
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 34;
+				CURRENT_PROJECT_VERSION = 35;
 				DEVELOPMENT_TEAM = X6LBF9H7M5;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -587,7 +599,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 3.8.0;
+				MARKETING_VERSION = 3.9.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kamstudios.fortabodeutilitycentral;
 				PRODUCT_NAME = "Fort Abode Utility Central";
 				SDKROOT = macosx;

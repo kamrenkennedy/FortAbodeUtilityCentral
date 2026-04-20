@@ -65,6 +65,28 @@ final class NotificationService: NSObject, @unchecked Sendable, UNUserNotificati
         }
     }
 
+    /// Post a notification when Full Disk Access has been revoked for a component
+    /// that needs it (e.g. iMessage). Identifier dedupes within a notification cycle
+    /// so repeated `checkAll()` runs that detect the same revocation don't spam.
+    func postFDARevokedNotification(componentName: String) async {
+        let content = UNMutableNotificationContent()
+        content.title = "Full Disk Access revoked"
+        content.body = "\(componentName) lost Full Disk Access. Open Fort Abode to re-grant it in System Settings."
+        content.sound = .default
+
+        let request = UNNotificationRequest(
+            identifier: "fda-revoked-\(componentName)",
+            content: content,
+            trigger: nil
+        )
+
+        do {
+            try await UNUserNotificationCenter.current().add(request)
+        } catch {
+            print("[NotificationService] Failed to post FDA-revoked notification: \(error)")
+        }
+    }
+
     /// Post a summary notification when multiple updates are available
     func postSummaryNotification(count: Int) async {
         let content = UNMutableNotificationContent()

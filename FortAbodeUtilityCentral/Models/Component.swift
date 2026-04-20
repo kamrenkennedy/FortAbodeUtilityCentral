@@ -301,6 +301,7 @@ struct Component: Identifiable, Codable, Hashable {
     let setupFlow: SetupFlow?
     let multiInstance: Bool?
     let minAppVersion: String?
+    let requiresFda: Bool?
 
     /// SF Symbol name — uses the explicit icon if provided, otherwise falls back by type
     var iconName: String {
@@ -334,5 +335,11 @@ struct Component: Identifiable, Codable, Hashable {
         guard let required = minAppVersion else { return true }
         let current = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
         return current.compare(required, options: .numeric) != .orderedAscending
+    }
+
+    /// Whether this component needs macOS Full Disk Access to function.
+    /// Drives the install-time setup prompt and the runtime health check.
+    var requiresFullDiskAccess: Bool {
+        requiresFda ?? false
     }
 }

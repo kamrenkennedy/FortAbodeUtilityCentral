@@ -35,6 +35,13 @@ final class ComponentRegistry {
     /// Fetch the latest registry from GitHub. Merges with bundled, caches locally.
     /// Call this during checkAll() so the refresh button also updates the marketplace.
     func refresh() async {
+        #if DEBUG
+        // In Debug builds, skip the remote fetch entirely and use only the bundled
+        // registry. Without this, local iteration on component-registry.json is
+        // silently clobbered by the stale GitHub main branch during checkAll().
+        components = loadBundledComponents()
+        return
+        #else
         guard let remote = await fetchRemote() else { return }
 
         // Merge: remote wins for matching IDs, bundled fills any gaps
@@ -46,6 +53,7 @@ final class ComponentRegistry {
 
         // Persist to cache
         saveToCache(remote)
+        #endif
     }
 
     /// Find a component by ID
@@ -82,6 +90,12 @@ final class ComponentRegistry {
     /// Load from local cache if available, otherwise from bundled JSON.
     /// Used at init for instant startup — no network delay.
     private func loadFromCacheOrBundle() {
+        #if DEBUG
+        // Debug builds always use the bundled JSON — the cache on disk may be
+        // stale from a prior Release run and would clobber local iteration.
+        components = loadBundledComponents()
+        return
+        #else
         // Try cache first
         if let cached = loadFromCache() {
             let bundled = loadBundledComponents()
@@ -91,6 +105,7 @@ final class ComponentRegistry {
 
         // Fall back to bundled
         components = loadBundledComponents()
+        #endif
     }
 
     /// Decode components from the bundled JSON resource.

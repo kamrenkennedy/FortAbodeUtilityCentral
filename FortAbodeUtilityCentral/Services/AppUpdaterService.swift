@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 import Sparkle
 
 // MARK: - App Updater Service
@@ -29,6 +30,24 @@ final class AppUpdaterService: NSObject, SPUUpdaterDelegate {
     /// Calling this relaunches the app with the new version applied.
     private var immediateInstallationBlock: (() -> Void)?
 
+    /// Reference to Sparkle's updater, set by the App after the controller is created.
+    /// Used by the bring-to-front check to ask Sparkle to poll the appcast on demand.
+    weak var updater: SPUUpdater?
+
+    /// Tracks the last on-demand background check so opening + closing the window
+    /// repeatedly within a few minutes doesn't hammer the appcast endpoint.
+    private var lastForegroundCheck: Date?
+
+    /// Cooldown between consecutive bring-to-front checks. 10 min strikes a balance:
+    /// long enough that alt-tabbing or quick window cycling doesn't fire repeated
+    /// network calls, short enough that opening Fort Abode after a meeting picks up
+    /// fresh updates without waiting for the daily Sparkle schedule.
+    private let foregroundCheckCooldown: TimeInterval = 600
+
+    /// Long-lived Task that bridges the AppKit notification stream into MainActor
+    /// context. Lives for the app's lifetime; cancellation isn't required.
+    private var activationObserverTask: Task<Void, Never>?
+
     /// Called by the banner's "Install Now" button.
     func installAndRelaunch() {
         guard let block = immediateInstallationBlock else { return }
@@ -38,6 +57,35 @@ final class AppUpdaterService: NSObject, SPUUpdaterDelegate {
     /// Called by the banner's "Later" button.
     func dismissForSession() {
         dismissedForSession = true
+    }
+
+    /// Start watching for the app being brought to the foreground. The first
+    /// activation after launch is skipped because Sparkle's own startup check
+    /// has already run by then; subsequent activations trigger a debounced
+    /// background check so the window opening picks up fresh updates fast.
+    func startObservingActivation() {
+        guard activationObserverTask == nil else { return }
+        activationObserverTask = Task { @MainActor [weak self] in
+            var seenFirstActivation = false
+            for await _ in NotificationCenter.default.notifications(named: NSApplication.didBecomeActiveNotification) {
+                guard let self else { return }
+                if !seenFirstActivation {
+                    seenFirstActivation = true
+                    continue
+                }
+                self.checkForUpdatesIfDebouncePassed()
+            }
+        }
+    }
+
+    private func checkForUpdatesIfDebouncePassed() {
+        // Don't re-check if we already have a staged update waiting on the banner.
+        guard !updateIsReady else { return }
+        if let last = lastForegroundCheck, Date().timeIntervalSince(last) < foregroundCheckCooldown {
+            return
+        }
+        lastForegroundCheck = Date()
+        updater?.checkForUpdatesInBackground()
     }
 
     // MARK: - SPUUpdaterDelegate

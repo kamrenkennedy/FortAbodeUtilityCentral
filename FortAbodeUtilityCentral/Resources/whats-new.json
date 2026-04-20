@@ -1,5 +1,12 @@
 [
   {
+    "version": "3.9.1",
+    "notes": [
+      "Fort Abode now checks for app updates the moment you bring the window to the front \u2014 you'll see the green Install Now banner within seconds of opening the app instead of waiting for the daily background check",
+      "Repeated window opens within 10 minutes won't re-check (debounced to keep the network quiet)"
+    ]
+  },
+  {
     "version": "3.9.0",
     "notes": [
       "iMessage now has a status card on its detail view \u2014 shows whether the component is installed, configured in Claude, and whether Full Disk Access looks right",

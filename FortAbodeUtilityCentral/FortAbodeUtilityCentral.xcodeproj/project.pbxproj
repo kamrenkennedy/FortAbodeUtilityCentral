@@ -499,7 +499,7 @@
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 35;
+				CURRENT_PROJECT_VERSION = 36;
 				DEVELOPMENT_TEAM = X6LBF9H7M5;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -509,7 +509,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 3.9.0;
+				MARKETING_VERSION = 3.9.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kamstudios.fortabodeutilitycentral;
 				PRODUCT_NAME = "Fort Abode Utility Central";
 				SDKROOT = macosx;
@@ -589,7 +589,7 @@
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 35;
+				CURRENT_PROJECT_VERSION = 36;
 				DEVELOPMENT_TEAM = X6LBF9H7M5;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -599,7 +599,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 3.9.0;
+				MARKETING_VERSION = 3.9.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kamstudios.fortabodeutilitycentral;
 				PRODUCT_NAME = "Fort Abode Utility Central";
 				SDKROOT = macosx;

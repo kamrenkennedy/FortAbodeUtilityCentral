@@ -135,6 +135,12 @@ struct FortAbodeUtilityCentralApp: App {
             updaterDelegate: service,
             userDriverDelegate: nil
         )
+        // Hand the service a reference to the live updater so its bring-to-front
+        // observer can ask Sparkle to poll the appcast on demand. Combined with
+        // SUEnableAutomaticChecks (~24h) this gives "fresh updates the moment you
+        // open the window" without spamming the network.
+        service.updater = updaterController.updater
+        service.startObservingActivation()
     }
 
     var body: some Scene {

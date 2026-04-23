@@ -94,7 +94,7 @@ actor FeedbackService {
     /// instead was 6458` error — the expanded debug report exceeded Notion's per-block
     /// character limit and every submission silently bounced. Writing to a shared iCloud
     /// folder has none of those limits and puts the reports where Kam can read them
-    /// directly (same pattern as the Weekly Flow engine files).
+    /// directly (same pattern as the Weekly Rhythm engine files).
     ///
     /// Dual-write: tries iCloud first, falls back to `~/Library/Logs/FortAbodeUtilityCentral/feedback/`
     /// if iCloud is unavailable or the write fails. Throws `saveFailed` only when both
@@ -466,8 +466,8 @@ actor FeedbackService {
         let home = fm.homeDirectoryForCurrentUser.path
 
         // iCloud managed files
-        let weeklyFlowDir = "\(home)/Library/Mobile Documents/com~apple~CloudDocs/Kennedy Family Docs/Claude/Weekly Flow"
-        lines.append("  iCloud Weekly Flow dir: \(fm.fileExists(atPath: weeklyFlowDir) ? "EXISTS" : "MISSING") (\(weeklyFlowDir))")
+        let weeklyFlowDir = "\(home)/Library/Mobile Documents/com~apple~CloudDocs/Kennedy Family Docs/Weekly Rhythm"
+        lines.append("  iCloud Weekly Rhythm dir: \(fm.fileExists(atPath: weeklyFlowDir) ? "EXISTS" : "MISSING") (\(weeklyFlowDir))")
         if fm.fileExists(atPath: weeklyFlowDir) {
             let dashboard = "\(weeklyFlowDir)/dashboard-template.html"
             let spec = "\(weeklyFlowDir)/engine-spec.md"

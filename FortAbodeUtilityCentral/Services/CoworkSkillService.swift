@@ -23,7 +23,7 @@ actor CoworkSkillService {
     static let setupPrompt = """
         I need you to set up my Weekly Rhythm Engine skill. Please do the following:
 
-        1. Read the full engine specification from: ~/Library/Mobile Documents/com~apple~CloudDocs/Kennedy Family Docs/Claude/Weekly Flow/engine-spec.md
+        1. Read the full engine specification from: ~/Library/Mobile Documents/com~apple~CloudDocs/Kennedy Family Docs/Weekly Rhythm/engine-spec.md
 
         2. Create the skill directory and file at ~/.claude/skills/weekly-rhythm-engine/SKILL.md with:
            - Start with this exact YAML frontmatter:

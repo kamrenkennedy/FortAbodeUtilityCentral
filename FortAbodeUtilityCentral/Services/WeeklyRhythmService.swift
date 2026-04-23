@@ -11,9 +11,9 @@ actor WeeklyRhythmService {
         fm.homeDirectoryForCurrentUser.path
     }
 
-    /// iCloud path where Weekly Flow lives
+    /// iCloud path where Weekly Rhythm lives
     private var weeklyFlowPath: String {
-        "\(homePath)/Library/Mobile Documents/com~apple~CloudDocs/Kennedy Family Docs/Claude/Weekly Flow"
+        "\(homePath)/Library/Mobile Documents/com~apple~CloudDocs/Kennedy Family Docs/Weekly Rhythm"
     }
 
     private var deployedEnginSpec: String { "\(weeklyFlowPath)/engine-spec.md" }
@@ -23,7 +23,7 @@ actor WeeklyRhythmService {
 
     /// Deploy the Weekly Rhythm Engine files to iCloud and create the user's config folder.
     func setupWeeklyFlow(userName: String) async throws {
-        // Create the Weekly Flow directory
+        // Create the Weekly Rhythm directory
         if !fm.fileExists(atPath: weeklyFlowPath) {
             try fm.createDirectory(atPath: weeklyFlowPath, withIntermediateDirectories: true)
         }
@@ -86,7 +86,7 @@ actor WeeklyRhythmService {
 
     // MARK: - Status
 
-    /// Whether the Weekly Flow folder and managed files exist in iCloud.
+    /// Whether the Weekly Rhythm folder and managed files exist in iCloud.
     func isConfigured() -> Bool {
         fm.fileExists(atPath: deployedEnginSpec) && fm.fileExists(atPath: deployedTemplate)
     }

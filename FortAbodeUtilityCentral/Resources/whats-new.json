@@ -1,5 +1,14 @@
 [
   {
+    "version": "3.10.0",
+    "notes": [
+      "Weekly Rhythm iCloud folder moved from 'Kennedy Family Docs/Claude/Weekly Flow' to 'Kennedy Family Docs/Weekly Rhythm' — shorter path, top-level placement, and the name now matches everything else",
+      "Bundles Weekly Rhythm Engine v2.1.0 — the DO NOT REBUILD banner that fixes the dashboard-rebuild bug Tiera hit",
+      "iCloud pin list updated so the new Weekly Rhythm folder stays downloaded offline on every machine",
+      "After installing, you can delete the old 'Weekly Flow' and 'Claude/Weekly Flow' folders — nothing writes there anymore"
+    ]
+  },
+  {
     "version": "3.9.1",
     "notes": [
       "Fort Abode now checks for app updates the moment you bring the window to the front \u2014 you'll see the green Install Now banner within seconds of opening the app instead of waiting for the daily background check",

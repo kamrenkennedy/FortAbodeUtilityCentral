@@ -88,7 +88,7 @@
 		0C827BD5D498E86D1F3BEC2D /* GitHubService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubService.swift; sourceTree = "<group>"; };
 		16FB3766D3708E744FA90472 /* WhatsNewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewView.swift; sourceTree = "<group>"; };
 		1EB57DA95F7124E0519B2C86 /* ErrorLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorLogger.swift; sourceTree = "<group>"; };
-		21A8F7C1C7370A480AA42749 /* weekly-rhythm-plugin-bundle */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "weekly-rhythm-plugin-bundle"; path = "Resources/weekly-rhythm-plugin-bundle"; sourceTree = SOURCE_ROOT; };
+		21A8F7C1C7370A480AA42749 /* weekly-rhythm-plugin-bundle */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "weekly-rhythm-plugin-bundle"; path = "weekly-rhythm-plugin-bundle"; sourceTree = SOURCE_ROOT; };
 		26113857AC506F0780BBEE4C /* ComponentCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentCardView.swift; sourceTree = "<group>"; };
 		354B5DB8AEAB5C2C6F4D2DCE /* CoworkSkillService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoworkSkillService.swift; sourceTree = "<group>"; };
 		3757BEFBB847475D0690FF32 /* FeedbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackView.swift; sourceTree = "<group>"; };
@@ -499,7 +499,7 @@
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 37;
 				DEVELOPMENT_TEAM = X6LBF9H7M5;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -509,7 +509,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 3.9.1;
+				MARKETING_VERSION = 3.10.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kamstudios.fortabodeutilitycentral;
 				PRODUCT_NAME = "Fort Abode Utility Central";
 				SDKROOT = macosx;
@@ -589,7 +589,7 @@
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 37;
 				DEVELOPMENT_TEAM = X6LBF9H7M5;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -599,7 +599,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 3.9.1;
+				MARKETING_VERSION = 3.10.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kamstudios.fortabodeutilitycentral;
 				PRODUCT_NAME = "Fort Abode Utility Central";
 				SDKROOT = macosx;

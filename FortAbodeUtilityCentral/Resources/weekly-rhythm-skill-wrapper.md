@@ -1,4 +1,3 @@
-<!-- Skill Wrapper v2.0.0 — Managed by Fort Abode -->
 ---
 name: weekly-rhythm-engine
 model: opus
@@ -7,6 +6,8 @@ description: >
 
   Trigger this skill for: "run my weekly rhythm", "set up my week", "what's my plan for the week", "run the rhythm engine", "plan my week", "what do I have going on this week", "update my week", or any variation of wanting a structured weekly planning view. Also trigger for first-time setup when no user config exists.
 ---
+
+<!-- Skill Wrapper v2.1.0 — Managed by Fort Abode -->
 
 # Weekly Rhythm Engine — Skill Wrapper
 
@@ -17,12 +18,12 @@ This is a thin wrapper. The full engine specification lives in a shared iCloud f
 Before doing anything else, read the full engine specification:
 
 ```
-Read: ~/Library/Mobile Documents/com~apple~CloudDocs/Kennedy Family Docs/Claude/Weekly Flow/engine-spec.md
+Read: ~/Library/Mobile Documents/com~apple~CloudDocs/Kennedy Family Docs/Weekly Rhythm/engine-spec.md
 ```
 
 If the file is not found, check alternate paths:
 ```
-Glob: ~/Library/Mobile Documents/com~apple~CloudDocs/*/Claude/Weekly Flow/engine-spec.md
+Glob: ~/Library/Mobile Documents/com~apple~CloudDocs/*/Weekly Rhythm/engine-spec.md
 ```
 
 If still not found, fall back to the bundled spec in this skill's directory:
@@ -39,10 +40,10 @@ Once the spec is loaded, follow all steps in it exactly. The spec contains:
 
 | What | Where |
 |------|-------|
-| Engine spec | `~/...iCloud.../Kennedy Family Docs/Claude/Weekly Flow/engine-spec.md` |
-| Dashboard template | `~/...iCloud.../Kennedy Family Docs/Claude/Weekly Flow/dashboard-template.html` |
-| User config | `~/...iCloud.../Kennedy Family Docs/Claude/Weekly Flow/{UserName}/config.md` |
-| User memory | `~/...iCloud.../Kennedy Family Docs/Claude/Weekly Flow/{UserName}/memory.md` |
-| Generated dashboards | `~/...iCloud.../Kennedy Family Docs/Claude/Weekly Flow/{UserName}/dashboards/weekly-brief-*.html` |
+| Engine spec | `~/...iCloud.../Kennedy Family Docs/Weekly Rhythm/engine-spec.md` |
+| Dashboard template | `~/...iCloud.../Kennedy Family Docs/Weekly Rhythm/dashboard-template.html` |
+| User config | `~/...iCloud.../Kennedy Family Docs/Weekly Rhythm/{UserName}/config.md` |
+| User memory | `~/...iCloud.../Kennedy Family Docs/Weekly Rhythm/{UserName}/memory.md` |
+| Generated dashboards | `~/...iCloud.../Kennedy Family Docs/Weekly Rhythm/{UserName}/dashboards/weekly-brief-*.html` |
 
 All files in the shared iCloud folder are synced across machines. Fort Abode manages `engine-spec.md` and `dashboard-template.html` (updates them on new versions). User files (`config.md`, `memory.md`, dashboards) are never overwritten.

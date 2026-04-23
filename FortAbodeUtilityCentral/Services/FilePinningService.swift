@@ -1,7 +1,7 @@
 import Foundation
 
 /// Pins iCloud folders locally via `brctl download` so Claude Memory, Deep Context,
-/// Weekly Flow, Family Memory, and CLAUDE.md are always available offline.
+/// Weekly Rhythm, Family Memory, and CLAUDE.md are always available offline.
 ///
 /// Runs in two places:
 ///   1. Post-install of the Memory or Weekly Rhythm component (first-time pin).
@@ -10,20 +10,21 @@ import Foundation
 ///
 /// The historical bug fixed in v3.7.1: the base path was hardcoded as
 /// `~/Library/Mobile Documents/com~apple~CloudDocs/Claude Memory` with subfolders
-/// `Kennedy Family Docs/Claude` and `Weekly Flow` appended — but those folders live
+/// `Kennedy Family Docs/Claude` and `Weekly Rhythm` appended — but those folders live
 /// at the iCloud root, not inside Claude Memory. The `fileExists` guard silently
 /// dropped the pin on every non-existent path. This rewrite uses two explicit root
 /// targets and walks the tree recursively so every subdirectory gets pinned.
 actor FilePinningService {
 
-    /// The two root folders that should always be kept downloaded.
+    /// Root folders that should always be kept downloaded.
     /// Each one is expanded recursively — every subdirectory is also pinned.
     private var targetRoots: [String] {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         let iCloudRoot = "\(home)/Library/Mobile Documents/com~apple~CloudDocs"
         return [
             "\(iCloudRoot)/Claude Memory",
-            "\(iCloudRoot)/Kennedy Family Docs/Claude"
+            "\(iCloudRoot)/Kennedy Family Docs/Claude",
+            "\(iCloudRoot)/Kennedy Family Docs/Weekly Rhythm"
         ]
     }
 
@@ -43,7 +44,7 @@ actor FilePinningService {
             _ = await pin(path: root)
 
             // Walk the tree and pin every subdirectory so nested folders like
-            // Weekly Flow/Kamren/dashboards/ get downloaded too. brctl download is
+            // Weekly Rhythm/Kamren/dashboards/ get downloaded too. brctl download is
             // non-recursive by default, so we explicitly enumerate.
             await pinSubdirectories(of: root, fileManager: fm)
         }

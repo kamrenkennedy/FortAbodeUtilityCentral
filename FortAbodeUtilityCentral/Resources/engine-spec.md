@@ -1,4 +1,4 @@
-<!-- Engine Spec v2.0.0 — Managed by Fort Abode — Updates to this file are picked up on next skill run -->
+<!-- Engine Spec v2.1.0 — Managed by Fort Abode — Updates to this file are picked up on next skill run -->
 
 # Weekly Rhythm Engine
 
@@ -41,7 +41,7 @@ Weekly    → THE ENGINE — plans the week, drives everything below
 └── weekly-brief-YYYY-MM-DD.html        ← Generated dashboards. User-owned.
 ```
 
-**Default iCloud path:** `~/Library/Mobile Documents/com~apple~CloudDocs/Kennedy Family Docs/Claude/Weekly Flow/{UserName}`
+**Default iCloud path:** `~/Library/Mobile Documents/com~apple~CloudDocs/Kennedy Family Docs/Weekly Rhythm/{UserName}`
 
 When Fort Abode is installed, it creates this folder automatically and copies the latest `dashboard-template.html` into it. The skill reads from whatever `icloud_path` is set in `config.md`.
 
@@ -57,16 +57,16 @@ When Fort Abode is installed, it creates this folder automatically and copies th
 
 ### Step 1a — Find iCloud folder
 
-Check the standard iCloud path for a Weekly Flow folder:
+Check the standard iCloud path for a Weekly Rhythm folder:
 
 ```
-Glob: ~/Library/Mobile Documents/com~apple~CloudDocs/*/Claude/Weekly Flow/*/config.md
+Glob: ~/Library/Mobile Documents/com~apple~CloudDocs/*/Weekly Rhythm/*/config.md
 ```
 
 - **If found** → load the first match's `config.md`, read the `icloud_path` and `name` from it
 - **If not found** → check if the folder exists without a config (Fort Abode may have created it):
   ```
-  Glob: ~/Library/Mobile Documents/com~apple~CloudDocs/*/Claude/Weekly Flow/*/
+  Glob: ~/Library/Mobile Documents/com~apple~CloudDocs/*/Weekly Rhythm/*/
   ```
   - **Folder exists, no config** → go to Step 2 (questionnaire, skip path question — folder is ready)
   - **No folder at all** → go to Step 2 (full questionnaire including path)
@@ -77,9 +77,9 @@ If the iCloud Glob in Step 1a returns no results, check whether you're in a Cowo
 
 - **Detection:** Working directory starts with `/sessions/` or skill loaded from a path containing `/mnt/.claude/skills/`
 - **Do NOT fall back to any bundled config directory** (`kam/`, `{skill_root}/kam/`, or any config file found in the skill's own directory tree). These are development artifacts with placeholder data — using them produces incorrect output.
-- **Request folder access:** Ask the user to select their Weekly Flow folder in iCloud. The path will be:
-  `~/Library/Mobile Documents/com~apple~CloudDocs/Kennedy Family Docs/Claude/Weekly Flow`
-  Tell the user: "I need access to your Weekly Flow folder in iCloud to load your config and save your dashboard. Please select it when prompted."
+- **Request folder access:** Ask the user to select their Weekly Rhythm folder in iCloud. The path will be:
+  `~/Library/Mobile Documents/com~apple~CloudDocs/Kennedy Family Docs/Weekly Rhythm`
+  Tell the user: "I need access to your Weekly Rhythm folder in iCloud to load your config and save your dashboard. Please select it when prompted."
 - Once the folder is mounted, re-run the Step 1a Glob against the mounted path to find `config.md`
 - **If folder access is denied or unavailable:** Stop and explain that the engine needs iCloud access to run.
 - **Automated/scheduled runs (no user present):** Emit an error and stop — folder access requires user interaction.
@@ -182,7 +182,7 @@ Run conversationally — one or two questions at a time. **Only ask about sectio
 **Full question set (for brand-new users):**
 
 1. **Path** (only if no iCloud folder found):
-   > "Where should I store your Weekly Flow files? Ideally in iCloud so it works on every device. Tell me your username and I'll suggest the path."
+   > "Where should I store your Weekly Rhythm files? Ideally in iCloud so it works on every device. Tell me your username and I'll suggest the path."
 
 2. **Identity:**
    > "What's your name? What do you do for work?"
@@ -212,8 +212,8 @@ Run conversationally — one or two questions at a time. **Only ask about sectio
     > "Any food preferences or diet restrictions? Favorite types of cuisine? This helps if you want lunch suggestions during busy days."
 
 11. **Family Sync (v2.0.0+):**
-    > "Do you want to share weekly context with a family member? This enables a shared message board, travel itinerary sync, and cross-user awareness. Each partner needs their own Weekly Flow folder."
-    - If **yes** → ask: "Who's your partner, and where's their Weekly Flow folder? (e.g., Tiera at `~/.../Kennedy Family Docs/Weekly Flow/Tiera`)"
+    > "Do you want to share weekly context with a family member? This enables a shared message board, travel itinerary sync, and cross-user awareness. Each partner needs their own Weekly Rhythm folder."
+    - If **yes** → ask: "Who's your partner, and where's their Weekly Rhythm folder? (e.g., Tiera at `~/.../Kennedy Family Docs/Weekly Rhythm/Tiera`)"
       - Persist as `family_sync_enabled: true`, `family_partners: [{name, icloud_path}]`, `message_auto_archive_days: 30`
     - If **no** → persist `family_sync_enabled: false`, omit `family_partners`
     - **Never copy a partner's config wholesale** — each user's identity, day types, goals, and lunch prefs must be answered fresh in their own setup run. Family Sync only shares the message board + travel itineraries, not the rest of the config.
@@ -1331,13 +1331,27 @@ Never end the proposed blocks without these two lines.
 
 After producing the proposed blocks, generate an interactive HTML dashboard file.
 
-**Template location:** `dashboard-template.html` in the shared Weekly Flow iCloud folder (same directory as this spec file). Read it using the path derived from the iCloud folder detection in Step 1a — e.g. `~/Library/Mobile Documents/com~apple~CloudDocs/.../Weekly Flow/dashboard-template.html`
+> ### ⚠️ CRITICAL — DO NOT REBUILD THE DASHBOARD TEMPLATE
+>
+> The dashboard's HTML, CSS, and JavaScript are **fully owned** by `dashboard-template.html`. Your job in this step is **placeholder substitution only** — replace each `{{PLACEHOLDER}}` token with the value you computed in Steps 4–9. You MUST NOT:
+> - Read `dashboard-template.html` into the conversation (it is ~100KB and will poison context).
+> - Write, edit, or emit any HTML, CSS, or `<script>` content yourself.
+> - Regenerate, "clean up," reformat, or restructure any section of the template.
+> - Recreate the dashboard from memory if the file appears missing or partial.
+>
+> The **only** acceptable mechanism for producing the weekly brief HTML is the on-disk Python substitution script in **Step 10b-ii**. Do not use the Edit tool, the Write tool, or an in-context string replacement as a substitute — those paths let the model drift into regenerating the template and are the historical source of the "rebuild" bug.
+>
+> **If `dashboard-template.html` is missing or unreadable:** STOP. Tell the user: *"Dashboard template not found at `<path>`. Fort Abode manages this file — please open Fort Abode and re-run the Weekly Rhythm Module setup to restore it."* Do not generate a replacement.
+>
+> **If Python-via-Bash is unavailable in this environment:** STOP. Tell the user: *"This environment can't run the dashboard substitution script, so I can't produce the HTML brief here. Run the skill from Claude Code or Claude Desktop instead."* Do not inline-replace placeholders or write HTML from memory.
+
+**Template location:** `dashboard-template.html` in the shared Weekly Rhythm iCloud folder (same directory as this spec file). The Python script in Step 10b-ii opens it directly from disk — you never read it into the conversation.
 
 **Output file:** `{icloud_path}/dashboards/weekly-brief-{YYYY-MM-DD}.html`
 
 Create the `dashboards/` directory if it doesn't exist. This keeps generated output separate from config files and makes it easy to browse past weeks. Each user gets their own dashboards folder (Kam → `Kamren/dashboards/`, Tiera → `Tiera/dashboards/`) — always write to the detected user's path, never a hardcoded one.
 
-**Cowork fallback:** If `{icloud_path}` is not writable (sandbox), write to the session outputs directory instead and note in the run output: "Dashboard saved to Cowork outputs (iCloud path unavailable). Copy to your Weekly Flow dashboards folder after the session."
+**Cowork fallback:** If `{icloud_path}` is not writable (sandbox), write to the session outputs directory instead and note in the run output: "Dashboard saved to Cowork outputs (iCloud path unavailable). Copy to your Weekly Rhythm dashboards folder after the session."
 
 **Inject ALL of these values into the template:**
 
@@ -1365,11 +1379,13 @@ Create the `dashboards/` directory if it doesn't exist. This keeps generated out
 
 ---
 
-### Step 10b-ii — Template substitution method (context optimization)
+### Step 10b-ii — Template substitution method (MANDATORY)
 
-**Do NOT read `dashboard-template.html` into the conversation.** It is ~100KB and will consume context needed for reasoning — this is especially critical in Cowork but applies to Claude Code runs too.
+**This is the only acceptable path for generating the dashboard HTML.** See the "DO NOT REBUILD" banner at the top of Step 10b — that banner governs this step. The goal of this method is not just context efficiency; it is drift prevention. When the template bytes pass through the conversation, the model reliably corrupts them. Keeping the template on disk and substituting with a Python script sidesteps that entire failure mode.
 
-Instead, write all placeholder values to a JSON file, then run a Python script that performs the substitution on disk:
+**Do NOT read `dashboard-template.html` into the conversation under any circumstances.** Not with the Read tool, not via `cat`, not via any inline approach. The script below opens it directly from disk.
+
+Write all placeholder values to a JSON file, then run the Python script that performs the substitution on disk:
 
 **1. Write the placeholders file** to `{icloud_path}/dashboards/.placeholders-{YYYY-MM-DD}.json` containing all 19 placeholder key-value pairs as a JSON object. Keys are the placeholder names without curly braces (e.g. `"WEEK_OF"`, `"BRIEF_CONTENT"`, `"PROPOSED_BLOCKS_JSON"`, `"UPDATE_BANNER_JSON"`, `"FAMILY_MESSAGES_JSON"`, `"DAY_TYPES_JSON"`, `"PROPOSED_FAM_MSGS_JSON"`, `"RUN_REPORT_JSON"`, etc.). Values are the fully-formed strings ready for injection — JSON arrays and objects should be serialized as strings.
 
@@ -1378,11 +1394,11 @@ Instead, write all placeholder values to a JSON file, then run a Python script t
 ```python
 import json, sys, os
 
-icloud_base = sys.argv[1]  # Weekly Flow root (e.g. ~/...Kennedy Family Docs/Claude/Weekly Flow)
-user_path = sys.argv[2]    # User folder (e.g. ~/...Weekly Flow/Kamren)
+icloud_base = sys.argv[1]  # Weekly Rhythm root (e.g. ~/...Kennedy Family Docs/Weekly Rhythm)
+user_path = sys.argv[2]    # User folder (e.g. ~/...Weekly Rhythm/Kamren)
 date_str = sys.argv[3]     # ISO date (e.g. 2026-04-13)
 
-# Read template (from Weekly Flow root, not user folder)
+# Read template (from Weekly Rhythm root, not user folder)
 with open(os.path.join(icloud_base, 'dashboard-template.html'), 'r') as f:
     html = f.read()
 
@@ -1805,18 +1821,14 @@ If no active projects exist, use an empty array `[]`. The dashboard handles the 
 
 ---
 
-**How to generate:**
-1. Read `dashboard-template.html` from the shared Weekly Flow iCloud folder
-2. Build all JSON arrays and objects from the data gathered in Steps 4–9
-3. Replace all `{{placeholders}}` using string replacement — the placeholders are exact literal strings
-4. Write the filled file to `{icloud_path}/weekly-brief-{YYYY-MM-DD}.html`
+**How to generate the dashboard file:** Follow **Step 10b-ii** above — that is the single source of truth for dashboard generation. Build the JSON arrays and objects from Steps 4–9, write them to the placeholders file, and run the Python substitution script. Do **not** read the template into the conversation; do **not** emit HTML yourself. (See the "DO NOT REBUILD" banner at the top of Step 10b.)
 
-**After writing the file, immediately open it in the default browser:**
+**After the script writes the file, immediately open it in the default browser:**
 ```
-open {icloud_path}/weekly-brief-{YYYY-MM-DD}.html
+open {user_path}/dashboards/weekly-brief-{YYYY-MM-DD}.html
 ```
 
-This is mandatory — never skip it. Kam expects the dashboard to appear automatically.
+This is mandatory — never skip it. Kam (or the detected user) expects the dashboard to appear automatically.
 
 **When Kam pastes back the `WEEKLY RHYTHM UPDATE — Week of...` output:**
 - Parse `ADD TO GOOGLE CALENDAR` section → call `gcal_create_event` for each
@@ -1982,7 +1994,7 @@ FAMILY MESSAGE COMPOSE:
 ```
 
 **For each queued message:**
-1. Determine the partner's iCloud path. Check `family_partners[].icloud_path` in config. If missing, fall back to `~/Library/Mobile Documents/com~apple~CloudDocs/Kennedy Family Docs/Weekly Flow/{partner_name}/`.
+1. Determine the partner's iCloud path. Check `family_partners[].icloud_path` in config. If missing, fall back to `~/Library/Mobile Documents/com~apple~CloudDocs/Kennedy Family Docs/Weekly Rhythm/{partner_name}/`.
 2. Ensure `{partner_path}/messages/inbox/` exists; create if needed.
 3. Generate the filename: `{ISO-timestamp}-{currentUser}-{category}.md` (e.g. `2026-04-14T08:42:00-kam-travel.md`).
 4. Write the file with frontmatter:

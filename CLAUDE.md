@@ -144,9 +144,9 @@ Update the `Fort_Abode_Utility_Central` entity specifically with current version
 | Google Workspace + Notion MCPs | COMPLETE |
 | GitHub Actions CI/CD Pipeline | COMPLETE |
 | iCloud folder pinning | COMPLETE |
-| **CLAUDE.md sync (Phase 6)** | **IN PROGRESS** |
-| Skills support (Phase 3) | FULLY SPECCED, TABLED — PDF spec at project folder |
-| Family Memory (Phase 7) | CONCEPT — shared iCloud memory for family communication |
+| CLAUDE.md sync (Phase 6) | COMPLETE — ClaudeCodeConfigService deploys generic template to iCloud with symlink + stop hook |
+| **Skills-over-MCP (replaces Phase 3)** | **IN PROGRESS** — Travel Itinerary is the pilot skill; long-term Weekly Rhythm migration waits on upstream MCP spec (~June 2026 per David Soria Parra talk). Original Skills-support Phase 3 PDF spec is superseded but kept at project folder for reference. |
+| Family Memory (Phase 7) | COMPLETE — setup-claude-memory v1.5.0 deploys shared iCloud folder; Fort Abode v3.7.1 surfaces opt-in; v3.11.0 adds Family tab + Health dashboard |
 | Future enhancements (Phase 8) | NOT STARTED |
 
 ## Family Activation

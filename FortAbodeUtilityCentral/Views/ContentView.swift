@@ -113,6 +113,12 @@ struct ContentView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 HStack(spacing: 8) {
+                    if viewModel.installedComponents.contains(where: { $0.id == "setup-claude-memory" }) {
+                        NavigationLink(value: AppDestination.familyMemory) {
+                            Label("Family", systemImage: "person.2.fill")
+                        }
+                    }
+
                     if !viewModel.marketplaceItems.isEmpty {
                         NavigationLink(value: AppDestination.marketplace) {
                             Label("Marketplace", systemImage: "storefront")

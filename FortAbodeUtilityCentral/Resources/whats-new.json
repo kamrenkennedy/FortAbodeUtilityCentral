@@ -1,5 +1,15 @@
 [
   {
+    "version": "3.11.0",
+    "notes": [
+      "New 'Family' tab in the toolbar — dedicated hub for shared family memory (insurance, contacts, household info, PDFs)",
+      "Family Health dashboard visualizes the 2026 health plan — all 5 components, tappable phone numbers, in-network doctors, action items checklist, exclusions, agent email",
+      "Empty sections show a soft prompt to add facts to FAMILY_MEMORY.md — the structure stays legible while the data fills in",
+      "Status tab confirms the iCloud folder, data files, and Claude routing block are all healthy",
+      "The Family tab only shows when Memory is installed (family memory is an extension of the Memory MCP setup)"
+    ]
+  },
+  {
     "version": "3.10.0",
     "notes": [
       "Weekly Rhythm iCloud folder moved from 'Kennedy Family Docs/Claude/Weekly Flow' to 'Kennedy Family Docs/Weekly Rhythm' — shorter path, top-level placement, and the name now matches everything else",

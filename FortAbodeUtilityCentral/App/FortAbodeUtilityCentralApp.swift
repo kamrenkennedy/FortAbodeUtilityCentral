@@ -161,6 +161,8 @@ struct FortAbodeUtilityCentralApp: App {
                                     MarketplaceView()
                                 case .feedback:
                                     FeedbackView()
+                                case .familyMemory:
+                                    FamilyMemoryView()
                                 }
                             }
                     }

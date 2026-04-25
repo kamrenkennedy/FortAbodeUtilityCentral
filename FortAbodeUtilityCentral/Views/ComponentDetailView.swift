@@ -57,7 +57,7 @@ struct ComponentDetailView: View {
                                 HStack(alignment: .top, spacing: 10) {
                                     Image(systemName: "server.rack")
                                         .font(.caption)
-                                        .foregroundStyle(.green)
+                                        .foregroundStyle(Color.statusScheduled)
                                         .frame(width: 16)
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(server.name)
@@ -128,24 +128,15 @@ struct ComponentDetailView: View {
             // Large icon
             ZStack {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(.ultraThinMaterial)
+                    .fill(Color.surfaceContainerHigh)
                     .overlay {
                         RoundedRectangle(cornerRadius: 28, style: .continuous)
-                            .fill(
-                                LinearGradient(
-                                    colors: [.green.opacity(0.08), .green.opacity(0.02)],
-                                    startPoint: .topLeading, endPoint: .bottomTrailing
-                                )
-                            )
-                    }
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 28, style: .continuous)
-                            .strokeBorder(.white.opacity(0.15), lineWidth: 0.5)
+                            .strokeBorder(Color.outlineVariant.opacity(0.4), lineWidth: 1)
                     }
 
                 Image(systemName: component.iconName)
                     .font(.system(size: 48, weight: .light))
-                    .foregroundStyle(.white.opacity(0.9))
+                    .foregroundStyle(Color.onSurfaceVariant)
             }
             .frame(width: 100, height: 100)
 
@@ -156,7 +147,7 @@ struct ComponentDetailView: View {
                 if let version = status.installedVersion {
                     Text(VersionFormatter.format(version))
                         .font(.system(.subheadline, design: .monospaced))
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.statusScheduled)
                 }
 
                 Text(component.userDescription ?? component.description)
@@ -189,7 +180,7 @@ struct ComponentDetailView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.regular)
-                .tint(.orange)
+                .tint(Color.statusDraft)
             }
 
             if status == .updating {
@@ -200,7 +191,7 @@ struct ComponentDetailView: View {
             if case .error(let message) = status {
                 Text(message)
                     .font(.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.statusError)
                     .lineLimit(2)
             }
 
@@ -242,7 +233,7 @@ struct ComponentDetailView: View {
         if component.id == "weekly-rhythm", copiedToClipboard {
             HStack(alignment: .top, spacing: 6) {
                 Image(systemName: "info.circle.fill")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.tertiary)
                 Text("Open Claude, start a new task, and paste with ⌘V. Claude will set up the skill for you.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -255,7 +246,7 @@ struct ComponentDetailView: View {
         if viewModel.showRestartHint {
             HStack(spacing: 6) {
                 Image(systemName: "arrow.clockwise.circle.fill")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.tertiary)
                 Text("Restart Claude Desktop to activate changes.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -329,7 +320,7 @@ struct ComponentDetailView: View {
                 HStack(spacing: 12) {
                     Image(systemName: "person.crop.circle.fill")
                         .font(.title3)
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.statusScheduled)
 
                     Text(name)
                         .font(.body)
@@ -343,7 +334,7 @@ struct ComponentDetailView: View {
                         }
                     } label: {
                         Image(systemName: "minus.circle")
-                            .foregroundStyle(.red.opacity(0.7))
+                            .foregroundStyle(Color.statusError.opacity(0.7))
                     }
                     .buttonStyle(.plain)
                     .help("Remove \(name)")
@@ -358,7 +349,7 @@ struct ComponentDetailView: View {
         }
         .background {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(.ultraThinMaterial)
+                .fill(Color.surfaceContainerLow)
         }
     }
 

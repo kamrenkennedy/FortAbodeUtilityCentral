@@ -20,6 +20,8 @@ struct WeeklyRhythmView: View {
     @State private var range: WeeklyRhythmRange = .week
     @State private var selectedProjectId: UUID?
     @State private var detailProject: PulseProject?
+    @State private var weekDays: [WeekDay] = WeeklyRhythmView.makeMockedWeekDays()
+    @State private var errands: [Errand] = WeeklyRhythmView.makeMockedErrands()
 
     var body: some View {
         ScrollView {
@@ -27,9 +29,12 @@ struct WeeklyRhythmView: View {
                 EditorialHeader(eyebrow: "Week 17", title: "April 21 — 27")
 
                 VStack(alignment: .leading, spacing: Space.s12) {
+                    todaysBriefSection
                     projectPulseSection
                     weekGridSection
+                    errandsSection
                     triageAndProposalsSection
+                    familyMessagesSection
                 }
                 .padding(.horizontal, Space.s16)
                 .padding(.bottom, Space.s24)
@@ -41,6 +46,49 @@ struct WeeklyRhythmView: View {
         .sheet(item: $detailProject) { project in
             ProjectDetailSheet(project: project)
                 .frame(minWidth: 520, idealWidth: 640, minHeight: 480, idealHeight: 600)
+        }
+    }
+
+    // MARK: - Today's Brief (engine-spec.md Step 6 + day-type narrative)
+
+    private var todaysBriefSection: some View {
+        DashboardCard(verticalPadding: Space.s5, horizontalPadding: Space.s6) {
+            HStack(alignment: .top, spacing: Space.s5) {
+                VStack(alignment: .leading, spacing: Space.s3) {
+                    HStack(spacing: Space.s2) {
+                        DayTypePill(kind: .move)
+                        Text("Today · Thursday April 24")
+                            .font(.labelSM)
+                            .tracking(1.5)
+                            .foregroundStyle(Color.secondaryText)
+                    }
+
+                    Text("Ship pass 3 of Braxton edit, then prep for Tiera's birthday window.")
+                        .font(.bodyMD)
+                        .foregroundStyle(Color.onSurface)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+
+                VStack(alignment: .leading, spacing: Space.s2) {
+                    Text("Week Goals".uppercased())
+                        .font(.labelSM)
+                        .tracking(1.5)
+                        .foregroundStyle(Color.secondaryText)
+
+                    HStack(alignment: .lastTextBaseline, spacing: 4) {
+                        Text("3")
+                            .font(.custom("Manrope", size: 28).weight(.light))
+                            .foregroundStyle(Color.onSurface)
+                        Text("of 5")
+                            .font(.bodySM)
+                            .foregroundStyle(Color.onSurfaceVariant)
+                    }
+
+                    GoalsProgressBar(complete: 3, total: 5)
+                        .frame(width: 120, height: 4)
+                }
+            }
         }
     }
 
@@ -240,8 +288,8 @@ struct WeeklyRhythmView: View {
     private var dayHeaderRow: some View {
         HStack(alignment: .top, spacing: 0) {
             Color.clear.frame(width: 56)
-            ForEach(weekDays.indices, id: \.self) { i in
-                DayHeader(day: weekDays[i])
+            ForEach($weekDays) { $day in
+                DayHeader(day: $day)
                     .frame(maxWidth: .infinity)
             }
         }
@@ -279,7 +327,7 @@ struct WeeklyRhythmView: View {
 
     private let timeLabels = ["8 AM", "9 AM", "10 AM", "11 AM", "12 PM", "1 PM", "2 PM", "3 PM", "4 PM"]
 
-    private var weekDays: [WeekDay] {
+    private static func makeMockedWeekDays() -> [WeekDay] {
         [
             WeekDay(name: "Mon", num: "21", dayType: .admin, isToday: false, events: [
                 Event(top: 64, height: 96, time: "9 — 10:30 AM", title: "Inbox triage", kind: .regular),
@@ -310,6 +358,201 @@ struct WeeklyRhythmView: View {
             ]),
             WeekDay(name: "Sun", num: "27", dayType: .open, isToday: false, events: [])
         ]
+    }
+
+    // MARK: - Errands (smart routing pool — engine-spec.md Errand Handling)
+
+    private var errandsSection: some View {
+        VStack(alignment: .leading, spacing: Space.s5) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Errands".uppercased())
+                    .font(.labelSM)
+                    .tracking(2.0)
+                    .foregroundStyle(Color.secondaryText)
+                Spacer(minLength: Space.s2)
+                Text("\(pendingErrands.count) pending")
+                    .font(.bodySM)
+                    .foregroundStyle(Color.onSurfaceVariant)
+            }
+
+            DashboardCard(verticalPadding: Space.s2, horizontalPadding: Space.s6) {
+                VStack(spacing: 0) {
+                    ForEach(pendingErrands.indices, id: \.self) { i in
+                        let actualIndex = errands.firstIndex(where: { $0.id == pendingErrands[i].id })!
+                        ErrandRow(errand: $errands[actualIndex])
+                        if i < pendingErrands.count - 1 {
+                            RowSeparator()
+                        }
+                    }
+
+                    if pendingErrands.isEmpty {
+                        VStack(spacing: Space.s2) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 22, weight: .light))
+                                .foregroundStyle(Color.statusScheduled)
+                            Text("All errands routed for the week")
+                                .font(.bodySM)
+                                .foregroundStyle(Color.onSurfaceVariant)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, Space.s5)
+                    }
+                }
+            }
+        }
+    }
+
+    private var pendingErrands: [Errand] {
+        errands.filter { !$0.isDone }
+    }
+
+    private static func makeMockedErrands() -> [Errand] {
+        [
+            Errand(title: "Return Amazon package",     location: "Downtown · 12 min",     daysPending: 2,  routedTo: "Mon · post office"),
+            Errand(title: "Pick up film samples",      location: "Lab · 18 min",          daysPending: 5,  routedTo: "Wed · lab pickup"),
+            Errand(title: "Drop off gear for cleaning",location: "Dry cleaner · 8 min",   daysPending: 9,  routedTo: "Fri · dry cleaner"),
+            Errand(title: "New driver's license photo",location: "DMV · 22 min",          daysPending: 17, routedTo: nil),
+            Errand(title: "Order Tiera's gift",        location: nil,                     daysPending: 4,  routedTo: nil)
+        ]
+    }
+
+    // MARK: - Family Messages (engine-spec.md Step 6c — Claude-proposed messages)
+
+    private var familyMessagesSection: some View {
+        VStack(alignment: .leading, spacing: Space.s5) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Family Messages".uppercased())
+                    .font(.labelSM)
+                    .tracking(2.0)
+                    .foregroundStyle(Color.secondaryText)
+                Spacer(minLength: Space.s2)
+                Text("\(visibleFamilyMessages.count) proposed")
+                    .font(.bodySM)
+                    .foregroundStyle(Color.onSurfaceVariant)
+            }
+
+            DashboardCard(verticalPadding: Space.s6, horizontalPadding: Space.s6) {
+                VStack(alignment: .leading, spacing: Space.s5) {
+                    if visibleFamilyMessages.isEmpty {
+                        familyMessagesEmpty
+                    } else {
+                        ForEach(visibleFamilyMessages) { message in
+                            familyMessageRow(message)
+                            if message.id != visibleFamilyMessages.last?.id {
+                                RowSeparator()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @State private var resolvedFamilyMessages: [UUID: FamilyMessageResolution] = [:]
+
+    private let familyMessages: [FamilyMessageProposal] = [
+        FamilyMessageProposal(
+            recipient: "Tiera",
+            reasoning: "Tiera has 3 events Thursday and a long run scheduled Sat morning.",
+            text: "Heads up — working late tonight on Braxton pass 3, dinner around 7? Want me to grab something?"
+        ),
+        FamilyMessageProposal(
+            recipient: "Tiera",
+            reasoning: "Birthday in 12 days; gift errand still unrouted.",
+            text: "What's your top wish for the birthday weekend? Trying to plan the day around what'll feel best for you."
+        )
+    ]
+
+    private var visibleFamilyMessages: [FamilyMessageProposal] {
+        familyMessages.filter { resolvedFamilyMessages[$0.id] == nil }
+    }
+
+    private var familyMessagesEmpty: some View {
+        VStack(spacing: Space.s2) {
+            Image(systemName: "tray")
+                .font(.system(size: 22, weight: .light))
+                .foregroundStyle(Color.onSurfaceVariant)
+            Text("No proposed messages right now")
+                .font(.bodySM)
+                .foregroundStyle(Color.onSurfaceVariant)
+            Button("Reset") {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    resolvedFamilyMessages.removeAll()
+                }
+            }
+            .buttonStyle(.plain)
+            .font(.labelSM.weight(.medium))
+            .foregroundStyle(Color.tertiary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, Space.s4)
+    }
+
+    private func familyMessageRow(_ message: FamilyMessageProposal) -> some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            HStack(spacing: Space.s2) {
+                Image(systemName: "envelope.fill")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.tertiary)
+                Text("Suggest sending to \(message.recipient)".uppercased())
+                    .font(.labelSM)
+                    .tracking(1.5)
+                    .foregroundStyle(Color.tertiary)
+            }
+
+            Text(message.text)
+                .font(.bodyMD)
+                .foregroundStyle(Color.onSurface)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(Space.s3)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous)
+                        .fill(Color.surfaceContainer)
+                )
+
+            HStack {
+                Text(message.reasoning)
+                    .font(.bodySM)
+                    .foregroundStyle(Color.onSurfaceVariant)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Spacer(minLength: Space.s2)
+
+                HStack(spacing: Space.s1) {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            resolvedFamilyMessages[message.id] = .skipped
+                        }
+                    } label: {
+                        Text("Skip")
+                            .font(.labelMD.weight(.medium))
+                            .foregroundStyle(Color.onSurfaceVariant)
+                            .padding(.horizontal, Space.s3)
+                            .padding(.vertical, Space.s1_5)
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            resolvedFamilyMessages[message.id] = .sent
+                        }
+                    } label: {
+                        Label("Send", systemImage: "arrow.up.circle.fill")
+                            .font(.labelMD.weight(.semibold))
+                            .foregroundStyle(Color.onPrimary)
+                            .padding(.horizontal, Space.s3)
+                            .padding(.vertical, Space.s1_5)
+                            .background(
+                                Capsule()
+                                    .fill(Color.primaryFill)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(.vertical, Space.s2)
     }
 
     // MARK: - Triage + Claude Proposals
@@ -492,6 +735,41 @@ private enum ProposalResolution {
     case declined
 }
 
+private struct FamilyMessageProposal: Identifiable {
+    let id = UUID()
+    let recipient: String
+    let reasoning: String
+    let text: String
+}
+
+private enum FamilyMessageResolution {
+    case sent
+    case skipped
+}
+
+// MARK: - Goals progress bar
+
+private struct GoalsProgressBar: View {
+    let complete: Int
+    let total: Int
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.surfaceContainerHigh)
+                Capsule()
+                    .fill(Color.tertiary)
+                    .frame(width: max(0, geo.size.width * fraction))
+            }
+        }
+    }
+
+    private var fraction: CGFloat {
+        total <= 0 ? 0 : CGFloat(complete) / CGFloat(total)
+    }
+}
+
 // Workaround: Space doesn't define s3_5 (14pt). Use s4 (16) where 14 was specced.
 // Kept as a private alias to flag the spec drift if it bites later.
 private extension Space {
@@ -629,7 +907,7 @@ private struct PulseProject: Identifiable {
 // MARK: - Day header + column
 
 private struct DayHeader: View {
-    let day: WeekDay
+    @Binding var day: WeekDay
 
     var body: some View {
         VStack(alignment: .center, spacing: Space.s1) {
@@ -639,7 +917,26 @@ private struct DayHeader: View {
             Text(day.num)
                 .font(.headlineMD)
                 .foregroundStyle(day.isToday ? Color.tertiary : Color.onSurface)
-            DayTypePill(kind: day.dayType)
+
+            Menu {
+                ForEach(DayType.allCases, id: \.self) { type in
+                    Button {
+                        day.dayType = type
+                    } label: {
+                        if type == day.dayType {
+                            Label(type.label, systemImage: "checkmark")
+                        } else {
+                            Text(type.label)
+                        }
+                    }
+                }
+            } label: {
+                DayTypePill(kind: day.dayType)
+            }
+            .menuStyle(.button)
+            .menuIndicator(.hidden)
+            .buttonStyle(.plain)
+            .help("Change day type")
         }
         .padding(.vertical, Space.s2)
         .padding(.horizontal, Space.s2)
@@ -743,16 +1040,117 @@ private struct EventBlock: View {
 
 // MARK: - Models
 
-private struct WeekDay {
+private struct WeekDay: Identifiable {
+    let id = UUID()
     let name: String
     let num: String
-    let dayType: DayType
+    var dayType: DayType
     let isToday: Bool
     let events: [Event]
     var nowLineOffset: CGFloat? = nil
 }
 
-private enum DayType {
+// MARK: - Errand model + row
+
+private struct Errand: Identifiable {
+    let id = UUID()
+    let title: String
+    let location: String?
+    let daysPending: Int
+    let routedTo: String?
+    var isDone: Bool = false
+}
+
+private struct ErrandRow: View {
+    @Binding var errand: Errand
+
+    var body: some View {
+        HStack(alignment: .top, spacing: Space.s3) {
+            Button {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    errand.isDone.toggle()
+                }
+            } label: {
+                ZStack {
+                    RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
+                        .strokeBorder(errand.isDone ? Color.statusScheduled : Color.outlineVariant, lineWidth: 1.5)
+                        .background(
+                            RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
+                                .fill(errand.isDone ? Color.statusScheduled : Color.clear)
+                        )
+                        .frame(width: 18, height: 18)
+                    if errand.isDone {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+                }
+                .padding(.top, 4)
+            }
+            .buttonStyle(.plain)
+            .help(errand.isDone ? "Mark as pending" : "Mark done")
+
+            VStack(alignment: .leading, spacing: Space.s1) {
+                Text(errand.title)
+                    .font(.bodyMD.weight(.medium))
+                    .foregroundStyle(errand.isDone ? Color.onSurfaceVariant : Color.onSurface)
+                    .strikethrough(errand.isDone, color: Color.onSurfaceVariant)
+
+                HStack(spacing: Space.s2) {
+                    if let location = errand.location {
+                        Label(location, systemImage: "location")
+                            .font(.bodySM)
+                            .foregroundStyle(Color.onSurfaceVariant)
+                    }
+
+                    if let routed = errand.routedTo {
+                        Label(routed, systemImage: "calendar")
+                            .font(.bodySM)
+                            .foregroundStyle(Color.tertiary)
+                    } else {
+                        Text("Unrouted")
+                            .font(.bodySM)
+                            .foregroundStyle(Color.onSurfaceVariant)
+                    }
+                }
+            }
+
+            Spacer(minLength: Space.s2)
+
+            DaysPendingPill(days: errand.daysPending)
+                .padding(.top, 2)
+        }
+        .padding(.vertical, Space.s3)
+    }
+}
+
+private struct DaysPendingPill: View {
+    let days: Int
+
+    var body: some View {
+        Text("\(days)d")
+            .font(.labelSM.weight(.medium))
+            .foregroundStyle(textColor)
+            .padding(.horizontal, Space.s2)
+            .padding(.vertical, 2)
+            .background(
+                Capsule()
+                    .fill(fillColor)
+            )
+    }
+
+    // Engine-spec.md Errand Handling: nudge errands sitting longer than the
+    // config threshold (default 14 days). brandRust on the pill flags those.
+    private var fillColor: Color {
+        days >= 14 ? Color.brandRust.opacity(0.14) : Color.surfaceContainerHigh
+    }
+
+    private var textColor: Color {
+        days >= 14 ? Color.brandRust : Color.onSurfaceVariant
+    }
+}
+
+private enum DayType: CaseIterable, Hashable {
     case make, move, recover, admin, open
 
     var label: String {

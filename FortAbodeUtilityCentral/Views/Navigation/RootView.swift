@@ -21,12 +21,31 @@ struct RootView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color.surface)
         }
+        .overlay(alignment: .bottomTrailing) {
+            chatOverlay
+                .animation(.spring(response: 0.32, dampingFraction: 0.78), value: appState.chatPanelOpen)
+                .animation(.easeOut(duration: 0.3), value: appState.chatPanelExpanded)
+        }
         .preferredColorScheme(appState.theme.preferredColorScheme)
         .sheet(isPresented: feedbackSheetBinding) {
             NavigationStack {
                 FeedbackView()
             }
             .frame(minWidth: 480, minHeight: 520)
+        }
+    }
+
+    @ViewBuilder
+    private var chatOverlay: some View {
+        if appState.chatPanelOpen {
+            ChatPanel()
+                .transition(.scale(scale: 0.4, anchor: .bottomTrailing).combined(with: .opacity))
+        } else {
+            ChatPanelFAB(unreadCount: appState.unreadFamilyCount) {
+                appState.openChat(.family)
+            }
+            .padding(28)
+            .transition(.opacity.combined(with: .scale(scale: 0.6, anchor: .bottomTrailing)))
         }
     }
 

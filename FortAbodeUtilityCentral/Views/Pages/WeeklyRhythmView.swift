@@ -360,34 +360,34 @@ struct WeeklyRhythmView: View {
 
     private static func makeMockedWeekDays() -> [WeekDay] {
         [
-            WeekDay(name: "Mon", num: "21", dayType: .admin, isToday: false, events: [
+            WeekDay(name: "Mon", num: "21", dayTypes: [.admin], isToday: false, events: [
                 Event(top: 64, height: 96, time: "9 — 10:30 AM", title: "Inbox triage", kind: .regular),
                 Event(top: 256, height: 32, time: nil, title: "Errand: post office", kind: .errand),
                 Event(top: 384, height: 64, time: "2 — 3 PM", title: "Ops review", kind: .accent)
             ]),
-            WeekDay(name: "Tue", num: "22", dayType: .make, isToday: false, events: [
+            WeekDay(name: "Tue", num: "22", dayTypes: [.make], isToday: false, events: [
                 Event(top: 128, height: 192, time: "10 AM — 1 PM", title: "Braxton edit · pass 2", kind: .regular),
                 Event(top: 448, height: 64, time: "3 — 4 PM", title: "Braxton sync", kind: .accent)
             ]),
-            WeekDay(name: "Wed", num: "23", dayType: .make, isToday: false, events: [
+            WeekDay(name: "Wed", num: "23", dayTypes: [.make], isToday: false, events: [
                 Event(top: 96, height: 224, time: "9:30 AM — 1 PM", title: "Rae reels · cuts", kind: .regular),
                 Event(top: 320, height: 32, time: nil, title: "Errand: lab pickup", kind: .errand)
             ]),
-            WeekDay(name: "Thu · today", num: "24", dayType: .move, isToday: true, events: [
+            WeekDay(name: "Thu · today", num: "24", dayTypes: [.move, .recover], isToday: true, events: [
                 Event(top: 128, height: 128, time: "10 AM — 12 PM", title: "Braxton edit · pass 3", kind: .regular),
                 Event(top: 448, height: 64, time: "3 — 4 PM", title: "Braxton sync", kind: .accent)
             ], nowLineOffset: 352),
-            WeekDay(name: "Fri", num: "25", dayType: .make, isToday: false, events: [
+            WeekDay(name: "Fri", num: "25", dayTypes: [.make], isToday: false, events: [
                 Event(top: 64, height: 192, time: "9 AM — 12 PM", title: "Studio site · DNS fix", kind: .regular),
                 Event(top: 288, height: 32, time: nil, title: "Errand: dry cleaner", kind: .errand),
                 Event(top: 448, height: 64, time: "3 — 4 PM", title: "Braxton sync (moved)", kind: .accent)
             ]),
-            WeekDay(name: "Sat", num: "26", dayType: .recover, isToday: false, events: [
+            WeekDay(name: "Sat", num: "26", dayTypes: [.recover], isToday: false, events: [
                 Event(top: 32, height: 96, time: "8:30 — 10 AM", title: "Long run · with Tiera", kind: .regular),
                 Event(top: 256, height: 32, time: "12 PM", title: "Gallery drop-off", kind: .accent),
                 Event(top: 448, height: 64, time: "3 — 4 PM", title: "Rae reels · review", kind: .regular)
             ]),
-            WeekDay(name: "Sun", num: "27", dayType: .open, isToday: false, events: [])
+            WeekDay(name: "Sun", num: "27", dayTypes: [.open], isToday: false, events: [])
         ]
     }
 
@@ -969,25 +969,7 @@ private struct DayHeader: View {
                 .font(.headlineMD)
                 .foregroundStyle(day.isToday ? Color.tertiary : Color.onSurface)
 
-            Menu {
-                ForEach(DayType.allCases, id: \.self) { type in
-                    Button {
-                        day.dayType = type
-                    } label: {
-                        if type == day.dayType {
-                            Label(type.label, systemImage: "checkmark")
-                        } else {
-                            Text(type.label)
-                        }
-                    }
-                }
-            } label: {
-                DayTypePill(kind: day.dayType)
-            }
-            .menuStyle(.button)
-            .menuIndicator(.hidden)
-            .buttonStyle(.plain)
-            .help("Change day type")
+            DayTypeEditor(types: $day.dayTypes)
         }
         .padding(.vertical, Space.s2)
         .padding(.horizontal, Space.s2)
@@ -999,20 +981,166 @@ private struct DayHeader: View {
     }
 }
 
-private struct DayTypePill: View {
-    let kind: DayType
+// MARK: - Day Type editor (custom dropdown matching engine HTML design)
+//
+// Replaces SwiftUI's native Menu so we control the visual language. Layout
+// mirrors the dashboard-template.html .dt-area pattern: each active type
+// renders as a pill (with × to remove when count > 1), followed by a small
+// ▼ chevron that opens a popover. The popover lists each available type
+// with two cells: name (replaces all current types) + plus (stacks
+// additionally). Exclusive types hide the plus cell.
+
+private struct DayTypeEditor: View {
+    @Binding var types: Set<DayType>
+    @State private var dropdownOpen: Bool = false
 
     var body: some View {
-        Text(kind.label)
-            .font(.system(size: 9, weight: .semibold))
-            .tracking(0.6)
-            .foregroundStyle(kind.tint)
-            .padding(.horizontal, Space.s2)
-            .padding(.vertical, 2)
-            .background(
-                Capsule()
-                    .fill(kind.tint.opacity(0.12))
-            )
+        HStack(spacing: 3) {
+            ForEach(sortedTypes, id: \.self) { type in
+                DayTypePill(kind: type, removable: types.count > 1) {
+                    types.remove(type)
+                }
+            }
+
+            Button {
+                dropdownOpen.toggle()
+            } label: {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(Color.onSurfaceVariant)
+                    .frame(width: 18, height: 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(Color.surfaceContainerHigh)
+                    )
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .popover(isPresented: $dropdownOpen, arrowEdge: .top) {
+                DayTypeDropdown(activeTypes: types) { newTypes in
+                    types = newTypes
+                }
+                .frame(minWidth: 220)
+            }
+            .help("Change or stack day types")
+        }
+    }
+
+    private var sortedTypes: [DayType] {
+        DayType.allCases.filter { types.contains($0) }
+    }
+}
+
+private struct DayTypeDropdown: View {
+    let activeTypes: Set<DayType>
+    let onChange: (Set<DayType>) -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(DayType.allCases.enumerated()), id: \.offset) { index, type in
+                DayTypeOption(
+                    type: type,
+                    isActive: activeTypes.contains(type),
+                    onReplace: {
+                        onChange([type])
+                    },
+                    onStack: {
+                        var next = activeTypes.filter { !$0.isExclusive }
+                        next.insert(type)
+                        onChange(next)
+                    }
+                )
+
+                if index < DayType.allCases.count - 1 {
+                    Rectangle()
+                        .fill(Color.outlineVariant.opacity(0.2))
+                        .frame(height: 1)
+                }
+            }
+        }
+        .background(Color.cardBackground)
+    }
+}
+
+private struct DayTypeOption: View {
+    let type: DayType
+    let isActive: Bool
+    let onReplace: () -> Void
+    let onStack: () -> Void
+
+    var body: some View {
+        HStack(spacing: 0) {
+            Button(action: onReplace) {
+                HStack(spacing: Space.s2) {
+                    Circle()
+                        .fill(type.tint)
+                        .frame(width: 8, height: 8)
+                    Text(type.label)
+                        .font(.bodySM.weight(isActive ? .semibold : .regular))
+                        .foregroundStyle(isActive ? Color.tertiary : Color.onSurface)
+                    Spacer(minLength: Space.s2)
+                    if isActive {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(Color.tertiary)
+                    }
+                }
+                .padding(.horizontal, Space.s3)
+                .padding(.vertical, Space.s2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if !type.isExclusive {
+                Rectangle()
+                    .fill(Color.outlineVariant.opacity(0.18))
+                    .frame(width: 1, height: 28)
+
+                Button(action: onStack) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color.onSurfaceVariant)
+                        .frame(width: 32, height: 28)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Stack this type alongside existing")
+            }
+        }
+    }
+}
+
+private struct DayTypePill: View {
+    let kind: DayType
+    var removable: Bool = false
+    var onRemove: (() -> Void)? = nil
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Text(kind.label)
+                .font(.system(size: 9, weight: .semibold))
+                .tracking(0.6)
+                .foregroundStyle(kind.tint)
+
+            if removable, let onRemove {
+                Button(action: onRemove) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 7, weight: .bold))
+                        .foregroundStyle(kind.tint.opacity(0.6))
+                        .frame(width: 10, height: 10)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Remove this day type")
+            }
+        }
+        .padding(.horizontal, Space.s2)
+        .padding(.vertical, 2)
+        .background(
+            Capsule()
+                .fill(kind.tint.opacity(0.12))
+        )
     }
 }
 
@@ -1095,10 +1223,21 @@ private struct WeekDay: Identifiable {
     let id = UUID()
     let name: String
     let num: String
-    var dayType: DayType
+    var dayTypes: Set<DayType>
     let isToday: Bool
     let events: [Event]
     var nowLineOffset: CGFloat? = nil
+
+    // Stable ordering of pills (so toggling doesn't reshuffle visually).
+    var sortedDayTypes: [DayType] {
+        DayType.allCases.filter { dayTypes.contains($0) }
+    }
+
+    // First active type, or .open as a sane fallback for downstream UI that
+    // surfaces a single representation (e.g. day breakdown narrative).
+    var primaryDayType: DayType {
+        sortedDayTypes.first ?? .open
+    }
 }
 
 // MARK: - Errand model + row
@@ -1223,6 +1362,12 @@ private enum DayType: CaseIterable, Hashable {
         case .open:    return Color.statusNeutral
         }
     }
+
+    // Engine-spec.md §Day Types: an exclusive type (e.g. Off) replaces all
+    // others — the dropdown hides its plus cell. None of the redesign HTML's
+    // 5 mock types are exclusive; Phase 5 wires the user's real config which
+    // may include Off or similar.
+    var isExclusive: Bool { false }
 }
 
 private struct Event: Identifiable {

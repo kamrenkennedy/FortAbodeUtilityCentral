@@ -43,6 +43,18 @@ final class AppState {
     var unreadFamilyCount: Int = 2
     var feedbackSheetOpen: Bool = false
 
+    // Alert counts per destination — drives the small brandRust dot on sidebar
+    // nav items (cross-page ambient awareness). Mocked for v4.0.0; Phase 5
+    // wires real counts from each destination's data source.
+    var weeklyRhythmAlertCount: Int = 2
+
+    func alertCount(for destination: Destination) -> Int {
+        switch destination {
+        case .weeklyRhythm: return weeklyRhythmAlertCount
+        default:            return 0
+        }
+    }
+
     init() {
         sidebarCollapsed = UserDefaults.standard.bool(forKey: Keys.sidebarCollapsed)
         let rawTheme = UserDefaults.standard.string(forKey: Keys.theme) ?? ThemePref.dark.rawValue

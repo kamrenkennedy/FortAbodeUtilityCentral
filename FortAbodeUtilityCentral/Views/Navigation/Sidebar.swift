@@ -67,14 +67,27 @@ private struct SidebarNavItem: View {
         appState.selectedDestination == destination
     }
 
+    private var hasAlert: Bool {
+        appState.alertCount(for: destination) > 0
+    }
+
     var body: some View {
         Button {
             appState.selectedDestination = destination
         } label: {
             HStack(spacing: Space.s3) {
-                Image(systemName: destination.symbol)
-                    .font(.system(size: compact ? 14 : 16, weight: .regular))
-                    .frame(width: 16, height: 16)
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: destination.symbol)
+                        .font(.system(size: compact ? 14 : 16, weight: .regular))
+                        .frame(width: 16, height: 16)
+
+                    if hasAlert && appState.sidebarCollapsed {
+                        Circle()
+                            .fill(Color.brandRust)
+                            .frame(width: 6, height: 6)
+                            .offset(x: 4, y: -2)
+                    }
+                }
 
                 if !appState.sidebarCollapsed {
                     Text(destination.label)
@@ -82,6 +95,12 @@ private struct SidebarNavItem: View {
                 }
 
                 Spacer(minLength: 0)
+
+                if hasAlert && !appState.sidebarCollapsed {
+                    Circle()
+                        .fill(Color.brandRust)
+                        .frame(width: 6, height: 6)
+                }
             }
             .foregroundStyle(isActive ? Color.onSurface : Color.navInactive)
             .padding(.horizontal, Space.s3)

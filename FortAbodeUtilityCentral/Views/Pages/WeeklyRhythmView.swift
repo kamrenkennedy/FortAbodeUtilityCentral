@@ -26,6 +26,8 @@ struct WeeklyRhythmView: View {
     @State private var editingErrandID: UUID?
     @State private var detailTriage: TriageEntry?
     @State private var detailProposal: Proposal?
+    @State private var alertsExpanded: Bool = true
+    @State private var alerts: [WeeklyRhythmAlert] = WeeklyRhythmView.makeMockedAlerts()
 
     var body: some View {
         ScrollView {
@@ -38,6 +40,9 @@ struct WeeklyRhythmView: View {
                     }
 
                 VStack(alignment: .leading, spacing: Space.s12) {
+                    if !alerts.isEmpty {
+                        alertsBannerSection
+                    }
                     todaysBriefSection
                     projectPulseSection
                     weekGridSection
@@ -96,6 +101,135 @@ struct WeeklyRhythmView: View {
             get: { editingErrandID != nil },
             set: { if !$0 { editingErrandID = nil } }
         )
+    }
+
+    // MARK: - Alerts banner (engine-spec.md Step 5g — location intel + conflicts)
+
+    private var alertsBannerSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
+                HStack(spacing: Space.s2) {
+                    Circle()
+                        .fill(Color.brandRust)
+                        .frame(width: 6, height: 6)
+                    Text("Alerts".uppercased())
+                        .font(.labelSM)
+                        .tracking(2.0)
+                        .foregroundStyle(Color.brandRust)
+                    Text("\(alerts.count) need attention")
+                        .font(.bodySM)
+                        .foregroundStyle(Color.onSurfaceVariant)
+                }
+
+                Spacer(minLength: Space.s2)
+
+                Button {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        alertsExpanded.toggle()
+                    }
+                } label: {
+                    Image(systemName: alertsExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.onSurfaceVariant)
+                        .frame(width: 22, height: 22)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.bottom, alertsExpanded ? Space.s4 : 0)
+
+            if alertsExpanded {
+                DashboardCard(verticalPadding: Space.s2, horizontalPadding: Space.s5) {
+                    VStack(spacing: 0) {
+                        ForEach(alerts.indices, id: \.self) { i in
+                            alertRow(alerts[i])
+                            if i < alerts.count - 1 {
+                                RowSeparator()
+                            }
+                        }
+                    }
+                }
+                .overlay(alignment: .leading) {
+                    Rectangle()
+                        .fill(Color.brandRust)
+                        .frame(width: 3)
+                        .clipShape(RoundedRectangle(cornerRadius: 2))
+                        .padding(.vertical, 4)
+                }
+            }
+        }
+    }
+
+    private func alertRow(_ alert: WeeklyRhythmAlert) -> some View {
+        HStack(alignment: .top, spacing: Space.s3) {
+            Image(systemName: alert.kind.symbol)
+                .font(.system(size: 14, weight: .regular))
+                .foregroundStyle(alert.kind.tint)
+                .frame(width: 32, height: 32)
+                .background(
+                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                        .fill(alert.kind.tint.opacity(0.12))
+                )
+                .padding(.top, 2)
+
+            VStack(alignment: .leading, spacing: Space.s1) {
+                HStack(spacing: Space.s2) {
+                    Text(alert.day.uppercased())
+                        .font(.labelSM)
+                        .tracking(1.5)
+                        .foregroundStyle(Color.secondaryText)
+                    Text("·")
+                        .foregroundStyle(Color.outlineVariant)
+                    Text(alert.kind.label)
+                        .font(.labelSM)
+                        .foregroundStyle(alert.kind.tint)
+                }
+
+                Text(alert.title)
+                    .font(.bodyMD.weight(.medium))
+                    .foregroundStyle(Color.onSurface)
+
+                Text(alert.detail)
+                    .font(.bodySM)
+                    .foregroundStyle(Color.onSurfaceVariant)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: Space.s3)
+
+            if let actionLabel = alert.actionLabel {
+                Button {} label: {
+                    Text(actionLabel)
+                        .font(.labelMD.weight(.medium))
+                        .foregroundStyle(Color.onSurface)
+                        .padding(.horizontal, Space.s3)
+                        .padding(.vertical, Space.s1_5)
+                        .background(Capsule().fill(Color.surfaceContainerHigh))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 2)
+            }
+        }
+        .padding(.vertical, Space.s4)
+    }
+
+    private static func makeMockedAlerts() -> [WeeklyRhythmAlert] {
+        [
+            WeeklyRhythmAlert(
+                kind: .travel,
+                day: "Saturday",
+                title: "Gallery drop-off — 12 PM downtown",
+                detail: "18 min drive each way. Plan a 30 min buffer for parking + load-in.",
+                actionLabel: "View itinerary"
+            ),
+            WeeklyRhythmAlert(
+                kind: .commuteConflict,
+                day: "Friday",
+                title: "Tight commute window before Braxton sync",
+                detail: "Studio-site DNS work runs to noon, but the dry cleaner closes at 12:30 — fits with a buffer or push to Saturday.",
+                actionLabel: "Reschedule"
+            )
+        ]
     }
 
     // MARK: - Today's Brief (engine-spec.md Step 6 + day-type narrative)
@@ -391,6 +525,9 @@ struct WeeklyRhythmView: View {
                                 .frame(maxWidth: .infinity, alignment: .trailing)
                         }
                     }
+                    .dropDestination(for: String.self) { droppedItems, location in
+                        moveEvent(droppedItems: droppedItems, toDayIndex: i, atY: location.y)
+                    }
             }
         }
     }
@@ -453,6 +590,10 @@ struct WeeklyRhythmView: View {
                             errand: $errands[actualIndex],
                             onOpen: { editingErrandID = errands[actualIndex].id }
                         )
+                        .draggable(errands[actualIndex].id.uuidString)
+                        .dropDestination(for: String.self) { droppedItems, _ in
+                            reorderErrands(droppedItems: droppedItems, beforeId: errands[actualIndex].id)
+                        }
                         if i < pendingErrands.count - 1 {
                             RowSeparator()
                         }
@@ -477,6 +618,43 @@ struct WeeklyRhythmView: View {
 
     private var pendingErrands: [Errand] {
         errands.filter { !$0.isDone }
+    }
+
+    @discardableResult
+    private func reorderErrands(droppedItems: [String], beforeId: UUID) -> Bool {
+        guard let droppedString = droppedItems.first,
+              let droppedId = UUID(uuidString: droppedString),
+              let fromIndex = errands.firstIndex(where: { $0.id == droppedId }),
+              let toIndex = errands.firstIndex(where: { $0.id == beforeId }),
+              fromIndex != toIndex
+        else { return false }
+        let item = errands.remove(at: fromIndex)
+        let insertIndex = fromIndex < toIndex ? toIndex - 1 : toIndex
+        errands.insert(item, at: insertIndex)
+        return true
+    }
+
+    @discardableResult
+    private func moveEvent(droppedItems: [String], toDayIndex: Int, atY: CGFloat) -> Bool {
+        guard let droppedString = droppedItems.first,
+              let droppedId = UUID(uuidString: droppedString)
+        else { return false }
+        // Find source day + event index
+        for srcDayIndex in weekDays.indices {
+            if let evtIndex = weekDays[srcDayIndex].events.firstIndex(where: { $0.id == droppedId }) {
+                // Snap drop position to nearest hour (64pt = 1 hour, starting at 8 AM = top 0)
+                let snappedTop = max(0, round(atY / 64) * 64)
+                if srcDayIndex == toDayIndex {
+                    weekDays[srcDayIndex].events[evtIndex].top = snappedTop
+                } else {
+                    var moved = weekDays[srcDayIndex].events.remove(at: evtIndex)
+                    moved.top = snappedTop
+                    weekDays[toDayIndex].events.append(moved)
+                }
+                return true
+            }
+        }
+        return false
     }
 
     private static func makeMockedErrands() -> [Errand] {
@@ -737,6 +915,51 @@ private struct DayBreakdown {
     let label: String
     let dayType: DayType
     let body: String
+}
+
+// MARK: - Alert model + kinds
+
+private struct WeeklyRhythmAlert: Identifiable {
+    let id = UUID()
+    let kind: AlertKind
+    let day: String
+    let title: String
+    let detail: String
+    let actionLabel: String?
+}
+
+private enum AlertKind {
+    case travel
+    case commuteConflict
+    case errandBatch
+    case lunch
+
+    var label: String {
+        switch self {
+        case .travel:          return "Travel"
+        case .commuteConflict: return "Commute conflict"
+        case .errandBatch:     return "Errand batch"
+        case .lunch:           return "Lunch"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .travel:          return "airplane"
+        case .commuteConflict: return "exclamationmark.triangle.fill"
+        case .errandBatch:     return "cart.fill"
+        case .lunch:           return "fork.knife"
+        }
+    }
+
+    var tint: Color {
+        switch self {
+        case .travel:          return Color.tertiary
+        case .commuteConflict: return Color.brandRust
+        case .errandBatch:     return Color.statusDraft
+        case .lunch:           return Color.statusScheduled
+        }
+    }
 }
 
 // MARK: - Run Health pill (engine-spec.md run health diagnostic)
@@ -1468,6 +1691,7 @@ private struct DayColumn: View {
                     .frame(height: event.height)
                     .padding(.horizontal, 2)
                     .offset(y: event.top)
+                    .draggable(event.id.uuidString)
             }
 
             if let nowOffset = day.nowLineOffset {
@@ -1533,7 +1757,7 @@ private struct WeekDay: Identifiable {
     let num: String
     var dayTypes: Set<DayType>
     let isToday: Bool
-    let events: [Event]
+    var events: [Event]
     var nowLineOffset: CGFloat? = nil
 
     // Stable ordering of pills (so toggling doesn't reshuffle visually).
@@ -1621,6 +1845,13 @@ private struct ErrandRow: View {
 
             DaysPendingPill(days: errand.daysPending)
                 .padding(.top, 2)
+
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 12, weight: .regular))
+                .foregroundStyle(Color.onSurfaceVariant.opacity(0.45))
+                .padding(.leading, Space.s2)
+                .padding(.top, 4)
+                .help("Drag to reorder")
         }
         .padding(.vertical, Space.s3)
     }
@@ -1684,8 +1915,8 @@ private enum DayType: CaseIterable, Hashable {
 
 private struct Event: Identifiable {
     let id = UUID()
-    let top: CGFloat
-    let height: CGFloat
+    var top: CGFloat
+    var height: CGFloat
     let time: String?
     let title: String
     let kind: EventKind

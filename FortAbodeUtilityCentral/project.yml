@@ -10,6 +10,13 @@ packages:
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle.git
     from: "2.0.0"
+  # AlignedDesignSystem — shared tokens/typography for the Aligned suite.
+  # Local path during the v4.0.0 redesign branch. Switch to GitHub URL before
+  # merging to main:
+  #   url: https://github.com/kamrenkennedy/AlignedDesignSystem.git
+  #   from: "1.0.0"
+  AlignedDesignSystem:
+    path: ../../../../../../App Projects/AlignedDesignSystem
 
 targets:
   FortAbodeUtilityCentral:
@@ -41,6 +48,7 @@ targets:
         buildPhase: resources
     dependencies:
       - package: Sparkle
+      - package: AlignedDesignSystem
     postCompileScripts:
       - script: |
           if [ "$CONFIGURATION" = "Debug" ]; then

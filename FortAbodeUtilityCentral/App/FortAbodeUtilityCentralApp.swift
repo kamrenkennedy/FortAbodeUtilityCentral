@@ -1,5 +1,6 @@
 import SwiftUI
 import Sparkle
+import AlignedDesignSystem
 
 // MARK: - App Delegate
 
@@ -128,6 +129,7 @@ struct FortAbodeUtilityCentralApp: App {
     private let updaterController: SPUStandardUpdaterController
 
     init() {
+        FontRegistration.registerBundledFonts()
         let service = AppUpdaterService()
         _updaterService = State(initialValue: service)
         updaterController = SPUStandardUpdaterController(

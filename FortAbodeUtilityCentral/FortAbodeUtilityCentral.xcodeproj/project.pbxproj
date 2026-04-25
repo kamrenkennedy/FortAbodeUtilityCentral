@@ -43,6 +43,7 @@
 		864D70FCF7B97D190269DDFF /* UpdateProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 782D8AD84007D35B5B0DB9CD /* UpdateProgressView.swift */; };
 		8C46F547DCED96736E019D49 /* ComponentRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB0B45EFBB7DD5A133107515 /* ComponentRegistryTests.swift */; };
 		8FEB14627351680D4959D1BF /* MarketplaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FB63D56853D1FFB0742D448 /* MarketplaceView.swift */; };
+		91905EBBC828F6BCDF09EF1A /* AlignedDesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 5D70F17E7114E90E5762C0DB /* AlignedDesignSystem */; };
 		91D50E1EB920B8C40D6B33FB /* ClaudeDesktopConfigService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A49ABEA06B33CB1666AD17A0 /* ClaudeDesktopConfigService.swift */; };
 		A1F5C83EBA3836D3FFACAC5D /* WeeklyRhythmService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66C0B457A755E70A4E21D034 /* WeeklyRhythmService.swift */; };
 		A2B2C6005EF42A9C341F8826 /* FilePinningService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72B3F9599ED98BC09073C78C /* FilePinningService.swift */; };
@@ -136,6 +137,7 @@
 		CB0B45EFBB7DD5A133107515 /* ComponentRegistryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentRegistryTests.swift; sourceTree = "<group>"; };
 		CB4031837BBE075B7CEF1484 /* whats-new.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "whats-new.json"; sourceTree = "<group>"; };
 		CB45A8A63D1E4873C3D739AA /* component-registry.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "component-registry.json"; sourceTree = "<group>"; };
+		CCA25CF29B9D7F5FB60EF529 /* AlignedDesignSystem */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AlignedDesignSystem; path = "../../../../../../App Projects/AlignedDesignSystem"; sourceTree = SOURCE_ROOT; };
 		CF650F1C05A9FE3D738BAA42 /* FamilyMemoryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyMemoryService.swift; sourceTree = "<group>"; };
 		CFEBF1AD73F4AD47132E5387 /* weekly-rhythm-skill-wrapper.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "weekly-rhythm-skill-wrapper.md"; sourceTree = "<group>"; };
 		D1A394C02034C7CEDA5FA603 /* ComponentDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentDetailView.swift; sourceTree = "<group>"; };
@@ -157,12 +159,21 @@
 			buildActionMask = 2147483647;
 			files = (
 				CA4CA8134B5255875DB1AF2A /* Sparkle in Frameworks */,
+				91905EBBC828F6BCDF09EF1A /* AlignedDesignSystem in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		148BC00650073D74C05D25B9 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				CCA25CF29B9D7F5FB60EF529 /* AlignedDesignSystem */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
 		15E77D64ABA66073AF28090E /* Services */ = {
 			isa = PBXGroup;
 			children = (
@@ -250,6 +261,7 @@
 			children = (
 				2B7E777056D86D2A12C04C6D /* App */,
 				A1581729D85D6A0D2DD33C27 /* Models */,
+				148BC00650073D74C05D25B9 /* Packages */,
 				4949B0D91CB6B21D4272EC08 /* Resources */,
 				15E77D64ABA66073AF28090E /* Services */,
 				AC76D68796CD55ABBC7527DD /* Tests */,
@@ -343,6 +355,7 @@
 			name = FortAbodeUtilityCentral;
 			packageProductDependencies = (
 				8B75BAAFED90C32A32CA2420 /* Sparkle */,
+				5D70F17E7114E90E5762C0DB /* AlignedDesignSystem */,
 			);
 			productName = FortAbodeUtilityCentral;
 			productReference = 5914439D10E470294A91A039 /* FortAbodeUtilityCentral.app */;
@@ -374,6 +387,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				C8572B4E1F6FCAC099FE243E /* XCRemoteSwiftPackageReference "Sparkle" */,
+				1F610BC340697B91A5143CEE /* XCLocalSwiftPackageReference "../../../../../../App Projects/AlignedDesignSystem" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E9A2CE9F8D9A16777B2182EF /* Products */;
@@ -754,6 +768,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		1F610BC340697B91A5143CEE /* XCLocalSwiftPackageReference "../../../../../../App Projects/AlignedDesignSystem" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../../../../../../App Projects/AlignedDesignSystem";
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		C8572B4E1F6FCAC099FE243E /* XCRemoteSwiftPackageReference "Sparkle" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -766,6 +787,10 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		5D70F17E7114E90E5762C0DB /* AlignedDesignSystem */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AlignedDesignSystem;
+		};
 		8B75BAAFED90C32A32CA2420 /* Sparkle */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = C8572B4E1F6FCAC099FE243E /* XCRemoteSwiftPackageReference "Sparkle" */;

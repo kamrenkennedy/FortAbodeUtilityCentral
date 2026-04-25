@@ -22,19 +22,25 @@ struct WeeklyRhythmView: View {
     @State private var detailProject: PulseProject?
     @State private var weekDays: [WeekDay] = WeeklyRhythmView.makeMockedWeekDays()
     @State private var errands: [Errand] = WeeklyRhythmView.makeMockedErrands()
+    @State private var dayTypeSettingsOpen: Bool = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 EditorialHeader(eyebrow: "Week 17", title: "April 21 — 27")
+                    .overlay(alignment: .topTrailing) {
+                        RunHealthPill(state: .allGood)
+                            .padding(.top, Space.s10)
+                            .padding(.trailing, Space.s16)
+                    }
 
                 VStack(alignment: .leading, spacing: Space.s12) {
                     todaysBriefSection
                     projectPulseSection
                     weekGridSection
-                    errandsSection
                     triageAndProposalsSection
-                    familyMessagesSection
+                    errandsSection
+                    dayBreakdownSection
                 }
                 .padding(.horizontal, Space.s16)
                 .padding(.bottom, Space.s24)
@@ -45,6 +51,10 @@ struct WeeklyRhythmView: View {
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .sheet(item: $detailProject) { project in
             ProjectDetailSheet(project: project)
+                .frame(minWidth: 520, idealWidth: 640, minHeight: 480, idealHeight: 600)
+        }
+        .sheet(isPresented: $dayTypeSettingsOpen) {
+            DayTypeSettingsSheet()
                 .frame(minWidth: 520, idealWidth: 640, minHeight: 480, idealHeight: 600)
         }
     }
@@ -128,7 +138,28 @@ struct WeeklyRhythmView: View {
 
     private var weekGridSection: some View {
         VStack(alignment: .leading, spacing: Space.s5) {
-            SectionEyebrow(text: "Week Grid", trailing: "8 AM — 6 PM · drag to reschedule")
+            HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
+                Text("Week Grid".uppercased())
+                    .font(.labelSM)
+                    .tracking(2.0)
+                    .foregroundStyle(Color.secondaryText)
+
+                Button { dayTypeSettingsOpen = true } label: {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundStyle(Color.onSurfaceVariant)
+                        .frame(width: 22, height: 22)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Day type settings")
+
+                Spacer(minLength: Space.s2)
+
+                Text("8 AM — 6 PM · drag to reschedule")
+                    .font(.bodySM)
+                    .foregroundStyle(Color.onSurfaceVariant)
+            }
 
             DashboardCard(verticalPadding: Space.s4, horizontalPadding: Space.s5) {
                 VStack(alignment: .leading, spacing: Space.s3) {
@@ -416,31 +447,18 @@ struct WeeklyRhythmView: View {
         ]
     }
 
-    // MARK: - Family Messages (engine-spec.md Step 6c — Claude-proposed messages)
+    // MARK: - Day Breakdown (engine-spec.md per-day narrative output)
 
-    private var familyMessagesSection: some View {
+    private var dayBreakdownSection: some View {
         VStack(alignment: .leading, spacing: Space.s5) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Family Messages".uppercased())
-                    .font(.labelSM)
-                    .tracking(2.0)
-                    .foregroundStyle(Color.secondaryText)
-                Spacer(minLength: Space.s2)
-                Text("\(visibleFamilyMessages.count) proposed")
-                    .font(.bodySM)
-                    .foregroundStyle(Color.onSurfaceVariant)
-            }
+            SectionEyebrow(text: "Day Breakdown")
 
-            DashboardCard(verticalPadding: Space.s6, horizontalPadding: Space.s6) {
-                VStack(alignment: .leading, spacing: Space.s5) {
-                    if visibleFamilyMessages.isEmpty {
-                        familyMessagesEmpty
-                    } else {
-                        ForEach(visibleFamilyMessages) { message in
-                            familyMessageRow(message)
-                            if message.id != visibleFamilyMessages.last?.id {
-                                RowSeparator()
-                            }
+            DashboardCard(verticalPadding: Space.s2, horizontalPadding: Space.s6) {
+                VStack(spacing: 0) {
+                    ForEach(dayBreakdownEntries.indices, id: \.self) { i in
+                        dayBreakdownRow(dayBreakdownEntries[i])
+                        if i < dayBreakdownEntries.count - 1 {
+                            RowSeparator()
                         }
                     }
                 }
@@ -448,111 +466,33 @@ struct WeeklyRhythmView: View {
         }
     }
 
-    @State private var resolvedFamilyMessages: [UUID: FamilyMessageResolution] = [:]
-
-    private let familyMessages: [FamilyMessageProposal] = [
-        FamilyMessageProposal(
-            recipient: "Tiera",
-            reasoning: "Tiera has 3 events Thursday and a long run scheduled Sat morning.",
-            text: "Heads up — working late tonight on Braxton pass 3, dinner around 7? Want me to grab something?"
-        ),
-        FamilyMessageProposal(
-            recipient: "Tiera",
-            reasoning: "Birthday in 12 days; gift errand still unrouted.",
-            text: "What's your top wish for the birthday weekend? Trying to plan the day around what'll feel best for you."
-        )
+    private let dayBreakdownEntries: [DayBreakdown] = [
+        DayBreakdown(label: "Mon · Apr 21", dayType: .admin,    body: "Catch up on inbox, file Q1 expenses, prep Tue's edit block. Light errand: post office return."),
+        DayBreakdown(label: "Tue · Apr 22", dayType: .make,     body: "Braxton edit pass 2 (3h block, 10–1). Client sync at 3. No errands routed."),
+        DayBreakdown(label: "Wed · Apr 23", dayType: .make,     body: "Rae reels cuts (3.5h, 9:30–1). Quick lab pickup mid-afternoon."),
+        DayBreakdown(label: "Thu · Apr 24", dayType: .move,     body: "Move day. Ship pass 3 of Braxton (10–12), then sync at 3. Save creative energy for Fri."),
+        DayBreakdown(label: "Fri · Apr 25", dayType: .make,     body: "Studio site DNS fix (3h). Errand: dry cleaner. Braxton sync moved here from Tue."),
+        DayBreakdown(label: "Sat · Apr 26", dayType: .recover,  body: "Long run with Tiera. Gallery drop-off at noon. Light review of Rae cuts in the afternoon."),
+        DayBreakdown(label: "Sun · Apr 27", dayType: .open,     body: "Open day — no scheduled blocks. Reserve for prep, recovery, or family time as needed.")
     ]
 
-    private var visibleFamilyMessages: [FamilyMessageProposal] {
-        familyMessages.filter { resolvedFamilyMessages[$0.id] == nil }
-    }
-
-    private var familyMessagesEmpty: some View {
-        VStack(spacing: Space.s2) {
-            Image(systemName: "tray")
-                .font(.system(size: 22, weight: .light))
-                .foregroundStyle(Color.onSurfaceVariant)
-            Text("No proposed messages right now")
-                .font(.bodySM)
-                .foregroundStyle(Color.onSurfaceVariant)
-            Button("Reset") {
-                withAnimation(.easeOut(duration: 0.3)) {
-                    resolvedFamilyMessages.removeAll()
-                }
+    private func dayBreakdownRow(_ entry: DayBreakdown) -> some View {
+        HStack(alignment: .top, spacing: Space.s4) {
+            VStack(alignment: .leading, spacing: Space.s1_5) {
+                Text(entry.label)
+                    .font(.bodyMD.weight(.semibold))
+                    .foregroundStyle(Color.onSurface)
+                DayTypePill(kind: entry.dayType)
             }
-            .buttonStyle(.plain)
-            .font(.labelSM.weight(.medium))
-            .foregroundStyle(Color.tertiary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, Space.s4)
-    }
+            .frame(width: 132, alignment: .leading)
 
-    private func familyMessageRow(_ message: FamilyMessageProposal) -> some View {
-        VStack(alignment: .leading, spacing: Space.s3) {
-            HStack(spacing: Space.s2) {
-                Image(systemName: "envelope.fill")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Color.tertiary)
-                Text("Suggest sending to \(message.recipient)".uppercased())
-                    .font(.labelSM)
-                    .tracking(1.5)
-                    .foregroundStyle(Color.tertiary)
-            }
-
-            Text(message.text)
+            Text(entry.body)
                 .font(.bodyMD)
                 .foregroundStyle(Color.onSurface)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(Space.s3)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous)
-                        .fill(Color.surfaceContainer)
-                )
-
-            HStack {
-                Text(message.reasoning)
-                    .font(.bodySM)
-                    .foregroundStyle(Color.onSurfaceVariant)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Spacer(minLength: Space.s2)
-
-                HStack(spacing: Space.s1) {
-                    Button {
-                        withAnimation(.easeOut(duration: 0.3)) {
-                            resolvedFamilyMessages[message.id] = .skipped
-                        }
-                    } label: {
-                        Text("Skip")
-                            .font(.labelMD.weight(.medium))
-                            .foregroundStyle(Color.onSurfaceVariant)
-                            .padding(.horizontal, Space.s3)
-                            .padding(.vertical, Space.s1_5)
-                    }
-                    .buttonStyle(.plain)
-
-                    Button {
-                        withAnimation(.easeOut(duration: 0.3)) {
-                            resolvedFamilyMessages[message.id] = .sent
-                        }
-                    } label: {
-                        Label("Send", systemImage: "arrow.up.circle.fill")
-                            .font(.labelMD.weight(.semibold))
-                            .foregroundStyle(Color.onPrimary)
-                            .padding(.horizontal, Space.s3)
-                            .padding(.vertical, Space.s1_5)
-                            .background(
-                                Capsule()
-                                    .fill(Color.primaryFill)
-                            )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
         }
-        .padding(.vertical, Space.s2)
+        .padding(.vertical, Space.s4)
     }
 
     // MARK: - Triage + Claude Proposals
@@ -735,16 +675,127 @@ private enum ProposalResolution {
     case declined
 }
 
-private struct FamilyMessageProposal: Identifiable {
-    let id = UUID()
-    let recipient: String
-    let reasoning: String
-    let text: String
+private struct DayBreakdown {
+    let label: String
+    let dayType: DayType
+    let body: String
 }
 
-private enum FamilyMessageResolution {
-    case sent
-    case skipped
+// MARK: - Run Health pill (engine-spec.md run health diagnostic)
+
+private struct RunHealthPill: View {
+    enum State {
+        case allGood
+        case warning(String)
+        case error(String)
+    }
+
+    let state: State
+
+    var body: some View {
+        HStack(spacing: Space.s1_5) {
+            Image(systemName: glyph)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(tint)
+            Text(label)
+                .font(.labelMD.weight(.medium))
+                .foregroundStyle(Color.onSurface)
+        }
+        .padding(.horizontal, Space.s3)
+        .padding(.vertical, Space.s1_5)
+        .background(
+            Capsule()
+                .fill(Color.surfaceContainerHigh)
+        )
+    }
+
+    private var glyph: String {
+        switch state {
+        case .allGood: return "checkmark.circle.fill"
+        case .warning: return "exclamationmark.triangle.fill"
+        case .error:   return "xmark.octagon.fill"
+        }
+    }
+
+    private var tint: Color {
+        switch state {
+        case .allGood:        return Color.statusScheduled
+        case .warning:        return Color.statusDraft
+        case .error:          return Color.statusError
+        }
+    }
+
+    private var label: String {
+        switch state {
+        case .allGood:                 return "All good"
+        case .warning(let message):    return message
+        case .error(let message):      return message
+        }
+    }
+}
+
+// MARK: - Day Type Settings sheet
+
+private struct DayTypeSettingsSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.s6) {
+                EditorialHeader(eyebrow: "Settings", title: "Day Types")
+
+                Text("Define the day-type vocabulary the engine uses for your week. Each type can stack additively (a day can be both Creative and Personal). One type can be marked exclusive (Off) — picking it replaces all others on that day.")
+                    .font(.bodyMD)
+                    .foregroundStyle(Color.onSurfaceVariant)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, Space.s16)
+
+                DashboardCard(verticalPadding: Space.s2, horizontalPadding: Space.s6) {
+                    VStack(spacing: 0) {
+                        ForEach(DayType.allCases, id: \.self) { type in
+                            HStack(spacing: Space.s3) {
+                                Circle()
+                                    .fill(type.tint)
+                                    .frame(width: 12, height: 12)
+
+                                Text(type.label)
+                                    .font(.bodyMD.weight(.medium))
+                                    .foregroundStyle(Color.onSurface)
+
+                                Spacer(minLength: Space.s2)
+
+                                Text("Stackable")
+                                    .font(.bodySM)
+                                    .foregroundStyle(Color.onSurfaceVariant)
+                            }
+                            .padding(.vertical, Space.s3)
+
+                            if type != DayType.allCases.last {
+                                Rectangle()
+                                    .fill(Color.outlineVariant.opacity(0.18))
+                                    .frame(height: 1)
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, Space.s16)
+
+                Text("Phase 5 will wire this to write your day_types config so the engine reads from the same source.")
+                    .font(.bodySM)
+                    .foregroundStyle(Color.secondaryText)
+                    .padding(.horizontal, Space.s16)
+
+                Spacer(minLength: Space.s4)
+            }
+            .padding(.vertical, Space.s8)
+        }
+        .background(Color.surface)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Close") { dismiss() }
+            }
+        }
+    }
 }
 
 // MARK: - Goals progress bar

@@ -89,10 +89,80 @@ struct WeeklyRhythmView: View {
             DashboardCard(verticalPadding: Space.s4, horizontalPadding: Space.s5) {
                 VStack(alignment: .leading, spacing: Space.s3) {
                     weekNavRow
-                    dayHeaderRow
-                    gridBody
+
+                    switch range {
+                    case .week:
+                        dayHeaderRow
+                        gridBody
+                    case .thirtyDay:
+                        thirtyDayGrid
+                    }
                 }
             }
+        }
+    }
+
+    // MARK: - 30 Day calendar grid
+
+    private var thirtyDayGrid: some View {
+        VStack(spacing: Space.s2) {
+            HStack(spacing: Space.s2) {
+                ForEach(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], id: \.self) { day in
+                    Text(day.uppercased())
+                        .font(.labelSM)
+                        .tracking(1.5)
+                        .foregroundStyle(Color.secondaryText)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.horizontal, 2)
+
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.flexible(), spacing: Space.s2), count: 7),
+                spacing: Space.s2
+            ) {
+                ForEach(thirtyDayCells) { cell in
+                    ThirtyDayCalendarCell(cell: cell)
+                }
+            }
+        }
+    }
+
+    private var thirtyDayCells: [ThirtyDayCell] {
+        // Mocked: Apr 21 (Mon) → May 25 — 35 cells (5 rows × 7 cols).
+        // Phase 5 wires real date math via the engine.
+        let baseline = 21
+        let todayOffset = 3   // Thu Apr 24
+        return (0..<35).map { i in
+            let absoluteDay = baseline + i
+            let displayDay = absoluteDay > 30 ? absoluteDay - 30 : absoluteDay
+            let monthLabel = absoluteDay > 30 ? "May" : "Apr"
+            let weekdayIndex = i % 7   // 0 = Mon
+            let isWeekend = weekdayIndex >= 5
+            let dayType: DayType
+            switch weekdayIndex {
+            case 0: dayType = .admin
+            case 1, 2: dayType = .make
+            case 3: dayType = (i == todayOffset) ? .move : .make
+            case 4: dayType = .make
+            case 5: dayType = .recover
+            default: dayType = .open
+            }
+            // Mocked event-count pattern — denser on weekdays
+            let eventCount: Int
+            if isWeekend {
+                eventCount = (i % 4 == 0) ? 1 : 0
+            } else {
+                eventCount = ((i * 3) % 5)
+            }
+            return ThirtyDayCell(
+                id: i,
+                day: displayDay,
+                monthLabel: i == 0 ? monthLabel : (absoluteDay == 31 ? "May" : ""),
+                dayType: dayType,
+                eventCount: eventCount,
+                isToday: i == todayOffset
+            )
         }
     }
 
@@ -383,6 +453,67 @@ struct WeeklyRhythmView: View {
 // Kept as a private alias to flag the spec drift if it bites later.
 private extension Space {
     static let s3_5: CGFloat = Space.s4
+}
+
+// MARK: - Project Pulse card
+
+// MARK: - 30 day calendar models + cell
+
+private struct ThirtyDayCell: Identifiable {
+    let id: Int
+    let day: Int
+    let monthLabel: String   // empty unless this cell is the first of a month
+    let dayType: DayType
+    let eventCount: Int
+    let isToday: Bool
+}
+
+private struct ThirtyDayCalendarCell: View {
+    let cell: ThirtyDayCell
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.s1_5) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text("\(cell.day)")
+                    .font(.system(size: 14, weight: cell.isToday ? .semibold : .regular))
+                    .foregroundStyle(cell.isToday ? Color.tertiary : Color.onSurface)
+                if !cell.monthLabel.isEmpty {
+                    Text(cell.monthLabel)
+                        .font(.labelSM)
+                        .foregroundStyle(Color.onSurfaceVariant)
+                }
+                Spacer(minLength: 0)
+                DayTypePill(kind: cell.dayType)
+            }
+
+            Spacer(minLength: 0)
+
+            if cell.eventCount > 0 {
+                HStack(spacing: 3) {
+                    ForEach(0..<min(cell.eventCount, 4), id: \.self) { _ in
+                        Circle()
+                            .fill(cell.dayType.tint)
+                            .frame(width: 5, height: 5)
+                    }
+                    if cell.eventCount > 4 {
+                        Text("+\(cell.eventCount - 4)")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(Color.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+        .padding(Space.s2)
+        .frame(maxWidth: .infinity, minHeight: 72, alignment: .topLeading)
+        .background(
+            RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
+                .fill(cell.isToday ? Color.tertiary.opacity(0.08) : Color.surfaceContainerLow)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
+                .strokeBorder(cell.isToday ? Color.tertiary : Color.clear, lineWidth: 1)
+        )
+    }
 }
 
 // MARK: - Project Pulse card

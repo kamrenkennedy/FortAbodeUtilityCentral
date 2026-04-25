@@ -32,6 +32,7 @@
 		39ACD4EE2996FF40E684E287 /* FeedbackViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6B493D672539E78B60DC3E8 /* FeedbackViewModel.swift */; };
 		3B1B8E9B129468193257A0A2 /* WeeklyRhythmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0115CDA875DB5D2D4BA7C4AA /* WeeklyRhythmView.swift */; };
 		3B8CF00712BD137247649E22 /* VersionDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52A1E55BD560971A940F171A /* VersionDetectionService.swift */; };
+		3DAC043E1F1CE49D3F91AA79 /* PageScaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC9BDBAE1BA8CDCF7640CE6B /* PageScaffold.swift */; };
 		49AFDBE9BAB4BDF2520332FF /* VersionDetectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE4CB53B5CB04DACA0FDC375 /* VersionDetectionTests.swift */; };
 		4C29C765E197C8C5C27D8BC2 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1341A36E69A185933A6187F4 /* RootView.swift */; };
 		4CB55B39A51109E2D3DAE9F1 /* ChatPanelHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C3580CD173E87DCBCC770F4 /* ChatPanelHeader.swift */; };
@@ -151,6 +152,7 @@
 		A100840E6248DECFE28C4DBF /* FortAbodeUtilityCentralTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FortAbodeUtilityCentralTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A49ABEA06B33CB1666AD17A0 /* ClaudeDesktopConfigService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeDesktopConfigService.swift; sourceTree = "<group>"; };
 		A88614DCA2B0E6155C755D3C /* SecureInputStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureInputStorage.swift; sourceTree = "<group>"; };
+		AC9BDBAE1BA8CDCF7640CE6B /* PageScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageScaffold.swift; sourceTree = "<group>"; };
 		B245C0720A4C0BC3EBC09BF2 /* ChatComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatComposer.swift; sourceTree = "<group>"; };
 		B34078A97122C23C4D2D35E0 /* gws-client-secret.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "gws-client-secret.json"; sourceTree = "<group>"; };
 		BA1C59FBAA6BF53EE5F93CE0 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
@@ -295,6 +297,7 @@
 				782D8AD84007D35B5B0DB9CD /* UpdateProgressView.swift */,
 				16FB3766D3708E744FA90472 /* WhatsNewView.swift */,
 				4A947DC71E3A5912AEA9D3A5 /* Chat */,
+				73EEB8A86B0CDC66AD4DCD75 /* Components */,
 				A3AD0155CC1F255978DB64F7 /* Navigation */,
 				7A3D9489BB29CB2E8BC2A634 /* Pages */,
 				2A30269D269741003D221D42 /* SetupWizard */,
@@ -316,6 +319,14 @@
 				5334E12F30C8D8C06E31F58F /* Views */,
 				E9A2CE9F8D9A16777B2182EF /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		73EEB8A86B0CDC66AD4DCD75 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				AC9BDBAE1BA8CDCF7640CE6B /* PageScaffold.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		7A3D9489BB29CB2E8BC2A634 /* Pages */ = {
@@ -580,6 +591,7 @@
 				05E6CAD0B79916E67AD9C87D /* KeychainService.swift in Sources */,
 				8FEB14627351680D4959D1BF /* MarketplaceView.swift in Sources */,
 				84EF3894AB836BBA01A7FB6A /* NotificationService.swift in Sources */,
+				3DAC043E1F1CE49D3F91AA79 /* PageScaffold.swift in Sources */,
 				4C29C765E197C8C5C27D8BC2 /* RootView.swift in Sources */,
 				5AB3F1610DB5361CAC618ECC /* SecureInputStorage.swift in Sources */,
 				ADE9797A2E5EE7EB3C461ED6 /* SettingsView.swift in Sources */,

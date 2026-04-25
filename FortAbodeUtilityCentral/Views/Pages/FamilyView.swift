@@ -16,7 +16,7 @@ struct FamilyView: View {
                 VStack(alignment: .leading, spacing: Space.s12) {
                     membersSection
                     healthSection
-                    sharedDocsSection
+                    familyMemorySection
                 }
                 .padding(.horizontal, Space.s16)
                 .padding(.bottom, Space.s24)
@@ -116,63 +116,113 @@ struct FamilyView: View {
         }
     }
 
-    // MARK: - Shared Documents
+    // MARK: - Family Memory (sections grid)
 
-    private var sharedDocsSection: some View {
+    private var familyMemorySection: some View {
         VStack(alignment: .leading, spacing: Space.s6) {
-            SectionEyebrow(text: "Shared Documents")
+            HStack(alignment: .firstTextBaseline) {
+                Text("Family Memory".uppercased())
+                    .font(.labelSM)
+                    .tracking(2.0)
+                    .foregroundStyle(Color.secondaryText)
+                Spacer(minLength: Space.s2)
+                Text("~/iCloud/Family/Memory.md")
+                    .font(.bodySM)
+                    .foregroundStyle(Color.onSurfaceVariant)
+            }
 
-            DashboardCard(verticalPadding: Space.s6, horizontalPadding: Space.s6) {
-                VStack(alignment: .leading, spacing: 0) {
-                    VStack(alignment: .leading, spacing: Space.s2) {
-                        Text("Family Memory")
-                            .font(.headlineSM)
-                            .foregroundStyle(Color.onSurface)
-
-                        Text("~/iCloud/Family/Memory.md · last 5 changes")
-                            .font(.bodySM)
-                            .foregroundStyle(Color.onSurfaceVariant)
-                    }
-                    .padding(.bottom, Space.s5)
-
-                    let changes: [(date: String, summary: String, author: String)] = [
-                        ("Apr 22", "Added \"Margot summer camp — Heron Lake\" with packing checklist", "Tiera"),
-                        ("Apr 19", "Updated spring travel notes — Portland trip pushed to June", "Kam"),
-                        ("Apr 14", "Reorganized Health section — split by member", "Tiera"),
-                        ("Apr 11", "Added Aunt Mira's new address (moved March)", "Kam"),
-                        ("Apr 7",  "Cleared old Q1 reminders", "Kam")
-                    ]
-
-                    ForEach(changes.indices, id: \.self) { i in
-                        changelogRow(changes[i])
-                        if i < changes.count - 1 {
-                            RowSeparator()
-                        }
-                    }
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 240, maximum: 320), spacing: Space.s4)],
+                spacing: Space.s4
+            ) {
+                ForEach(memorySections) { section in
+                    FamilyMemoryCard(section: section)
                 }
             }
         }
     }
 
-    private func changelogRow(_ entry: (date: String, summary: String, author: String)) -> some View {
-        HStack(alignment: .top, spacing: 0) {
-            Text(entry.date)
-                .font(.custom("Inter-Regular", size: 12))
-                .monospacedDigit()
-                .foregroundStyle(Color.secondaryText)
-                .frame(width: 96, alignment: .leading)
-                .padding(.top, 2)
+    private let memorySections: [MemorySection] = [
+        MemorySection(symbol: "house.fill",          title: "Household",            subtitle: "Address, mortgage, utilities, maintenance", lastUpdated: "Updated Apr 19 · Kam"),
+        MemorySection(symbol: "car.fill",            title: "Vehicles",             subtitle: "Registrations, services, insurance",        lastUpdated: "Updated Apr 11 · Kam"),
+        MemorySection(symbol: "dollarsign.circle.fill", title: "Finance",           subtitle: "Joint accounts, recurring bills, budgets",  lastUpdated: "No facts yet"),
+        MemorySection(symbol: "person.2.fill",       title: "Contacts",             subtitle: "Family, emergency, services",                lastUpdated: "Updated Apr 11 · Kam"),
+        MemorySection(symbol: "airplane",            title: "Travel",               subtitle: "Trips, passports, packing notes",            lastUpdated: "Updated Apr 19 · Kam"),
+        MemorySection(symbol: "calendar",            title: "Calendar",             subtitle: "Recurring family events, anniversaries",     lastUpdated: "No facts yet"),
+        MemorySection(symbol: "heart.square.fill",   title: "Wedding & Anniversary",subtitle: "Vendors, traditions, photos",                lastUpdated: "No facts yet"),
+        MemorySection(symbol: "questionmark.bubble", title: "Open Questions",       subtitle: "To discuss together",                        lastUpdated: "No facts yet")
+    ]
+}
+
+private struct MemorySection: Identifiable {
+    let id = UUID()
+    let symbol: String
+    let title: String
+    let subtitle: String
+    let lastUpdated: String
+}
+
+private struct FamilyMemoryCard: View {
+    let section: MemorySection
+
+    @State private var isHovering = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            HStack(alignment: .top, spacing: Space.s3) {
+                Image(systemName: section.symbol)
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundStyle(Color.onSurfaceVariant)
+                    .frame(width: 32, height: 32)
+                    .background(
+                        RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                            .fill(Color.surfaceContainerHigh)
+                    )
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "plus")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.onSurfaceVariant)
+                    .frame(width: 24, height: 24)
+                    .background(
+                        Circle()
+                            .fill(Color.surfaceContainerHigh)
+                    )
+                    .opacity(isHovering ? 1 : 0)
+                    .help("Add a fact (manual or via chat)")
+            }
 
             VStack(alignment: .leading, spacing: Space.s1) {
-                Text(entry.summary)
-                    .font(.bodyMD)
+                Text(section.title)
+                    .font(.headlineSM)
                     .foregroundStyle(Color.onSurface)
-                Text(entry.author)
+
+                Text(section.subtitle)
                     .font(.bodySM)
                     .foregroundStyle(Color.onSurfaceVariant)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+
+            Spacer(minLength: Space.s2)
+
+            Text(section.lastUpdated)
+                .font(.labelSM)
+                .foregroundStyle(Color.secondaryText)
         }
-        .padding(.vertical, Space.s4)
+        .padding(Space.s5)
+        .frame(maxWidth: .infinity, minHeight: 160, alignment: .topLeading)
+        .background(
+            RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
+                .fill(Color.cardBackground)
+        )
+        .offset(y: isHovering ? -2 : 0)
+        .animation(.easeOut(duration: 0.2), value: isHovering)
+        .whisperShadow()
+        .onHover { hovering in
+            isHovering = hovering
+        }
     }
 }
 

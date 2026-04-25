@@ -9,8 +9,16 @@ import AlignedDesignSystem
 // dashboard-template.html structure / WeeklyRhythmService) is a Phase 5
 // concern.
 
+enum WeeklyRhythmRange: Hashable {
+    case week
+    case thirtyDay
+}
+
 struct WeeklyRhythmView: View {
     @State private var checkedProposals: Set<UUID> = []
+    @State private var weekOffset: Int = 0
+    @State private var range: WeeklyRhythmRange = .week
+    @State private var selectedProjectId: UUID?
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -50,8 +58,13 @@ struct WeeklyRhythmView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: Space.s4) {
                     ForEach(pulseProjects) { project in
-                        ProjectPulseCard(project: project)
-                            .frame(width: 220)
+                        Button {
+                            selectedProjectId = project.id
+                        } label: {
+                            ProjectPulseCard(project: project, isSelected: selectedProjectId == project.id)
+                                .frame(width: 220, height: 168)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -75,11 +88,87 @@ struct WeeklyRhythmView: View {
 
             DashboardCard(verticalPadding: Space.s4, horizontalPadding: Space.s5) {
                 VStack(alignment: .leading, spacing: Space.s3) {
+                    weekNavRow
                     dayHeaderRow
                     gridBody
                 }
             }
         }
+    }
+
+    private var weekNavRow: some View {
+        HStack(spacing: Space.s2) {
+            navIconButton(symbol: "chevron.left", help: "Previous week") {
+                weekOffset -= 1
+            }
+
+            Text(weekRangeLabel)
+                .font(.bodyMD.weight(.medium))
+                .foregroundStyle(Color.onSurface)
+                .padding(.horizontal, Space.s2)
+
+            navIconButton(symbol: "chevron.right", help: "Next week") {
+                weekOffset += 1
+            }
+
+            if weekOffset != 0 {
+                Button {
+                    weekOffset = 0
+                } label: {
+                    Text("Today")
+                        .font(.labelMD.weight(.medium))
+                        .foregroundStyle(Color.tertiary)
+                        .padding(.horizontal, Space.s3)
+                        .padding(.vertical, Space.s1_5)
+                        .background(
+                            Capsule()
+                                .fill(Color.tertiary.opacity(0.12))
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+
+            Spacer(minLength: Space.s4)
+
+            let rangeBinding = Binding<WeeklyRhythmRange>(
+                get: { range },
+                set: { range = $0 }
+            )
+            SegmentedTabBar(
+                options: [WeeklyRhythmRange.week, WeeklyRhythmRange.thirtyDay],
+                selection: rangeBinding,
+                label: { $0 == .week ? "Week" : "30 Day" }
+            )
+            .frame(maxWidth: 180)
+        }
+        .padding(.bottom, Space.s2)
+    }
+
+    private var weekRangeLabel: String {
+        // Mocked range — Phase 5 wires WeeklyRhythmService for real dates.
+        switch (range, weekOffset) {
+        case (.week, 0):       return "April 21 — 27"
+        case (.week, 1):       return "April 28 — May 4"
+        case (.week, -1):      return "April 14 — 20"
+        case (.week, let n):   return n > 0 ? "+\(n) weeks" : "\(n) weeks"
+        case (.thirtyDay, 0):  return "Apr 21 — May 20"
+        case (.thirtyDay, _):  return "30 day window"
+        }
+    }
+
+    private func navIconButton(symbol: String, help: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.onSurfaceVariant)
+                .frame(width: 28, height: 28)
+                .background(
+                    RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
+                        .fill(Color.surfaceContainerHigh)
+                )
+        }
+        .buttonStyle(.plain)
+        .help(help)
     }
 
     private var dayHeaderRow: some View {
@@ -300,6 +389,9 @@ private extension Space {
 
 private struct ProjectPulseCard: View {
     let project: PulseProject
+    let isSelected: Bool
+
+    @State private var isHovering = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -315,25 +407,39 @@ private struct ProjectPulseCard: View {
             Text(project.title)
                 .font(.headlineSM)
                 .foregroundStyle(Color.onSurface)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, Space.s2)
 
             Text(project.touched)
                 .font(.bodySM)
                 .foregroundStyle(Color.onSurfaceVariant)
-                .padding(.bottom, Space.s3)
+
+            Spacer(minLength: Space.s2)
 
             Text(project.action)
                 .font(.bodyMD.weight(.medium))
                 .foregroundStyle(Color.onSurface)
+                .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(Space.s4)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
                 .fill(Color.cardBackground)
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                .strokeBorder(isSelected ? Color.tertiary : Color.clear, lineWidth: 1.5)
+        )
+        .offset(y: (isHovering && !isSelected) ? -2 : 0)
+        .animation(.easeOut(duration: 0.2), value: isHovering)
+        .animation(.easeOut(duration: 0.2), value: isSelected)
         .whisperShadow()
+        .onHover { hovering in
+            isHovering = hovering
+        }
     }
 }
 

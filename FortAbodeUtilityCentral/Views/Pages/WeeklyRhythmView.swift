@@ -15,38 +15,33 @@ enum WeeklyRhythmRange: Hashable {
 }
 
 struct WeeklyRhythmView: View {
-    @State private var checkedProposals: Set<UUID> = []
+    @State private var resolvedProposals: [UUID: ProposalResolution] = [:]
     @State private var weekOffset: Int = 0
     @State private var range: WeeklyRhythmRange = .week
     @State private var selectedProjectId: UUID?
+    @State private var detailProject: PulseProject?
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    EditorialHeader(eyebrow: "Week 17", title: "April 21 — 27")
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                EditorialHeader(eyebrow: "Week 17", title: "April 21 — 27")
 
-                    VStack(alignment: .leading, spacing: Space.s12) {
-                        projectPulseSection
-                        weekGridSection
-                        triageAndProposalsSection
-                    }
-                    .padding(.horizontal, Space.s16)
-                    .padding(.bottom, checkedProposals.isEmpty ? Space.s24 : 96)
+                VStack(alignment: .leading, spacing: Space.s12) {
+                    projectPulseSection
+                    weekGridSection
+                    triageAndProposalsSection
                 }
-                .frame(maxWidth: 1184, alignment: .leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Space.s16)
+                .padding(.bottom, Space.s24)
             }
-            .frame(maxWidth: .infinity, alignment: .topLeading)
-
-            if !checkedProposals.isEmpty {
-                ConfirmBar(count: checkedProposals.count) {
-                    checkedProposals.removeAll()
-                }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
+            .frame(maxWidth: 1184, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .animation(.easeOut(duration: 0.3), value: checkedProposals.isEmpty)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .sheet(item: $detailProject) { project in
+            ProjectDetailSheet(project: project)
+                .frame(minWidth: 520, idealWidth: 640, minHeight: 480, idealHeight: 600)
+        }
     }
 
     // MARK: - Project Pulse
@@ -60,6 +55,7 @@ struct WeeklyRhythmView: View {
                     ForEach(pulseProjects) { project in
                         Button {
                             selectedProjectId = project.id
+                            detailProject = project
                         } label: {
                             ProjectPulseCard(project: project, isSelected: selectedProjectId == project.id)
                                 .frame(width: 220, height: 168)
@@ -385,14 +381,18 @@ struct WeeklyRhythmView: View {
                         .tracking(2.0)
                         .foregroundStyle(Color.secondaryText)
                     Spacer(minLength: Space.s2)
-                    Text("\(proposals.count) new")
+                    Text(proposalCountLabel)
                         .font(.bodySM)
                         .foregroundStyle(Color.onSurfaceVariant)
                 }
 
                 VStack(alignment: .leading, spacing: Space.s4) {
-                    ForEach(proposals) { proposal in
+                    ForEach(visibleProposals) { proposal in
                         proposalRow(proposal)
+                    }
+
+                    if visibleProposals.isEmpty {
+                        emptyProposalsState
                     }
                 }
             }
@@ -405,35 +405,38 @@ struct WeeklyRhythmView: View {
         Proposal(title: "Snooze \"Studio site DNS\" until Mon", reasoning: "Cloudflare propagation reports settle within 24h.")
     ]
 
-    private func proposalRow(_ proposal: Proposal) -> some View {
-        let isChecked = checkedProposals.contains(proposal.id)
-        return HStack(alignment: .top, spacing: Space.s3_5) {
-            Button {
-                if isChecked {
-                    checkedProposals.remove(proposal.id)
-                } else {
-                    checkedProposals.insert(proposal.id)
-                }
-            } label: {
-                ZStack {
-                    RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
-                        .strokeBorder(isChecked ? Color.tertiary : Color.outlineVariant, lineWidth: 1.5)
-                        .background(
-                            RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
-                                .fill(isChecked ? Color.tertiary : Color.clear)
-                        )
-                        .frame(width: 18, height: 18)
+    private var visibleProposals: [Proposal] {
+        proposals.filter { resolvedProposals[$0.id] == nil }
+    }
 
-                    if isChecked {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(Color.onTertiary)
-                    }
+    private var proposalCountLabel: String {
+        let count = visibleProposals.count
+        return count == 0 ? "All resolved" : "\(count) new"
+    }
+
+    private var emptyProposalsState: some View {
+        VStack(spacing: Space.s2) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 24, weight: .light))
+                .foregroundStyle(Color.statusScheduled)
+            Text("All proposals reviewed")
+                .font(.bodySM)
+                .foregroundStyle(Color.onSurfaceVariant)
+            Button("Reset") {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    resolvedProposals.removeAll()
                 }
-                .padding(.top, 2)
             }
             .buttonStyle(.plain)
+            .font(.labelSM.weight(.medium))
+            .foregroundStyle(Color.tertiary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, Space.s4)
+    }
 
+    private func proposalRow(_ proposal: Proposal) -> some View {
+        HStack(alignment: .top, spacing: Space.s3) {
             VStack(alignment: .leading, spacing: Space.s1) {
                 Text(proposal.title)
                     .font(.bodyMD.weight(.medium))
@@ -444,9 +447,49 @@ struct WeeklyRhythmView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Spacer(minLength: 0)
+            Spacer(minLength: Space.s2)
+
+            HStack(spacing: Space.s1) {
+                Button {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        resolvedProposals[proposal.id] = .declined
+                    }
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color.onSurfaceVariant)
+                        .frame(width: 28, height: 28)
+                        .background(
+                            Circle().fill(Color.surfaceContainerHigh)
+                        )
+                }
+                .buttonStyle(.plain)
+                .help("Decline")
+
+                Button {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        resolvedProposals[proposal.id] = .accepted
+                    }
+                } label: {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color.onTertiary)
+                        .frame(width: 28, height: 28)
+                        .background(
+                            Circle().fill(Color.tertiary)
+                        )
+                }
+                .buttonStyle(.plain)
+                .help("Accept")
+            }
+            .padding(.top, 1)
         }
     }
+}
+
+private enum ProposalResolution {
+    case accepted
+    case declined
 }
 
 // Workaround: Space doesn't define s3_5 (14pt). Use s4 (16) where 14 was specced.
@@ -758,48 +801,155 @@ private struct Proposal: Identifiable {
     let reasoning: String
 }
 
-// MARK: - Confirm bar
+// MARK: - Project Detail sheet
 
-private struct ConfirmBar: View {
-    let count: Int
-    let onApply: () -> Void
+private struct ProjectDetailSheet: View {
+    let project: PulseProject
+
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        HStack(spacing: Space.s4) {
-            Text("\(count) selected")
-                .font(.bodyMD.weight(.medium))
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.s6) {
+                header
+
+                section(title: "This Week") {
+                    VStack(alignment: .leading, spacing: 0) {
+                        relatedEvent(time: "Today · 10:00 AM", title: "Braxton edit · pass 3", meta: "Make block · 2h")
+                        RowSeparator()
+                        relatedEvent(time: "Today · 3:00 PM", title: "Braxton sync", meta: "Recurring · video call")
+                        RowSeparator()
+                        relatedEvent(time: "Friday · 3:00 PM", title: "Braxton sync (moved)", meta: "Per accepted proposal")
+                    }
+                    .padding(.vertical, Space.s2)
+                    .padding(.horizontal, Space.s4)
+                    .background(
+                        RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                            .fill(Color.surfaceContainerLow)
+                    )
+                }
+
+                section(title: "Recent Activity") {
+                    VStack(alignment: .leading, spacing: 0) {
+                        activityRow(when: "4h ago", text: "Pushed pass 2 to client folder")
+                        RowSeparator()
+                        activityRow(when: "Yesterday", text: "Added scene-04 cut + lower-thirds revision")
+                        RowSeparator()
+                        activityRow(when: "Tue", text: "Notion: status moved In Progress → In Review")
+                    }
+                    .padding(.vertical, Space.s2)
+                    .padding(.horizontal, Space.s4)
+                    .background(
+                        RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                            .fill(Color.surfaceContainerLow)
+                    )
+                }
+
+                section(title: "Quick Actions") {
+                    HStack(spacing: Space.s2) {
+                        actionButton(label: "Mark Complete", symbol: "checkmark.circle")
+                        actionButton(label: "Block", symbol: "exclamationmark.octagon")
+                        actionButton(label: "Snooze", symbol: "clock")
+                        actionButton(label: "Open in Notion", symbol: "arrow.up.right.square")
+                    }
+                }
+
+                Spacer(minLength: Space.s4)
+            }
+            .padding(Space.s8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(Color.surface)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Close") { dismiss() }
+            }
+        }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            HStack(spacing: Space.s2) {
+                StatusDot(project.status)
+                Text(project.statusLabel.uppercased())
+                    .font(.system(size: 10, weight: .medium))
+                    .tracking(1.2)
+                    .foregroundStyle(Color.onSurfaceVariant)
+            }
+
+            Text(project.title)
+                .font(.displaySM)
                 .foregroundStyle(Color.onSurface)
 
-            Spacer()
+            Text(project.touched)
+                .font(.bodySM)
+                .foregroundStyle(Color.onSurfaceVariant)
 
-            Button("Cancel") {
-                onApply()
-            }
-            .buttonStyle(.plain)
-            .font(.labelLG)
-            .foregroundStyle(Color.onSurfaceVariant)
-
-            Button {
-                onApply()
-            } label: {
-                Text("Apply \(count) proposal\(count == 1 ? "" : "s")")
-                    .font(.labelLG.weight(.semibold))
-                    .foregroundStyle(Color.onPrimary)
-                    .padding(.horizontal, Space.s4)
-                    .padding(.vertical, Space.s2_5)
-                    .background(
-                        Capsule()
-                            .fill(Color.primaryFill)
-                    )
-            }
-            .buttonStyle(.plain)
-            .ctaShadow()
+            Text(project.action)
+                .font(.bodyMD.weight(.medium))
+                .foregroundStyle(Color.onSurface)
+                .padding(.top, Space.s1)
         }
-        .padding(Space.s4)
-        .frame(maxWidth: .infinity)
-        .background(
-            Color.surfaceContainerLowest
-                .overlay(Rectangle().fill(Color.outlineVariant.opacity(0.18)).frame(height: 1), alignment: .top)
-        )
+    }
+
+    private func section<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            Text(title.uppercased())
+                .font(.labelSM)
+                .tracking(1.5)
+                .foregroundStyle(Color.secondaryText)
+            content()
+        }
+    }
+
+    private func relatedEvent(time: String, title: String, meta: String) -> some View {
+        HStack(alignment: .top, spacing: Space.s3) {
+            Text(time)
+                .font(.custom("Inter-Regular", size: 12))
+                .foregroundStyle(Color.secondaryText)
+                .frame(width: 140, alignment: .leading)
+
+            VStack(alignment: .leading, spacing: Space.s1) {
+                Text(title)
+                    .font(.bodyMD.weight(.medium))
+                    .foregroundStyle(Color.onSurface)
+                Text(meta)
+                    .font(.bodySM)
+                    .foregroundStyle(Color.onSurfaceVariant)
+            }
+        }
+        .padding(.vertical, Space.s3)
+    }
+
+    private func activityRow(when label: String, text: String) -> some View {
+        HStack(alignment: .top, spacing: Space.s3) {
+            Text(label)
+                .font(.custom("Inter-Regular", size: 12))
+                .foregroundStyle(Color.secondaryText)
+                .frame(width: 80, alignment: .leading)
+            Text(text)
+                .font(.bodyMD)
+                .foregroundStyle(Color.onSurface)
+        }
+        .padding(.vertical, Space.s3)
+    }
+
+    private func actionButton(label: String, symbol: String) -> some View {
+        Button {} label: {
+            HStack(spacing: Space.s1_5) {
+                Image(systemName: symbol)
+                    .font(.system(size: 12, weight: .regular))
+                Text(label)
+                    .font(.labelMD.weight(.medium))
+            }
+            .foregroundStyle(Color.onSurface)
+            .padding(.horizontal, Space.s3)
+            .padding(.vertical, Space.s2)
+            .background(
+                Capsule()
+                    .fill(Color.surfaceContainerHigh)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }

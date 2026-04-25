@@ -1,4 +1,5 @@
 import SwiftUI
+import AlignedDesignSystem
 
 /// Apple Setup Assistant-style wizard for configuring components that require user input.
 /// Presented as a 540x480 sheet from MarketplaceView or ComponentDetailView.
@@ -47,7 +48,7 @@ struct SetupWizardView: View {
             navigationBar
         }
         .frame(width: 540, height: 480)
-        .background(VisualEffectBackground().ignoresSafeArea())
+        .background(Color.surface.ignoresSafeArea())
     }
 
     // MARK: - Progress Bar

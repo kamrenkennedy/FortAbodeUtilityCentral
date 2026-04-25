@@ -1,4 +1,5 @@
 import SwiftUI
+import AlignedDesignSystem
 
 // MARK: - Component Detail View
 
@@ -93,7 +94,7 @@ struct ComponentDetailView: View {
             }
         }
         .background {
-            VisualEffectBackground().ignoresSafeArea()
+            Color.surface.ignoresSafeArea()
         }
         .navigationTitle(component?.displayName ?? "Detail")
         .task {

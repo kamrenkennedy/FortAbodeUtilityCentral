@@ -1,9 +1,13 @@
 import SwiftUI
+import AppKit
+import AlignedDesignSystem
 
 // MARK: - Family Activation View
+//
+// First-launch gate. Once activated, the code is stored in Keychain and this
+// view never appears again. v4.0.0 restyle: token-swap pass, primaryFill CTA,
+// GhostBorderField pattern for the code input.
 
-/// Shown on first launch before the user has activated with the family code.
-/// Once activated, the code is stored in Keychain and this view never appears again.
 struct ActivationView: View {
 
     @State private var code = ""
@@ -11,44 +15,55 @@ struct ActivationView: View {
     @State private var showError = false
     @State private var isActivating = false
 
-    /// Called when activation succeeds
     var onActivated: () -> Void
 
     var body: some View {
         ZStack {
-            VisualEffectBackground()
+            Color.surface
                 .ignoresSafeArea()
 
-            VStack(spacing: 28) {
+            VStack(spacing: Space.s8) {
                 Spacer()
 
-                // App icon
                 Image(nsImage: NSApp.applicationIconImage)
                     .resizable()
                     .frame(width: 96, height: 96)
                     .shadow(color: .black.opacity(0.3), radius: 12, y: 4)
 
-                VStack(spacing: 8) {
+                VStack(spacing: Space.s2) {
                     Text("Fort Abode Utility Central")
-                        .font(.title.bold())
+                        .font(.headlineLG)
+                        .foregroundStyle(Color.onSurface)
 
                     Text("Enter your family activation code to get started.")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
+                        .font(.bodyMD)
+                        .foregroundStyle(Color.onSurfaceVariant)
+                        .multilineTextAlignment(.center)
                 }
 
-                // Code input
-                VStack(spacing: 12) {
+                VStack(spacing: Space.s3) {
                     SecureField("Activation Code", text: $code)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(maxWidth: 280)
+                        .textFieldStyle(.plain)
+                        .font(.bodyLG)
+                        .foregroundStyle(Color.onSurface)
+                        .padding(.horizontal, Space.s4)
+                        .padding(.vertical, Space.s3)
+                        .background(
+                            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                                .fill(Color.surfaceContainerLow)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                                .strokeBorder(Color.outlineVariant.opacity(0.4), lineWidth: 1)
+                        )
+                        .frame(maxWidth: 320)
                         .onSubmit { activate() }
                         .offset(x: isShaking ? -8 : 0)
 
                     if showError {
                         Text("Invalid code. Please try again.")
-                            .font(.caption)
-                            .foregroundStyle(.red)
+                            .font(.labelMD)
+                            .foregroundStyle(Color.statusError)
                             .transition(.opacity)
                     }
                 }
@@ -57,26 +72,34 @@ struct ActivationView: View {
                     if isActivating {
                         ProgressView()
                             .controlSize(.small)
-                            .frame(width: 120)
+                            .tint(Color.onPrimary)
+                            .frame(width: 140, height: 24)
                     } else {
                         Text("Activate")
-                            .frame(width: 120)
+                            .font(.labelLG.weight(.semibold))
+                            .foregroundStyle(Color.onPrimary)
+                            .frame(width: 140, height: 24)
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .tint(.green)
+                .padding(.vertical, Space.s2)
+                .background(
+                    Capsule()
+                        .fill(Color.primaryFill)
+                )
+                .buttonStyle(.plain)
                 .disabled(code.isEmpty || isActivating)
+                .opacity((code.isEmpty || isActivating) ? 0.5 : 1)
                 .keyboardShortcut(.defaultAction)
+                .ctaShadow()
 
                 Spacer()
 
                 Text("This app is for authorized family members only.")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                    .padding(.bottom, 16)
+                    .font(.labelSM)
+                    .foregroundStyle(Color.secondaryText)
+                    .padding(.bottom, Space.s4)
             }
-            .padding(40)
+            .padding(Space.s10)
         }
         .frame(minWidth: 420, minHeight: 360)
     }
@@ -85,7 +108,6 @@ struct ActivationView: View {
         isActivating = true
         showError = false
 
-        // Small delay for feel
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             if KeychainService.activate(with: code) {
                 withAnimation(.easeOut(duration: 0.2)) {
@@ -93,7 +115,6 @@ struct ActivationView: View {
                 }
             } else {
                 showError = true
-                // Shake animation
                 withAnimation(.default.repeatCount(3, autoreverses: true).speed(6)) {
                     isShaking = true
                 }

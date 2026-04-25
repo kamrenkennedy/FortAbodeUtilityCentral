@@ -65,12 +65,6 @@ struct RootView: View {
                         switch destination {
                         case .componentDetail(let id):
                             ComponentDetailView(componentId: id)
-                        case .familyMemory:
-                            FamilyMemoryView()
-                        case .feedback:
-                            FeedbackView()
-                        case .marketplace:
-                            MarketplaceView()
                         }
                     }
             }

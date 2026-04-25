@@ -1,13 +1,16 @@
 import SwiftUI
+import AlignedDesignSystem
 
 // MARK: - What's New View (Post-Update Splash)
+//
+// v4.0.0 restyle: token-swap pass, Manrope display title, brandRust sparkle
+// glyph (notification accent), primaryFill "Got It" CTA.
 
 struct WhatsNewView: View {
 
     let releases: [WhatsNewRelease]
     let onDismiss: () -> Void
 
-    /// Convenience for a single release
     init(version: String, notes: [String], onDismiss: @escaping () -> Void) {
         self.releases = [WhatsNewRelease(version: version, notes: notes)]
         self.onDismiss = onDismiss
@@ -20,72 +23,87 @@ struct WhatsNewView: View {
 
     var body: some View {
         ZStack {
-            VisualEffectBackground()
+            Color.surface
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                VStack(spacing: 6) {
+                VStack(spacing: Space.s1_5) {
                     Text("Hey Honey")
-                        .font(.system(size: 28, weight: .bold))
+                        .font(.displaySM)
+                        .foregroundStyle(Color.onSurface)
 
                     Text(releases.count > 1
                          ? "Here's what you missed"
                          : "Here's what's new in this update")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .font(.bodyMD)
+                        .foregroundStyle(Color.onSurfaceVariant)
                 }
-                .padding(.top, 28)
-                .padding(.bottom, 20)
+                .padding(.top, Space.s8)
+                .padding(.bottom, Space.s5)
 
-                Divider()
-                    .padding(.horizontal, 32)
+                Rectangle()
+                    .fill(Color.outlineVariant.opacity(0.18))
+                    .frame(height: 1)
+                    .padding(.horizontal, Space.s8)
 
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: Space.s5) {
                         ForEach(releases) { release in
-                            VStack(alignment: .leading, spacing: 12) {
+                            VStack(alignment: .leading, spacing: Space.s3) {
                                 Text("v\(release.version)")
                                     .font(.system(size: 13, weight: .medium, design: .monospaced))
-                                    .foregroundStyle(.green.opacity(0.8))
+                                    .foregroundStyle(Color.statusScheduled)
 
                                 ForEach(Array(release.notes.enumerated()), id: \.offset) { _, note in
-                                    HStack(alignment: .top, spacing: 10) {
+                                    HStack(alignment: .top, spacing: Space.s2_5) {
                                         Image(systemName: "sparkle")
                                             .font(.system(size: 10))
-                                            .foregroundStyle(.blue)
+                                            .foregroundStyle(Color.brandRust)
                                             .padding(.top, 3)
 
                                         Text(note)
-                                            .font(.body)
-                                            .foregroundStyle(.primary)
+                                            .font(.bodyMD)
+                                            .foregroundStyle(Color.onSurface)
                                             .fixedSize(horizontal: false, vertical: true)
                                     }
                                 }
                             }
 
                             if release.id != releases.last?.id {
-                                Divider()
-                                    .padding(.vertical, 4)
+                                Rectangle()
+                                    .fill(Color.outlineVariant.opacity(0.18))
+                                    .frame(height: 1)
+                                    .padding(.vertical, Space.s1)
                             }
                         }
                     }
-                    .padding(.horizontal, 36)
-                    .padding(.vertical, 20)
+                    .padding(.horizontal, Space.s8)
+                    .padding(.vertical, Space.s5)
                 }
 
-                Divider()
-                    .padding(.horizontal, 32)
+                Rectangle()
+                    .fill(Color.outlineVariant.opacity(0.18))
+                    .frame(height: 1)
+                    .padding(.horizontal, Space.s8)
 
-                Button("Got It") {
-                    onDismiss()
+                Button(action: onDismiss) {
+                    Text("Got It")
+                        .font(.labelLG.weight(.semibold))
+                        .foregroundStyle(Color.onPrimary)
+                        .frame(width: 120, height: 24)
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .padding(.vertical, 20)
+                .padding(.vertical, Space.s2)
+                .background(
+                    Capsule()
+                        .fill(Color.primaryFill)
+                )
+                .buttonStyle(.plain)
+                .ctaShadow()
+                .padding(.vertical, Space.s5)
             }
         }
-        .frame(width: 380)
-        .frame(minHeight: 340)
+        .frame(width: 420)
+        .frame(minHeight: 360)
     }
 }
 
@@ -100,15 +118,11 @@ struct WhatsNewRelease: Codable, Identifiable {
 
 enum WhatsNewLoader {
 
-    /// Load release notes from the bundled whats-new.json for the given version.
-    /// Returns nil if no entry exists for that version.
     static func load(for version: String) -> WhatsNewRelease? {
         guard let releases = loadAll() else { return nil }
         return releases.first { $0.version == version }
     }
 
-    /// Load all releases between lastSeen (exclusive) and current (inclusive),
-    /// sorted newest-first. Returns nil if no entries match.
     static func loadSince(lastSeen: String, current: String) -> [WhatsNewRelease]? {
         guard let releases = loadAll() else { return nil }
 

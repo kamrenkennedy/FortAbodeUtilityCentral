@@ -1526,11 +1526,12 @@ private struct DayTypeEditor: View {
     @State private var dropdownOpen: Bool = false
 
     var body: some View {
-        HStack(spacing: 3) {
+        VStack(alignment: .center, spacing: 3) {
             ForEach(sortedTypes, id: \.self) { type in
                 DayTypePill(kind: type, removable: types.count > 1) {
                     types.remove(type)
                 }
+                .fixedSize(horizontal: true, vertical: false)
             }
 
             Button {
@@ -1539,7 +1540,7 @@ private struct DayTypeEditor: View {
                 Image(systemName: "chevron.down")
                     .font(.system(size: 8, weight: .semibold))
                     .foregroundStyle(Color.onSurfaceVariant)
-                    .frame(width: 18, height: 16)
+                    .frame(width: 22, height: 14)
                     .background(
                         RoundedRectangle(cornerRadius: 4, style: .continuous)
                             .fill(Color.surfaceContainerHigh)
@@ -1653,6 +1654,8 @@ private struct DayTypePill: View {
                 .font(.system(size: 9, weight: .semibold))
                 .tracking(0.6)
                 .foregroundStyle(kind.tint)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
 
             if removable, let onRemove {
                 Button(action: onRemove) {

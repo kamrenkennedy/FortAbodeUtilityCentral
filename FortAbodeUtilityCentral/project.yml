@@ -26,6 +26,7 @@ targets:
       - path: App
       - path: Models
       - path: Services
+      - path: State
       - path: ViewModels
       - path: Views
       - path: Resources/Assets.xcassets

@@ -103,9 +103,10 @@ private final class WindowConfigView: NSView {
     }
 
     private func applyStyle() {
-        guard let window else { return }
-        window.titlebarAppearsTransparent = true
-        window.titlebarSeparatorStyle = .none
+        // Title bar is hidden entirely via .windowStyle(.hiddenTitleBar) on the
+        // Window scene. WindowAppearanceModifier exists only to attach the close
+        // observer below (drops the Dock icon when the main window closes so the
+        // process keeps running for background Sparkle checks).
     }
 
     deinit {
@@ -124,6 +125,7 @@ struct FortAbodeUtilityCentralApp: App {
     @State private var isActivated = KeychainService.isActivated
     @State private var whatsNewReleases: [WhatsNewRelease]?
     @State private var updaterService: AppUpdaterService
+    @State private var appState = AppState()
 
     // Sparkle updater controller — starts checking for updates automatically
     private let updaterController: SPUStandardUpdaterController
@@ -153,29 +155,16 @@ struct FortAbodeUtilityCentralApp: App {
                         isActivated = true
                     }
                 } else if let viewModel {
-                    NavigationStack {
-                        ContentView()
-                            .navigationDestination(for: AppDestination.self) { destination in
-                                switch destination {
-                                case .componentDetail(let id):
-                                    ComponentDetailView(componentId: id)
-                                case .marketplace:
-                                    MarketplaceView()
-                                case .feedback:
-                                    FeedbackView()
-                                case .familyMemory:
-                                    FamilyMemoryView()
-                                }
-                            }
-                    }
-                    .environment(viewModel)
-                    .environment(updaterService)
+                    RootView(updater: updaterController.updater)
+                        .environment(viewModel)
+                        .environment(updaterService)
+                        .environment(appState)
                 } else {
                     ProgressView("Loading...")
-                        .frame(minWidth: 500, minHeight: 400)
+                        .frame(minWidth: 900, minHeight: 600)
                 }
             }
-            .frame(minWidth: 500, minHeight: 400)
+            .frame(minWidth: 900, minHeight: 600)
             .background(WindowAppearanceModifier())
             .sheet(isPresented: Binding(
                 get: { whatsNewReleases != nil },
@@ -206,8 +195,9 @@ struct FortAbodeUtilityCentralApp: App {
                 pinICloudFoldersInBackground()
             }
         }
-        .defaultSize(width: 600, height: 500)
+        .defaultSize(width: 1280, height: 800)
         .windowResizability(.contentMinSize)
+        .windowStyle(.hiddenTitleBar)
         .commands {
             CommandGroup(after: .appInfo) {
                 CheckForUpdatesView(updater: updaterController.updater)

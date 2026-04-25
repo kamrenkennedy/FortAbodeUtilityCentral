@@ -1,215 +1,251 @@
 import SwiftUI
+import AppKit
+import AlignedDesignSystem
 
 // MARK: - Feedback View
+//
+// v4.0.0 restyle. Presented as a sheet from Settings → Send Feedback OR from
+// the chat panel's "Report a bug" suggestion chip. Preserves the existing
+// FeedbackViewModel + FeedbackService flow (writes structured reports to the
+// shared iCloud folder — zero Claude API tokens for what is fundamentally a
+// form post). Only the visuals are new.
 
 struct FeedbackView: View {
 
     @Environment(ComponentListViewModel.self) private var listViewModel
+    @Environment(\.dismiss) private var dismiss
     @State private var viewModel = FeedbackViewModel()
 
     var body: some View {
-        ZStack {
-            VisualEffectBackground()
-                .ignoresSafeArea()
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                EditorialHeader(eyebrow: "Fort Abode", title: "Send Feedback")
 
-            Group {
-                if !viewModel.isConfigured {
-                    notConfiguredView
-                } else {
-                    feedbackForm
+                VStack(alignment: .leading, spacing: Space.s5) {
+                    typeRow
+                    if viewModel.feedbackType == .bug {
+                        componentRow
+                    }
+                    GhostBorderField(
+                        label: "Subject",
+                        text: $viewModel.subject,
+                        placeholder: "Brief summary"
+                    )
+                    detailsField
+
+                    if viewModel.feedbackType == .bug {
+                        debugReportChip
+                    }
+
+                    if let result = viewModel.submitResult {
+                        resultBanner(result)
+                    }
+
+                    submitRow
                 }
+                .padding(.horizontal, Space.s16)
+                .padding(.bottom, Space.s24)
+            }
+            .frame(maxWidth: 720, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .background(Color.surface)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Close") { dismiss() }
             }
         }
-        .navigationTitle("Send Feedback")
         .task {
             await viewModel.checkConfiguration()
         }
     }
 
-    // MARK: - Not Configured (unreachable as of v3.7.5)
-    //
-    // FeedbackService.isConfigured() now always returns true because the file-write
-    // path has no preconditions. Kept for compile-time compatibility and in case a
-    // future release adds an optional API destination that can be "not configured."
+    // MARK: - Type segmented picker
 
-    private var notConfiguredView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.bubble")
-                .font(.system(size: 48, weight: .light))
-                .foregroundStyle(.secondary)
+    private var typeRow: some View {
+        VStack(alignment: .leading, spacing: Space.s2) {
+            Text("Type".uppercased())
+                .font(.labelSM)
+                .tracking(1.0)
+                .foregroundStyle(Color.onSurfaceVariant)
 
-            Text("Feedback isn't set up yet")
-                .font(.headline)
-                .foregroundStyle(.secondary)
+            let binding = Binding<FeedbackType>(
+                get: { viewModel.feedbackType },
+                set: { viewModel.feedbackType = $0 }
+            )
 
-            Text("Ask Kam to configure it on his machine, or set it up in Settings.")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 280)
+            SegmentedTabBar(
+                options: FeedbackType.allCases,
+                selection: binding,
+                label: { $0.rawValue }
+            )
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    // MARK: - Feedback Form
+    // MARK: - Component picker (bug only)
 
-    private var feedbackForm: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+    private var componentRow: some View {
+        VStack(alignment: .leading, spacing: Space.s2) {
+            Text("Component".uppercased())
+                .font(.labelSM)
+                .tracking(1.0)
+                .foregroundStyle(Color.onSurfaceVariant)
 
-                // Type picker
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Type")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    Picker("Type", selection: $viewModel.feedbackType) {
-                        ForEach(FeedbackType.allCases) { type in
-                            Text(type.rawValue).tag(type)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                }
-
-                // Component picker (bugs only)
-                if viewModel.feedbackType == .bug {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Component")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        Picker("Component", selection: $viewModel.selectedComponentId) {
-                            Text("General / Not sure").tag(nil as String?)
-                            ForEach(listViewModel.installedComponents) { component in
-                                Text(component.displayName).tag(component.id as String?)
-                            }
-                        }
-                    }
-                }
-
-                // Subject
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Subject")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    TextField("Brief summary", text: $viewModel.subject)
-                        .textFieldStyle(.roundedBorder)
-                }
-
-                // Description
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Details")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    TextEditor(text: $viewModel.descriptionText)
-                        .font(.body)
-                        .frame(minHeight: 100)
-                        .padding(4)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(.quaternary)
-                        )
-                        .scrollContentBackground(.hidden)
-                }
-
-                // Debug report badge
-                if viewModel.feedbackType == .bug {
-                    HStack(spacing: 6) {
-                        Image(systemName: "wrench.and.screwdriver")
-                            .font(.caption)
-                            .foregroundStyle(.blue)
-                        Text("A debug report will be included automatically")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(.blue.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
-                }
-
-                // Result banner
-                if let result = viewModel.submitResult {
-                    resultBanner(result)
-                }
-
-                // Submit button
-                HStack {
-                    Spacer()
-                    Button {
-                        Task {
-                            await viewModel.submit(
-                                statuses: listViewModel.statuses,
-                                components: listViewModel.components
-                            )
-                        }
-                    } label: {
-                        if viewModel.isSubmitting {
-                            ProgressView()
-                                .controlSize(.small)
-                                .padding(.horizontal, 8)
-                        } else {
-                            Text("Submit")
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                    .disabled(viewModel.isSubmitting || viewModel.subject.trimmingCharacters(in: .whitespaces).isEmpty)
+            Picker("", selection: $viewModel.selectedComponentId) {
+                Text("General / Not sure").tag(nil as String?)
+                ForEach(listViewModel.installedComponents) { component in
+                    Text(component.displayName).tag(component.id as String?)
                 }
             }
-            .padding(32)
+            .labelsHidden()
+            .pickerStyle(.menu)
         }
     }
 
-    // MARK: - Result Banner
+    // MARK: - Details field
+
+    private var detailsField: some View {
+        VStack(alignment: .leading, spacing: Space.s2) {
+            Text("Details".uppercased())
+                .font(.labelSM)
+                .tracking(1.0)
+                .foregroundStyle(Color.onSurfaceVariant)
+
+            TextEditor(text: $viewModel.descriptionText)
+                .font(.bodyLG)
+                .foregroundStyle(Color.onSurface)
+                .scrollContentBackground(.hidden)
+                .frame(minHeight: 140)
+                .padding(Space.s2)
+                .background(
+                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                        .fill(Color.surfaceContainerLow)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                        .strokeBorder(Color.outlineVariant.opacity(0.4), lineWidth: 1)
+                )
+        }
+    }
+
+    // MARK: - Debug report chip
+
+    private var debugReportChip: some View {
+        HStack(spacing: Space.s1_5) {
+            Image(systemName: "wrench.and.screwdriver")
+                .font(.system(size: 11, weight: .medium))
+            Text("A debug report will be included automatically")
+                .font(.labelMD)
+        }
+        .foregroundStyle(Color.onTertiaryContainer)
+        .padding(.horizontal, Space.s3)
+        .padding(.vertical, Space.s1_5)
+        .background(
+            Capsule()
+                .fill(Color.tertiaryContainer)
+        )
+    }
+
+    // MARK: - Submit row
+
+    private var submitRow: some View {
+        HStack {
+            Spacer()
+
+            Button {
+                Task {
+                    await viewModel.submit(
+                        statuses: listViewModel.statuses,
+                        components: listViewModel.components
+                    )
+                }
+            } label: {
+                HStack(spacing: Space.s2) {
+                    if viewModel.isSubmitting {
+                        ProgressView().controlSize(.small)
+                            .tint(Color.onPrimary)
+                    }
+                    Text(viewModel.isSubmitting ? "Submitting…" : "Submit")
+                        .font(.labelLG.weight(.semibold))
+                }
+                .foregroundStyle(Color.onPrimary)
+                .padding(.horizontal, Space.s5)
+                .padding(.vertical, Space.s3)
+                .background(
+                    Capsule()
+                        .fill(Color.primaryFill)
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(isSubmitDisabled)
+            .opacity(isSubmitDisabled ? 0.5 : 1)
+            .ctaShadow()
+        }
+    }
+
+    private var isSubmitDisabled: Bool {
+        viewModel.isSubmitting ||
+        viewModel.subject.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
+    // MARK: - Result banner
 
     @ViewBuilder
     private func resultBanner(_ result: FeedbackViewModel.SubmitResult) -> some View {
         switch result {
         case .success(let savedPath):
-            // v3.7.5: feedback now writes to a shared iCloud folder (or a local fallback).
-            // Show the saved path explicitly so the user can verify where it went, grab it
-            // out of Finder, or paste it somewhere if iCloud sync is slow. The copy button
-            // puts the path on the clipboard for fast sharing.
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: Space.s2) {
+                HStack(spacing: Space.s2) {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.statusScheduled)
+                        .font(.system(size: 14))
                     Text("Feedback saved — Kam will pick it up from iCloud")
-                        .font(.callout)
+                        .font(.bodyMD.weight(.medium))
+                        .foregroundStyle(Color.onSurface)
                 }
-                HStack(spacing: 8) {
+
+                HStack(spacing: Space.s2) {
                     Text(savedPath)
-                        .font(.caption.monospaced())
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(Color.onSurfaceVariant)
                         .lineLimit(2)
                         .truncationMode(.middle)
-                    Spacer(minLength: 8)
+                    Spacer(minLength: Space.s2)
                     Button {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(savedPath, forType: .string)
                     } label: {
                         Image(systemName: "doc.on.doc")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.onSurfaceVariant)
                     }
                     .buttonStyle(.plain)
                     .help("Copy file path to clipboard")
                 }
             }
-            .padding(12)
+            .padding(Space.s3)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.green.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+            .background(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .fill(Color.statusScheduled.opacity(0.12))
+            )
 
         case .error(let message):
-            HStack(alignment: .top, spacing: 8) {
+            HStack(alignment: .top, spacing: Space.s2) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.statusError)
+                    .font(.system(size: 14))
                 Text(message)
-                    .font(.callout)
+                    .font(.bodyMD)
+                    .foregroundStyle(Color.onSurface)
             }
-            .padding(12)
+            .padding(Space.s3)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+            .background(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .fill(Color.statusError.opacity(0.12))
+            )
         }
     }
 }

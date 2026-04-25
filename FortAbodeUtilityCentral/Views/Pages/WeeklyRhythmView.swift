@@ -23,6 +23,9 @@ struct WeeklyRhythmView: View {
     @State private var weekDays: [WeekDay] = WeeklyRhythmView.makeMockedWeekDays()
     @State private var errands: [Errand] = WeeklyRhythmView.makeMockedErrands()
     @State private var dayTypeSettingsOpen: Bool = false
+    @State private var editingErrandID: UUID?
+    @State private var detailTriage: TriageEntry?
+    @State private var detailProposal: Proposal?
 
     var body: some View {
         ScrollView {
@@ -57,6 +60,42 @@ struct WeeklyRhythmView: View {
             DayTypeSettingsSheet()
                 .frame(minWidth: 520, idealWidth: 640, minHeight: 480, idealHeight: 600)
         }
+        .sheet(isPresented: errandEditSheetBinding) {
+            if let id = editingErrandID, let index = errands.firstIndex(where: { $0.id == id }) {
+                ErrandDetailSheet(errand: $errands[index])
+                    .frame(minWidth: 480, idealWidth: 560, minHeight: 420, idealHeight: 520)
+            }
+        }
+        .sheet(item: $detailTriage) { entry in
+            TriageDetailSheet(entry: entry)
+                .frame(minWidth: 480, idealWidth: 560, minHeight: 360, idealHeight: 440)
+        }
+        .sheet(item: $detailProposal) { proposal in
+            ProposalDetailSheet(
+                proposal: proposal,
+                isResolved: resolvedProposals[proposal.id] != nil,
+                onAccept: {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        resolvedProposals[proposal.id] = .accepted
+                    }
+                    detailProposal = nil
+                },
+                onDecline: {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        resolvedProposals[proposal.id] = .declined
+                    }
+                    detailProposal = nil
+                }
+            )
+            .frame(minWidth: 480, idealWidth: 560, minHeight: 360, idealHeight: 480)
+        }
+    }
+
+    private var errandEditSheetBinding: Binding<Bool> {
+        Binding(
+            get: { editingErrandID != nil },
+            set: { if !$0 { editingErrandID = nil } }
+        )
     }
 
     // MARK: - Today's Brief (engine-spec.md Step 6 + day-type narrative)
@@ -410,7 +449,10 @@ struct WeeklyRhythmView: View {
                 VStack(spacing: 0) {
                     ForEach(pendingErrands.indices, id: \.self) { i in
                         let actualIndex = errands.firstIndex(where: { $0.id == pendingErrands[i].id })!
-                        ErrandRow(errand: $errands[actualIndex])
+                        ErrandRow(
+                            errand: $errands[actualIndex],
+                            onOpen: { editingErrandID = errands[actualIndex].id }
+                        )
                         if i < pendingErrands.count - 1 {
                             RowSeparator()
                         }
@@ -537,22 +579,33 @@ struct WeeklyRhythmView: View {
     ]
 
     private func triageRow(_ entry: TriageEntry) -> some View {
-        HStack(alignment: .top, spacing: Space.s3) {
-            StatusDot(entry.status)
-                .padding(.top, 7)
+        Button {
+            detailTriage = entry
+        } label: {
+            HStack(alignment: .top, spacing: Space.s3) {
+                StatusDot(entry.status)
+                    .padding(.top, 7)
 
-            VStack(alignment: .leading, spacing: Space.s1) {
-                Text(entry.title)
-                    .font(.bodyMD.weight(.medium))
-                    .foregroundStyle(Color.onSurface)
-                Text(entry.meta)
-                    .font(.bodySM)
+                VStack(alignment: .leading, spacing: Space.s1) {
+                    Text(entry.title)
+                        .font(.bodyMD.weight(.medium))
+                        .foregroundStyle(Color.onSurface)
+                    Text(entry.meta)
+                        .font(.bodySM)
+                        .foregroundStyle(Color.onSurfaceVariant)
+                }
+
+                Spacer(minLength: Space.s2)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(Color.onSurfaceVariant)
+                    .padding(.top, 7)
             }
-
-            Spacer(minLength: 0)
+            .padding(.vertical, Space.s3)
+            .contentShape(Rectangle())
         }
-        .padding(.vertical, Space.s3)
+        .buttonStyle(.plain)
     }
 
     private var proposalsCard: some View {
@@ -620,17 +673,22 @@ struct WeeklyRhythmView: View {
 
     private func proposalRow(_ proposal: Proposal) -> some View {
         HStack(alignment: .top, spacing: Space.s3) {
-            VStack(alignment: .leading, spacing: Space.s1) {
-                Text(proposal.title)
-                    .font(.bodyMD.weight(.medium))
-                    .foregroundStyle(Color.onSurface)
-                Text(proposal.reasoning)
-                    .font(.bodySM)
-                    .foregroundStyle(Color.onSurfaceVariant)
-                    .fixedSize(horizontal: false, vertical: true)
+            Button {
+                detailProposal = proposal
+            } label: {
+                VStack(alignment: .leading, spacing: Space.s1) {
+                    Text(proposal.title)
+                        .font(.bodyMD.weight(.medium))
+                        .foregroundStyle(Color.onSurface)
+                    Text(proposal.reasoning)
+                        .font(.bodySM)
+                        .foregroundStyle(Color.onSurfaceVariant)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
-
-            Spacer(minLength: Space.s2)
+            .buttonStyle(.plain)
 
             HStack(spacing: Space.s1) {
                 Button {
@@ -730,6 +788,256 @@ private struct RunHealthPill: View {
         case .allGood:                 return "All good"
         case .warning(let message):    return message
         case .error(let message):      return message
+        }
+    }
+}
+
+// MARK: - Errand Detail sheet (edit fields)
+
+private struct ErrandDetailSheet: View {
+    @Binding var errand: Errand
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.s5) {
+                EditorialHeader(eyebrow: "Errand", title: "Edit")
+
+                VStack(alignment: .leading, spacing: Space.s5) {
+                    GhostBorderField(label: "Title", text: $errand.title)
+
+                    GhostBorderField(
+                        label: "Location",
+                        text: locationBinding,
+                        placeholder: "e.g. Downtown · 12 min"
+                    )
+
+                    GhostBorderField(
+                        label: "Routed to",
+                        text: routedBinding,
+                        placeholder: "e.g. Mon · post office (leave blank for Unrouted)"
+                    )
+
+                    HStack(spacing: Space.s4) {
+                        VStack(alignment: .leading, spacing: Space.s2) {
+                            Text("Days Pending".uppercased())
+                                .font(.labelSM)
+                                .tracking(1.0)
+                                .foregroundStyle(Color.onSurfaceVariant)
+                            Text("\(errand.daysPending)d")
+                                .font(.bodyLG)
+                                .foregroundStyle(Color.onSurface)
+                        }
+
+                        Spacer(minLength: Space.s4)
+
+                        VStack(alignment: .leading, spacing: Space.s2) {
+                            Text("Status".uppercased())
+                                .font(.labelSM)
+                                .tracking(1.0)
+                                .foregroundStyle(Color.onSurfaceVariant)
+                            Toggle(errand.isDone ? "Done" : "Pending", isOn: $errand.isDone)
+                                .toggleStyle(.switch)
+                        }
+                    }
+                }
+                .padding(.horizontal, Space.s16)
+
+                Spacer(minLength: Space.s4)
+            }
+            .padding(.vertical, Space.s8)
+            .frame(maxWidth: 720, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(Color.surface)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Done") { dismiss() }
+            }
+        }
+    }
+
+    private var locationBinding: Binding<String> {
+        Binding(
+            get: { errand.location ?? "" },
+            set: { errand.location = $0.isEmpty ? nil : $0 }
+        )
+    }
+
+    private var routedBinding: Binding<String> {
+        Binding(
+            get: { errand.routedTo ?? "" },
+            set: { errand.routedTo = $0.isEmpty ? nil : $0 }
+        )
+    }
+}
+
+// MARK: - Triage Detail sheet (read-only with mock actions)
+
+private struct TriageDetailSheet: View {
+    let entry: TriageEntry
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.s5) {
+                EditorialHeader(eyebrow: "Triage", title: entry.title)
+
+                VStack(alignment: .leading, spacing: Space.s5) {
+                    HStack(spacing: Space.s2) {
+                        StatusDot(entry.status)
+                        Text(entry.meta)
+                            .font(.bodyMD)
+                            .foregroundStyle(Color.onSurfaceVariant)
+                    }
+
+                    DashboardCard(verticalPadding: Space.s4, horizontalPadding: Space.s4) {
+                        VStack(alignment: .leading, spacing: Space.s2) {
+                            Text("Snippet".uppercased())
+                                .font(.labelSM)
+                                .tracking(1.0)
+                                .foregroundStyle(Color.secondaryText)
+                            Text(snippetForEntry(entry))
+                                .font(.bodyMD)
+                                .foregroundStyle(Color.onSurface)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+
+                    HStack(spacing: Space.s2) {
+                        actionPill(label: "Mark Read", symbol: "envelope.open")
+                        actionPill(label: "Reply", symbol: "arrowshape.turn.up.left")
+                        actionPill(label: "Snooze", symbol: "clock")
+                        actionPill(label: "Archive", symbol: "archivebox")
+                    }
+                }
+                .padding(.horizontal, Space.s16)
+
+                Spacer(minLength: Space.s4)
+            }
+            .padding(.vertical, Space.s8)
+            .frame(maxWidth: 720, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(Color.surface)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Close") { dismiss() }
+            }
+        }
+    }
+
+    private func snippetForEntry(_ entry: TriageEntry) -> String {
+        // Mocked snippet text. Phase 5 wires the real source (Gmail/Reminders/Memory).
+        "Mock preview of the source content. Phase 5 will fetch the real snippet (Gmail thread, Reminders item, Family Memory edit, etc) based on the triage source."
+    }
+
+    private func actionPill(label: String, symbol: String) -> some View {
+        Button {} label: {
+            HStack(spacing: Space.s1_5) {
+                Image(systemName: symbol).font(.system(size: 12))
+                Text(label).font(.labelMD.weight(.medium))
+            }
+            .foregroundStyle(Color.onSurface)
+            .padding(.horizontal, Space.s3)
+            .padding(.vertical, Space.s2)
+            .background(Capsule().fill(Color.surfaceContainerHigh))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Proposal Detail sheet
+
+private struct ProposalDetailSheet: View {
+    let proposal: Proposal
+    let isResolved: Bool
+    let onAccept: () -> Void
+    let onDecline: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.s5) {
+                EditorialHeader(eyebrow: "Claude Proposal", title: proposal.title)
+
+                VStack(alignment: .leading, spacing: Space.s5) {
+                    DashboardCard(verticalPadding: Space.s4, horizontalPadding: Space.s4) {
+                        VStack(alignment: .leading, spacing: Space.s2) {
+                            Text("Reasoning".uppercased())
+                                .font(.labelSM)
+                                .tracking(1.0)
+                                .foregroundStyle(Color.secondaryText)
+                            Text(proposal.reasoning)
+                                .font(.bodyMD)
+                                .foregroundStyle(Color.onSurface)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+
+                    DashboardCard(verticalPadding: Space.s4, horizontalPadding: Space.s4) {
+                        VStack(alignment: .leading, spacing: Space.s2) {
+                            Text("Proposed Change".uppercased())
+                                .font(.labelSM)
+                                .tracking(1.0)
+                                .foregroundStyle(Color.secondaryText)
+                            Text("Phase 5 wires the real before/after diff from the engine. For now this is the proposal title rendered as the change summary.")
+                                .font(.bodyMD)
+                                .foregroundStyle(Color.onSurfaceVariant)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+
+                    if !isResolved {
+                        HStack(spacing: Space.s2) {
+                            Spacer()
+                            Button(action: onDecline) {
+                                Text("Decline")
+                                    .font(.labelLG.weight(.medium))
+                                    .foregroundStyle(Color.onSurface)
+                                    .padding(.horizontal, Space.s4)
+                                    .padding(.vertical, Space.s2_5)
+                                    .background(Capsule().fill(Color.surfaceContainerHigh))
+                            }
+                            .buttonStyle(.plain)
+
+                            Button(action: onAccept) {
+                                HStack(spacing: Space.s1_5) {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 12, weight: .semibold))
+                                    Text("Accept")
+                                        .font(.labelLG.weight(.semibold))
+                                }
+                                .foregroundStyle(Color.onTertiary)
+                                .padding(.horizontal, Space.s4)
+                                .padding(.vertical, Space.s2_5)
+                                .background(Capsule().fill(Color.tertiary))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    } else {
+                        HStack(spacing: Space.s2) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(Color.statusScheduled)
+                            Text("Resolved — close to dismiss")
+                                .font(.bodySM)
+                                .foregroundStyle(Color.onSurfaceVariant)
+                        }
+                    }
+                }
+                .padding(.horizontal, Space.s16)
+
+                Spacer(minLength: Space.s4)
+            }
+            .padding(.vertical, Space.s8)
+            .frame(maxWidth: 720, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(Color.surface)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Close") { dismiss() }
+            }
         }
     }
 }
@@ -1244,15 +1552,16 @@ private struct WeekDay: Identifiable {
 
 private struct Errand: Identifiable {
     let id = UUID()
-    let title: String
-    let location: String?
-    let daysPending: Int
-    let routedTo: String?
+    var title: String
+    var location: String?
+    var daysPending: Int
+    var routedTo: String?
     var isDone: Bool = false
 }
 
 private struct ErrandRow: View {
     @Binding var errand: Errand
+    let onOpen: () -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: Space.s3) {
@@ -1280,32 +1589,35 @@ private struct ErrandRow: View {
             .buttonStyle(.plain)
             .help(errand.isDone ? "Mark as pending" : "Mark done")
 
-            VStack(alignment: .leading, spacing: Space.s1) {
-                Text(errand.title)
-                    .font(.bodyMD.weight(.medium))
-                    .foregroundStyle(errand.isDone ? Color.onSurfaceVariant : Color.onSurface)
-                    .strikethrough(errand.isDone, color: Color.onSurfaceVariant)
+            Button(action: onOpen) {
+                VStack(alignment: .leading, spacing: Space.s1) {
+                    Text(errand.title)
+                        .font(.bodyMD.weight(.medium))
+                        .foregroundStyle(errand.isDone ? Color.onSurfaceVariant : Color.onSurface)
+                        .strikethrough(errand.isDone, color: Color.onSurfaceVariant)
 
-                HStack(spacing: Space.s2) {
-                    if let location = errand.location {
-                        Label(location, systemImage: "location")
-                            .font(.bodySM)
-                            .foregroundStyle(Color.onSurfaceVariant)
-                    }
+                    HStack(spacing: Space.s2) {
+                        if let location = errand.location {
+                            Label(location, systemImage: "location")
+                                .font(.bodySM)
+                                .foregroundStyle(Color.onSurfaceVariant)
+                        }
 
-                    if let routed = errand.routedTo {
-                        Label(routed, systemImage: "calendar")
-                            .font(.bodySM)
-                            .foregroundStyle(Color.tertiary)
-                    } else {
-                        Text("Unrouted")
-                            .font(.bodySM)
-                            .foregroundStyle(Color.onSurfaceVariant)
+                        if let routed = errand.routedTo {
+                            Label(routed, systemImage: "calendar")
+                                .font(.bodySM)
+                                .foregroundStyle(Color.tertiary)
+                        } else {
+                            Text("Unrouted")
+                                .font(.bodySM)
+                                .foregroundStyle(Color.onSurfaceVariant)
+                        }
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
-
-            Spacer(minLength: Space.s2)
+            .buttonStyle(.plain)
 
             DaysPendingPill(days: errand.daysPending)
                 .padding(.top, 2)
@@ -1383,10 +1695,14 @@ private enum EventKind {
     case regular, accent, errand
 }
 
-private struct TriageEntry {
+private struct TriageEntry: Identifiable, Hashable {
+    let id = UUID()
     let status: StatusKind
     let title: String
     let meta: String
+
+    static func == (lhs: TriageEntry, rhs: TriageEntry) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
 
 private struct Proposal: Identifiable {

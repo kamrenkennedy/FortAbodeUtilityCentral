@@ -36,7 +36,7 @@ struct ChatComposer: View {
             TextField(placeholder, text: $text, axis: .vertical)
                 .textFieldStyle(.plain)
                 .font(.bodyMD)
-                .lineLimit(1...4)
+                .lineLimit(1...6)
                 .padding(.horizontal, Space.s2)
                 .padding(.vertical, Space.s1_5)
                 .onSubmit(send)

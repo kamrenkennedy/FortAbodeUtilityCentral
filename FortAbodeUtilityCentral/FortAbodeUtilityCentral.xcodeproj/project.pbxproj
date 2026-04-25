@@ -69,7 +69,6 @@
 		C3404068D33521F15C9DAC34 /* whats-new.json in Resources */ = {isa = PBXBuildFile; fileRef = CB4031837BBE075B7CEF1484 /* whats-new.json */; };
 		CA4CA8134B5255875DB1AF2A /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 8B75BAAFED90C32A32CA2420 /* Sparkle */; };
 		CB346FEB794E23991188381B /* CoworkSkillService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B5DB8AEAB5C2C6F4D2DCE /* CoworkSkillService.swift */; };
-		D2A08EFC0C9A826F2AD20E18 /* KennedyFamilyIdentityCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80B7F00145F4F152E484CC6A /* KennedyFamilyIdentityCard.swift */; };
 		DF4E9A21418662B5D610866B /* ChangelogEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91BE7F2F52EFF582932E8B9D /* ChangelogEntry.swift */; };
 		DFEE2E123FFC73F011AA13EB /* ClaudeChatPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 767920B3A5A38AFD4081D133 /* ClaudeChatPane.swift */; };
 		E2A034CE471A68B4E0222C3E /* FamilyMemoryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8599C33B343D91784A3618B0 /* FamilyMemoryModels.swift */; };
@@ -132,7 +131,6 @@
 		782EFED7B8F2AD1265BCF690 /* ComponentRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentRegistry.swift; sourceTree = "<group>"; };
 		7D874D5A2A3528B406492C6B /* FullDiskAccessService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullDiskAccessService.swift; sourceTree = "<group>"; };
 		7FB63D56853D1FFB0742D448 /* MarketplaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketplaceView.swift; sourceTree = "<group>"; };
-		80B7F00145F4F152E484CC6A /* KennedyFamilyIdentityCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KennedyFamilyIdentityCard.swift; sourceTree = "<group>"; };
 		8599C33B343D91784A3618B0 /* FamilyMemoryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyMemoryModels.swift; sourceTree = "<group>"; };
 		8BECADF7B96CB7D3842E642F /* ActivationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivationView.swift; sourceTree = "<group>"; };
 		8ED7ECBE41703B1FC4EB0791 /* GitHubServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubServiceTests.swift; sourceTree = "<group>"; };
@@ -352,7 +350,6 @@
 			isa = PBXGroup;
 			children = (
 				F8B7BB0163579ACD834ADBB1 /* Destination.swift */,
-				80B7F00145F4F152E484CC6A /* KennedyFamilyIdentityCard.swift */,
 				1341A36E69A185933A6187F4 /* RootView.swift */,
 				D107F8C5D300A4F18DF49A3F /* Sidebar.swift */,
 				18F6C3CFC3DE69126D5C70F1 /* SidebarCollapseButton.swift */,
@@ -569,7 +566,6 @@
 				06CB33690CC14595E2E99291 /* GitHubService.swift in Sources */,
 				63B0BCA2036A45DF148B3C37 /* HealthCheck.swift in Sources */,
 				F4855FF4FA0E88D59716A23B /* HomeView.swift in Sources */,
-				D2A08EFC0C9A826F2AD20E18 /* KennedyFamilyIdentityCard.swift in Sources */,
 				05E6CAD0B79916E67AD9C87D /* KeychainService.swift in Sources */,
 				8FEB14627351680D4959D1BF /* MarketplaceView.swift in Sources */,
 				84EF3894AB836BBA01A7FB6A /* NotificationService.swift in Sources */,

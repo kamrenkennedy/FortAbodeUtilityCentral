@@ -195,7 +195,7 @@ struct FortAbodeUtilityCentralApp: App {
                 pinICloudFoldersInBackground()
             }
         }
-        .defaultSize(width: 1280, height: 800)
+        .defaultSize(width: 1440, height: 900)
         .windowResizability(.contentMinSize)
         .windowStyle(.hiddenTitleBar)
         .commands {

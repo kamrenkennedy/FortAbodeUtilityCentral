@@ -31,7 +31,15 @@ final class AppState {
 
     var chatPanelOpen: Bool = false
     var chatPanelExpanded: Bool = false
-    var chatActiveTab: ChatTab = .family
+
+    var chatActiveTab: ChatTab = .family {
+        didSet {
+            if chatActiveTab == .family && oldValue != .family {
+                unreadFamilyCount = 0
+            }
+        }
+    }
+
     var unreadFamilyCount: Int = 2
     var feedbackSheetOpen: Bool = false
 
@@ -44,6 +52,9 @@ final class AppState {
     func openChat(_ tab: ChatTab) {
         chatActiveTab = tab
         chatPanelOpen = true
+        if tab == .family {
+            unreadFamilyCount = 0
+        }
     }
 
     func closeChat() {

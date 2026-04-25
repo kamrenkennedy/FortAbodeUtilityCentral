@@ -37,8 +37,6 @@ struct FamilyView: View {
                 FamilyMemberCard(
                     initial: "K",
                     name: "Kam",
-                    role: "Owner · Kam Studios",
-                    isActive: true,
                     recent: [
                         "Pushed Braxton edit pass 2 to client · 4h ago",
                         "Updated Family Memory · \"Spring travel notes\" · Tue"
@@ -49,8 +47,6 @@ struct FamilyView: View {
                 FamilyMemberCard(
                     initial: "T",
                     name: "Tiera",
-                    role: "Family · Co-curator",
-                    isActive: true,
                     recent: [
                         "Edited Family Memory · \"Margot summer camp\" · 2 days ago",
                         "RSVP'd to Saturday long run · Wed"
@@ -185,8 +181,6 @@ struct FamilyView: View {
 private struct FamilyMemberCard: View {
     let initial: String
     let name: String
-    let role: String
-    let isActive: Bool
     let recent: [String]
 
     var body: some View {
@@ -202,20 +196,11 @@ private struct FamilyMemberCard: View {
                                 .foregroundStyle(Color.onTertiary)
                         )
 
-                    VStack(alignment: .leading, spacing: Space.s1) {
-                        Text(name)
-                            .font(.headlineMD)
-                            .foregroundStyle(Color.onSurface)
-                        Text(role)
-                            .font(.bodySM)
-                            .foregroundStyle(Color.onSurfaceVariant)
-                    }
+                    Text(name)
+                        .font(.headlineMD)
+                        .foregroundStyle(Color.onSurface)
 
                     Spacer(minLength: Space.s2)
-
-                    if isActive {
-                        ActiveTag()
-                    }
                 }
 
                 Rectangle()
@@ -237,23 +222,6 @@ private struct FamilyMemberCard: View {
                 }
             }
         }
-    }
-}
-
-private struct ActiveTag: View {
-    var body: some View {
-        HStack(spacing: Space.s1) {
-            StatusDot(.scheduled)
-            Text("Active")
-                .font(.labelSM)
-                .foregroundStyle(Color.onSurface)
-        }
-        .padding(.horizontal, Space.s2)
-        .padding(.vertical, Space.s1)
-        .background(
-            Capsule()
-                .fill(Color.surfaceContainerHigh)
-        )
     }
 }
 

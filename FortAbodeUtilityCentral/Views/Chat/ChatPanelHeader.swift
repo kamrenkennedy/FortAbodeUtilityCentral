@@ -13,7 +13,7 @@ struct ChatPanelHeader: View {
             tabBar
             Spacer(minLength: Space.s2)
             iconButton(symbol: "square.and.pencil", help: "New chat", action: {})
-            iconButton(symbol: "clock.arrow.circlepath", help: "History", action: {})
+            iconButton(symbol: "bookmark", help: "Unread queue", action: {})
             iconButton(
                 symbol: appState.chatPanelExpanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right",
                 help: appState.chatPanelExpanded ? "Collapse" : "Expand",

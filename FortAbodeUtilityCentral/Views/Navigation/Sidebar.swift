@@ -8,6 +8,8 @@ import AlignedDesignSystem
 struct Sidebar: View {
     @Environment(AppState.self) private var appState
 
+    private let mainNavDestinations: [Destination] = [.home, .family, .weeklyRhythm, .marketplace]
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
@@ -16,7 +18,7 @@ struct Sidebar: View {
                 .padding(.bottom, Space.s12)
 
             VStack(alignment: .leading, spacing: Space.s2) {
-                ForEach(Destination.allCases) { destination in
+                ForEach(mainNavDestinations) { destination in
                     SidebarNavItem(destination: destination)
                 }
             }
@@ -24,11 +26,11 @@ struct Sidebar: View {
 
             Spacer()
 
-            if !appState.sidebarCollapsed {
-                KennedyFamilyIdentityCard()
-                    .padding(Space.s4)
-                    .transition(.opacity)
-            }
+            // Settings sits at the bottom — separate from the main nav, lower
+            // visual weight (smaller padding) so it reads as a footer item.
+            SidebarNavItem(destination: .settings, compact: true)
+                .padding(.horizontal, appState.sidebarCollapsed ? Space.s2 : Space.s4)
+                .padding(.bottom, Space.s4)
         }
         .frame(maxHeight: .infinity, alignment: .top)
         .background(Color.sidebarBackground)
@@ -57,6 +59,7 @@ struct Sidebar: View {
 
 private struct SidebarNavItem: View {
     let destination: Destination
+    var compact: Bool = false
     @Environment(AppState.self) private var appState
     @State private var isHovering = false
 
@@ -70,19 +73,19 @@ private struct SidebarNavItem: View {
         } label: {
             HStack(spacing: Space.s3) {
                 Image(systemName: destination.symbol)
-                    .font(.system(size: 16, weight: .regular))
+                    .font(.system(size: compact ? 14 : 16, weight: .regular))
                     .frame(width: 16, height: 16)
 
                 if !appState.sidebarCollapsed {
                     Text(destination.label)
-                        .font(.navItem)
+                        .font(compact ? .labelLG : .navItem)
                 }
 
                 Spacer(minLength: 0)
             }
             .foregroundStyle(isActive ? Color.onSurface : Color.navInactive)
             .padding(.horizontal, Space.s3)
-            .padding(.vertical, Space.s3)
+            .padding(.vertical, compact ? Space.s2 : Space.s3)
             .background(
                 RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
                     .fill(isActive ? Color.surfaceContainerLow : Color.clear)

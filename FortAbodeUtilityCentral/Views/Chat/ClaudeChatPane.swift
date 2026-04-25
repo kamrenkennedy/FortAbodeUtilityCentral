@@ -81,12 +81,9 @@ struct ClaudeChatPane: View {
                     text: $draft,
                     placeholder: "Ask Claude anything…",
                     leadingIcons: [
-                        ComposerIconButton(symbol: "paperclip", help: "Attach", action: {}),
-                        ComposerIconButton(symbol: "wrench.and.screwdriver", help: "Tools", action: {})
+                        ComposerIconButton(symbol: "paperclip", help: "Attach", action: {})
                     ],
-                    trailingIcons: [
-                        ComposerIconButton(symbol: "mic", help: "Voice", action: {})
-                    ],
+                    trailingIcons: [],
                     trailingTrailing: AnyView(modelBadge),
                     onSend: { sent in
                         // mocked — Phase 5 wires real Claude CLI
@@ -136,7 +133,6 @@ struct ClaudeChatPane: View {
         [
             SuggestionChipModel(title: "Move my 3pm to Friday") { draft = "Move my 3pm to Friday" },
             SuggestionChipModel(title: "Status on Braxton edit") { draft = "Status on Braxton edit" },
-            SuggestionChipModel(title: "Summarize this page") { draft = "Summarize this page" },
             SuggestionChipModel(title: "Report a bug") { appState.feedbackSheetOpen = true }
         ]
     }

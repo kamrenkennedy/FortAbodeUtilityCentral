@@ -1,16 +1,18 @@
 import SwiftUI
 import Sparkle
+import AlignedDesignSystem
 
-// MARK: - Settings View
+// Settings — v4.0.0. Editorial header PREFERENCES / Settings. Sections in
+// vertical order: Appearance, Component Checks, App Updates, Account, API
+// Keys & Codes, Advanced (with Send Feedback link → FeedbackView sheet).
+//
+// Theme toggle (System/Dark/Light) wires AppState.theme — persists as
+// `fa-theme` in UserDefaults, applied via .preferredColorScheme on RootView.
 
 struct SettingsView: View {
 
+    @Environment(AppState.self) private var appState
     @State private var viewModel = SettingsViewModel()
-    @State private var feedbackConfigured = false
-    @State private var showFeedbackSetup = false
-    @State private var feedbackToken = ""
-    @State private var feedbackDatabaseId = ""
-    @State private var feedbackSaveError: String?
     private let updater: SPUUpdater
 
     init(updater: SPUUpdater) {
@@ -18,143 +20,395 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        Form {
-            Section("Component Checks") {
-                Picker("Check interval", selection: $viewModel.checkInterval) {
-                    ForEach(CheckInterval.allCases) { interval in
-                        Text(interval.label).tag(interval)
-                    }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                EditorialHeader(eyebrow: "Preferences", title: "Settings")
+
+                VStack(alignment: .leading, spacing: Space.s12) {
+                    appearanceSection
+                    componentChecksSection
+                    appUpdatesSection
+                    accountSection
+                    apiKeysSection
+                    advancedSection
                 }
-
-                Toggle("Enable background checks", isOn: $viewModel.backgroundChecksEnabled)
-
-                Toggle("Launch at login", isOn: $viewModel.launchAtLogin)
+                .padding(.horizontal, Space.s16)
+                .padding(.bottom, Space.s24)
             }
+            .frame(maxWidth: 1184, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
 
-            Section("App Updates") {
-                Toggle(
-                    "Automatically check for app updates",
-                    isOn: Binding(
-                        get: { updater.automaticallyChecksForUpdates },
-                        set: { updater.automaticallyChecksForUpdates = $0 }
-                    )
-                )
-            }
+    // MARK: - Appearance
 
-            Section("Feedback") {
-                if feedbackConfigured {
-                    HStack {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                        Text("Feedback is configured")
+    private var appearanceSection: some View {
+        VStack(alignment: .leading, spacing: Space.s6) {
+            SectionEyebrow(text: "Appearance")
+
+            DashboardCard(verticalPadding: Space.s5, horizontalPadding: Space.s6) {
+                VStack(alignment: .leading, spacing: Space.s5) {
+                    VStack(alignment: .leading, spacing: Space.s1) {
+                        Text("Theme")
+                            .font(.headlineSM)
+                            .foregroundStyle(Color.onSurface)
+                        Text("Default is Dark — Night Gallery. System follows your OS.")
+                            .font(.bodySM)
+                            .foregroundStyle(Color.onSurfaceVariant)
                     }
 
-                    Button("Reconfigure") {
-                        showFeedbackSetup = true
-                    }
-                } else {
-                    HStack {
-                        Image(systemName: "exclamationmark.circle")
-                            .foregroundStyle(.secondary)
-                        Text("Not configured")
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Button("Set Up Feedback") {
-                        showFeedbackSetup = true
-                    }
+                    ThemePicker()
                 }
             }
-
-            Section("About") {
-                LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")
-
-                Link("View on GitHub", destination: URL(string: "https://github.com/kamrenkennedy/FortAbodeUtilityCentral")!)
-            }
         }
-        .formStyle(.grouped)
-        .frame(width: 400, height: 380)
-        .task {
-            feedbackConfigured = await FeedbackService.shared.isConfigured()
-        }
-        .sheet(isPresented: $showFeedbackSetup) {
-            FeedbackConfigSheet(
-                token: $feedbackToken,
-                databaseId: $feedbackDatabaseId,
-                errorMessage: $feedbackSaveError
-            ) {
-                Task {
-                    do {
-                        try await FeedbackService.shared.saveConfig(
-                            token: feedbackToken,
-                            databaseId: feedbackDatabaseId
-                        )
-                        feedbackConfigured = true
-                        feedbackSaveError = nil
-                        showFeedbackSetup = false
-                    } catch {
-                        feedbackSaveError = error.localizedDescription
+    }
+
+    // MARK: - Component checks
+
+    private var componentChecksSection: some View {
+        VStack(alignment: .leading, spacing: Space.s6) {
+            SectionEyebrow(text: "Component Checks")
+
+            DashboardCard(verticalPadding: Space.s2, horizontalPadding: Space.s6) {
+                VStack(spacing: 0) {
+                    settingsRow(
+                        title: "Check interval",
+                        subtitle: "How often Fort Abode polls for updates."
+                    ) {
+                        Picker("", selection: $viewModel.checkInterval) {
+                            ForEach(CheckInterval.allCases) { interval in
+                                Text(interval.label).tag(interval)
+                            }
+                        }
+                        .labelsHidden()
+                        .frame(width: 140)
+                    }
+
+                    RowSeparator()
+
+                    settingsRow(
+                        title: "Background checks",
+                        subtitle: "Run a quiet check while the window is closed."
+                    ) {
+                        Toggle("", isOn: $viewModel.backgroundChecksEnabled)
+                            .labelsHidden()
+                            .toggleStyle(.switch)
+                    }
+
+                    RowSeparator()
+
+                    settingsRow(
+                        title: "Launch at login",
+                        subtitle: "Open Fort Abode automatically when you sign in."
+                    ) {
+                        Toggle("", isOn: $viewModel.launchAtLogin)
+                            .labelsHidden()
+                            .toggleStyle(.switch)
                     }
                 }
             }
         }
     }
+
+    // MARK: - App updates
+
+    private var appUpdatesSection: some View {
+        VStack(alignment: .leading, spacing: Space.s6) {
+            SectionEyebrow(text: "App Updates")
+
+            DashboardCard(verticalPadding: Space.s2, horizontalPadding: Space.s6) {
+                settingsRow(
+                    title: "Automatic update checks",
+                    subtitle: "Sparkle polls the appcast and notifies you when a new build is ready."
+                ) {
+                    Toggle("", isOn: Binding(
+                        get: { updater.automaticallyChecksForUpdates },
+                        set: { updater.automaticallyChecksForUpdates = $0 }
+                    ))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                }
+            }
+        }
+    }
+
+    // MARK: - Account
+
+    private var accountSection: some View {
+        VStack(alignment: .leading, spacing: Space.s6) {
+            SectionEyebrow(text: "Account")
+
+            DashboardCard(verticalPadding: Space.s5, horizontalPadding: Space.s6) {
+                VStack(alignment: .leading, spacing: Space.s5) {
+                    HStack(spacing: Space.s4) {
+                        Circle()
+                            .fill(Color.tertiary)
+                            .frame(width: 48, height: 48)
+                            .overlay(
+                                Text("K")
+                                    .font(.headlineMD)
+                                    .foregroundStyle(Color.onTertiary)
+                            )
+
+                        VStack(alignment: .leading, spacing: Space.s1) {
+                            Text("The Kennedy Family")
+                                .font(.headlineSM)
+                                .foregroundStyle(Color.onSurface)
+                            Text("Kam & Tiera · Shared household")
+                                .font(.bodySM)
+                                .foregroundStyle(Color.onSurfaceVariant)
+                        }
+
+                        Spacer(minLength: Space.s2)
+
+                        HStack(spacing: Space.s1) {
+                            StatusDot(.scheduled)
+                            Text("Family activated")
+                                .font(.labelSM)
+                                .foregroundStyle(Color.onSurface)
+                        }
+                        .padding(.horizontal, Space.s2)
+                        .padding(.vertical, Space.s1)
+                        .background(
+                            Capsule()
+                                .fill(Color.surfaceContainerHigh)
+                        )
+                    }
+
+                    Rectangle()
+                        .fill(Color.outlineVariant.opacity(0.18))
+                        .frame(height: 1)
+
+                    HStack(alignment: .center) {
+                        VStack(alignment: .leading, spacing: Space.s1) {
+                            Text("Activation code")
+                                .font(.bodyMD.weight(.medium))
+                                .foregroundStyle(Color.onSurface)
+                            Text("Stored locally in Keychain. Used to gate first-run setup.")
+                                .font(.bodySM)
+                                .foregroundStyle(Color.onSurfaceVariant)
+                        }
+
+                        Spacer(minLength: Space.s2)
+
+                        SecondaryButton(label: "Manage") {
+                            // Phase 5: surface re-activation flow / keychain reset
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - API keys
+
+    private var apiKeysSection: some View {
+        VStack(alignment: .leading, spacing: Space.s6) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("API Keys & Codes".uppercased())
+                    .font(.labelSM)
+                    .tracking(2.0)
+                    .foregroundStyle(Color.secondaryText)
+                Spacer(minLength: Space.s2)
+                Text("Shared with the family")
+                    .font(.bodySM)
+                    .foregroundStyle(Color.onSurfaceVariant)
+            }
+
+            DashboardCard(verticalPadding: Space.s2, horizontalPadding: Space.s6) {
+                VStack(spacing: 0) {
+                    ForEach(apiKeys.indices, id: \.self) { i in
+                        APIKeyRow(entry: apiKeys[i])
+                        if i < apiKeys.count - 1 {
+                            RowSeparator()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private let apiKeys: [APIKeyEntry] = [
+        APIKeyEntry(label: "Anthropic API",            masked: "sk-ant-api03-••••••••••••••••••••••••••••••_a8Xq"),
+        APIKeyEntry(label: "Notion integration token", masked: "secret_••••••••••••••••••••••••••••••••LpQ4"),
+        APIKeyEntry(label: "Google OAuth client",      masked: "947182••••••.apps.googleusercontent.com"),
+        APIKeyEntry(label: "Linear personal API key",  masked: "lin_api_•••••••••••••••••••••••••••••1mZ"),
+        APIKeyEntry(label: "Cloudflare API token",     masked: "cf_•••••••••••••••••••••••••••••Tn0p")
+    ]
+
+    // MARK: - Advanced
+
+    private var advancedSection: some View {
+        VStack(alignment: .leading, spacing: Space.s6) {
+            SectionEyebrow(text: "Advanced")
+
+            DashboardCard(verticalPadding: Space.s2, horizontalPadding: Space.s6) {
+                VStack(spacing: 0) {
+                    settingsRow(
+                        title: "Reset to defaults",
+                        subtitle: "Clears local preferences. Family Memory not affected."
+                    ) {
+                        SecondaryButton(label: "Reset") {
+                            // Phase 5: confirmation sheet + UserDefaults reset
+                        }
+                    }
+
+                    RowSeparator()
+
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading, spacing: Space.s1) {
+                            Text("Version")
+                                .font(.bodyMD.weight(.medium))
+                                .foregroundStyle(Color.onSurface)
+                            HStack(spacing: 4) {
+                                Text(versionLine)
+                                    .font(.bodySM)
+                                    .foregroundStyle(Color.onSurfaceVariant)
+                                Text("·")
+                                    .font(.bodySM)
+                                    .foregroundStyle(Color.onSurfaceVariant)
+                                Button("Send feedback") {
+                                    appState.feedbackSheetOpen = true
+                                }
+                                .buttonStyle(.plain)
+                                .font(.bodySM)
+                                .foregroundStyle(Color.tertiary)
+                            }
+                        }
+                        Spacer(minLength: Space.s2)
+                    }
+                    .padding(.vertical, Space.s4)
+                }
+            }
+        }
+    }
+
+    private var versionLine: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"
+        return "Fort Abode v\(version) (build \(build))"
+    }
+
+    // MARK: - Helpers
+
+    @ViewBuilder
+    private func settingsRow<Trailing: View>(
+        title: String,
+        subtitle: String,
+        @ViewBuilder trailing: () -> Trailing
+    ) -> some View {
+        HStack(alignment: .top, spacing: Space.s4) {
+            VStack(alignment: .leading, spacing: Space.s1) {
+                Text(title)
+                    .font(.bodyMD.weight(.medium))
+                    .foregroundStyle(Color.onSurface)
+                Text(subtitle)
+                    .font(.bodySM)
+                    .foregroundStyle(Color.onSurfaceVariant)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: Space.s2)
+
+            trailing()
+        }
+        .padding(.vertical, Space.s4)
+    }
 }
 
-// MARK: - Feedback Config Sheet
+// MARK: - Theme picker
 
-private struct FeedbackConfigSheet: View {
-    @Binding var token: String
-    @Binding var databaseId: String
-    @Binding var errorMessage: String?
-    let onSave: () -> Void
+private struct ThemePicker: View {
+    @Environment(AppState.self) private var appState
 
     var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "exclamationmark.bubble.fill")
-                .font(.system(size: 36, weight: .light))
-                .foregroundStyle(.blue)
+        let binding = Binding<ThemePref>(
+            get: { appState.theme },
+            set: { appState.theme = $0 }
+        )
 
-            Text("Set Up Feedback")
-                .font(.headline)
+        return SegmentedTabBar(
+            options: ThemePref.allCases,
+            selection: binding,
+            label: { $0.label }
+        )
+        .frame(maxWidth: 320)
+    }
+}
 
-            Text("Enter your Notion integration token and the database ID where feedback should be sent.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+// MARK: - Secondary button
 
-            VStack(alignment: .leading, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Notion Token")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    SecureField("ntn_...", text: $token)
-                        .textFieldStyle(.roundedBorder)
-                }
+private struct SecondaryButton: View {
+    let label: String
+    let action: () -> Void
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Database ID")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    TextField("abc123...", text: $databaseId)
-                        .textFieldStyle(.roundedBorder)
-                }
-            }
-
-            if let errorMessage {
-                Text(errorMessage)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-            }
-
-            Button("Save") {
-                onSave()
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(token.trimmingCharacters(in: .whitespaces).isEmpty ||
-                      databaseId.trimmingCharacters(in: .whitespaces).isEmpty)
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .font(.labelMD.weight(.medium))
+                .foregroundStyle(Color.onSurface)
+                .padding(.horizontal, Space.s3)
+                .padding(.vertical, Space.s1_5)
+                .background(
+                    Capsule()
+                        .fill(Color.surfaceContainerHigh)
+                )
         }
-        .padding(32)
-        .frame(width: 380)
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - API key row
+
+private struct APIKeyEntry {
+    let label: String
+    let masked: String
+}
+
+private struct APIKeyRow: View {
+    let entry: APIKeyEntry
+    @State private var isRevealed = false
+
+    var body: some View {
+        HStack(alignment: .center, spacing: Space.s3) {
+            VStack(alignment: .leading, spacing: Space.s1) {
+                Text(entry.label)
+                    .font(.bodyMD.weight(.medium))
+                    .foregroundStyle(Color.onSurface)
+                Text(displayValue)
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundStyle(Color.onSurfaceVariant)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            HStack(spacing: Space.s1) {
+                Button {
+                    isRevealed.toggle()
+                } label: {
+                    Image(systemName: isRevealed ? "eye.slash" : "eye")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.onSurfaceVariant)
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(isRevealed ? "Hide" : "Reveal")
+
+                SecondaryButton(label: "Copy") {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(entry.masked, forType: .string)
+                }
+            }
+        }
+        .padding(.vertical, Space.s3)
+    }
+
+    private var displayValue: String {
+        // Phase 5 reads the unmasked secret from Keychain when revealed.
+        // For v4.0.0 the masked value is the only stored representation.
+        entry.masked
     }
 }

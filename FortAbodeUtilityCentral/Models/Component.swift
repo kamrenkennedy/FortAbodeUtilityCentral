@@ -34,6 +34,7 @@ enum VersionSource: Hashable {
     case claudeDesktopConfig(serverKey: String)
     case icloudTemplateVersion(relativePath: String)
     case keychainSecret(componentId: String, fieldName: String)
+    case claudeExtensionManifest(extensionId: String)
 }
 
 extension VersionSource: Codable {
@@ -43,9 +44,10 @@ extension VersionSource: Codable {
     private struct ClaudeDesktopPayload: Codable { let serverKey: String }
     private struct ICloudTemplatePayload: Codable { let relativePath: String }
     private struct KeychainSecretPayload: Codable { let componentId: String; let fieldName: String }
+    private struct ClaudeExtensionManifestPayload: Codable { let extensionId: String }
 
     private enum CodingKeys: String, CodingKey {
-        case npxCache, localDirectory, packageJson, claudeDesktopConfig, icloudTemplateVersion, keychainSecret
+        case npxCache, localDirectory, packageJson, claudeDesktopConfig, icloudTemplateVersion, keychainSecret, claudeExtensionManifest
     }
 
     init(from decoder: Decoder) throws {
@@ -62,6 +64,8 @@ extension VersionSource: Codable {
             self = .icloudTemplateVersion(relativePath: payload.relativePath)
         } else if let payload = try container.decodeIfPresent(KeychainSecretPayload.self, forKey: .keychainSecret) {
             self = .keychainSecret(componentId: payload.componentId, fieldName: payload.fieldName)
+        } else if let payload = try container.decodeIfPresent(ClaudeExtensionManifestPayload.self, forKey: .claudeExtensionManifest) {
+            self = .claudeExtensionManifest(extensionId: payload.extensionId)
         } else {
             throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "Unknown VersionSource type"))
         }
@@ -82,6 +86,8 @@ extension VersionSource: Codable {
             try container.encode(ICloudTemplatePayload(relativePath: relativePath), forKey: .icloudTemplateVersion)
         case .keychainSecret(let componentId, let fieldName):
             try container.encode(KeychainSecretPayload(componentId: componentId, fieldName: fieldName), forKey: .keychainSecret)
+        case .claudeExtensionManifest(let extensionId):
+            try container.encode(ClaudeExtensionManifestPayload(extensionId: extensionId), forKey: .claudeExtensionManifest)
         }
     }
 }
@@ -140,15 +146,17 @@ extension UpdateSource: Codable {
 enum UpdateCommand: Hashable {
     case npxInstall(packageName: String)
     case shellCommand(command: String, args: [String])
+    case mcpbDownloadAndOpen(githubRepo: String, assetPattern: String)
     case none
 }
 
 extension UpdateCommand: Codable {
     private struct NpxPayload: Codable { let packageName: String }
     private struct ShellPayload: Codable { let command: String; let args: [String] }
+    private struct McpbDownloadAndOpenPayload: Codable { let githubRepo: String; let assetPattern: String }
 
     private enum CodingKeys: String, CodingKey {
-        case npxInstall, shellCommand
+        case npxInstall, shellCommand, mcpbDownloadAndOpen
     }
 
     init(from decoder: Decoder) throws {
@@ -164,6 +172,8 @@ extension UpdateCommand: Codable {
             self = .npxInstall(packageName: payload.packageName)
         } else if let payload = try container.decodeIfPresent(ShellPayload.self, forKey: .shellCommand) {
             self = .shellCommand(command: payload.command, args: payload.args)
+        } else if let payload = try container.decodeIfPresent(McpbDownloadAndOpenPayload.self, forKey: .mcpbDownloadAndOpen) {
+            self = .mcpbDownloadAndOpen(githubRepo: payload.githubRepo, assetPattern: payload.assetPattern)
         } else {
             self = .none
         }
@@ -177,6 +187,9 @@ extension UpdateCommand: Codable {
         case .shellCommand(let command, let args):
             var container = encoder.container(keyedBy: CodingKeys.self)
             try container.encode(ShellPayload(command: command, args: args), forKey: .shellCommand)
+        case .mcpbDownloadAndOpen(let githubRepo, let assetPattern):
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(McpbDownloadAndOpenPayload(githubRepo: githubRepo, assetPattern: assetPattern), forKey: .mcpbDownloadAndOpen)
         case .none:
             var container = encoder.singleValueContainer()
             try container.encode("none")

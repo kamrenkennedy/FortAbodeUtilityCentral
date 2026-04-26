@@ -99,6 +99,80 @@ final class AppUpdaterService: NSObject, SPUUpdaterDelegate {
         updater?.checkForUpdatesInBackground()
     }
 
+    // MARK: - Stale staged-installer cleanup
+
+    /// Delete any Sparkle-staged installers in the cache whose CFBundleVersion is
+    /// less-than-or-equal to the currently-running app's. Called BEFORE
+    /// `SPUStandardUpdaterController` is created so Sparkle's first scan sees a
+    /// clean state.
+    ///
+    /// Why this exists: on Kam's Mac (2026-04-25), Sparkle had a queued v3.11.0
+    /// installer that kept re-prompting "ready to install" on every launch even
+    /// though the running app was already v3.11.0 (38). The install had partially
+    /// completed at some prior point but Sparkle didn't clear its Installation
+    /// cache, so it kept offering a no-op upgrade. This wipes the queue when
+    /// there's nothing to actually upgrade to.
+    static func clearStaleStagedInstallers() {
+        let fm = FileManager.default
+        guard let bundleID = Bundle.main.bundleIdentifier,
+              let runningBuildString = Bundle.main.infoDictionary?["CFBundleVersion"] as? String,
+              let runningBuild = Int(runningBuildString) else {
+            return
+        }
+
+        let installationDir = fm
+            .urls(for: .cachesDirectory, in: .userDomainMask).first?
+            .appendingPathComponent(bundleID)
+            .appendingPathComponent("org.sparkle-project.Sparkle")
+            .appendingPathComponent("Installation")
+
+        guard let installationDir,
+              fm.fileExists(atPath: installationDir.path),
+              let stagedDirs = try? fm.contentsOfDirectory(at: installationDir, includingPropertiesForKeys: nil) else {
+            return
+        }
+
+        var removedCount = 0
+        for stagedDir in stagedDirs {
+            // Each staged dir contains the downloaded .zip + a subdirectory with the unpacked .app.
+            // Walk one level down to find the unpacked .app's Info.plist.
+            guard let children = try? fm.contentsOfDirectory(at: stagedDir, includingPropertiesForKeys: nil) else {
+                continue
+            }
+            for child in children {
+                var isDir: ObjCBool = false
+                guard fm.fileExists(atPath: child.path, isDirectory: &isDir), isDir.boolValue else { continue }
+
+                // Look for any *.app sibling in this child dir — Sparkle unpacks to a uuid
+                // dir then puts the .app inside it.
+                guard let unpackedApp = (try? fm.contentsOfDirectory(at: child, includingPropertiesForKeys: nil))?
+                        .first(where: { $0.pathExtension == "app" }) else { continue }
+
+                let plistURL = unpackedApp.appendingPathComponent("Contents/Info.plist")
+                guard let data = try? Data(contentsOf: plistURL),
+                      let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
+                      let stagedBuildString = plist["CFBundleVersion"] as? String,
+                      let stagedBuild = Int(stagedBuildString) else { continue }
+
+                if stagedBuild <= runningBuild {
+                    try? fm.removeItem(at: stagedDir)
+                    removedCount += 1
+                    break
+                }
+            }
+        }
+
+        if removedCount > 0 {
+            Task.detached(priority: .background) {
+                await ErrorLogger.shared.log(
+                    area: "AppUpdaterService.clearStaleStagedInstallers",
+                    message: "Removed \(removedCount) stale Sparkle staged installer(s) at or below running build \(runningBuild)",
+                    context: ["runningBuild": "\(runningBuild)"]
+                )
+            }
+        }
+    }
+
     // MARK: - SPUUpdaterDelegate
 
     /// Sparkle calls this on the main thread when it has a staged update ready to install.

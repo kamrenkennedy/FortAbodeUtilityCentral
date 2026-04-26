@@ -128,6 +128,11 @@ struct FortAbodeUtilityCentralApp: App {
     private let updaterController: SPUStandardUpdaterController
 
     init() {
+        // Defensive: clear any Sparkle-staged installers whose build is at or below
+        // ours BEFORE starting the updater. Otherwise a stale queue (observed on Kam's
+        // Mac after the 3.10.0 → 3.11.0 update) makes Sparkle re-prompt forever.
+        AppUpdaterService.clearStaleStagedInstallers()
+
         let service = AppUpdaterService()
         _updaterService = State(initialValue: service)
         updaterController = SPUStandardUpdaterController(

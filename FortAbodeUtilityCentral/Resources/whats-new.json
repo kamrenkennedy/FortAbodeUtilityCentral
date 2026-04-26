@@ -1,5 +1,14 @@
 [
   {
+    "version": "3.11.1",
+    "notes": [
+      "Travel Itinerary now installs as a real Claude Desktop extension (.mcpb) instead of just storing your Google Maps API key — clicking Install downloads the latest .mcpb from GitHub and hands it to Claude Desktop, which prompts for your API key and registers the skill",
+      "Travel Itinerary detail page now shows the real version (e.g. \"v1.0.0 installed\") and pulls release notes from GitHub — replaces the stale \"configured\" badge and the empty \"No changelog available\" line",
+      "Updates flow through the standard Check-for-Updates path: bumping the .mcpb on GitHub will surface as an available update in Fort Abode automatically",
+      "Fix: the Sparkle update prompt could re-appear on every launch even when you were already on the latest version — Fort Abode now clears stale staged installers at startup so the dialog stops looping"
+    ]
+  },
+  {
     "version": "3.11.0",
     "notes": [
       "New 'Family' tab in the toolbar — dedicated hub for shared family memory (insurance, contacts, household info, PDFs)",

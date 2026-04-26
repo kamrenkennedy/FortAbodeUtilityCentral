@@ -371,63 +371,50 @@
   },
   {
     "id": "travel-itinerary",
-    "display_name": "Travel Itinerary (Google Maps)",
-    "description": "Google Maps backend for Weekly Rhythm location intelligence",
-    "user_description": "Powers travel itineraries, commute conflict warnings, errand routing, and lunch suggestions in the Weekly Rhythm Engine. Uses Google Maps for traffic-aware drive times, geocoding, and place search.",
-    "usage_instructions": "Once configured, the Weekly Rhythm Engine will automatically use Google Maps when you run /weekly-rhythm-engine. No direct interaction needed \u2014 the key is read by the travel-itinerary plugin in Cowork.",
-    "type": "localMCPServer",
+    "display_name": "Travel Itinerary",
+    "description": "Traffic-aware travel itinerary skill for Claude Desktop",
+    "user_description": "Builds accurate travel itineraries from boarding time backwards \u2014 every drive leg uses live traffic-aware data from Google Maps. Plans dog drop-offs, rental car returns, and gas stops, then saves the result to Apple Notes. Powers Travel Mode in the Weekly Rhythm Engine.",
+    "usage_instructions": "Once installed, mention a flight, boarding time, or trip in any Claude Desktop conversation \u2014 the skill auto-triggers. Try \u201cI fly out at 6am, plan my trip to BNA.\u201d The skill loads automatically when relevant.",
+    "type": "skill",
     "icon": "airplane.departure",
     "version_source": {
-      "keychainSecret": {
-        "componentId": "travel-itinerary",
-        "fieldName": "GOOGLE_MAPS_API_KEY"
+      "claude_extension_manifest": {
+        "extension_id": "local.mcpb.kamren-kennedy.travel-itinerary"
       }
     },
-    "update_source": "none",
-    "update_command": "none",
+    "update_source": {
+      "github_release": {
+        "owner": "kamrenkennedy",
+        "repo": "travel-itinerary"
+      }
+    },
+    "update_command": {
+      "mcpb_download_and_open": {
+        "github_repo": "kamrenkennedy/travel-itinerary",
+        "asset_pattern": "travel-itinerary-*.mcpb"
+      }
+    },
     "setup_flow": {
       "id": "travel-itinerary-setup",
-      "title": "Set Up Travel Itinerary",
-      "subtitle": "Connect Google Maps for Weekly Rhythm location intelligence",
+      "title": "Install Travel Itinerary",
+      "subtitle": "Download the .mcpb bundle and let Claude Desktop finish the install",
       "steps": [
         {
-          "id": "open-console",
+          "id": "explain",
           "type": "instruction",
-          "title": "Open Google Cloud Console",
-          "body": "You need a Google Maps API key. Open Google Cloud Console, create a project (or pick an existing one), then enable these APIs: Directions API, Geocoding API, Places API, Distance Matrix API.",
-          "illustration": { "type": "sf_symbol", "name": "globe.americas.fill" },
-          "action_label": "Next",
+          "title": "How This Install Works",
+          "body": "Travel Itinerary ships as a self-contained Claude Desktop extension (.mcpb).\n\n1. Fort Abode downloads the latest .mcpb from GitHub\n2. macOS opens it in Claude Desktop\n3. Claude Desktop prompts you for your Google Maps API key (stored in its own encrypted store)\n4. You\u2019re done \u2014 the skill is registered and auto-triggers on any travel question\n\nYou\u2019ll need a Google Maps API key with Directions API + Geocoding API enabled. If you don\u2019t have one yet, create it before continuing.",
+          "illustration": { "type": "sf_symbol", "name": "shippingbox.and.arrow.backward.fill" },
+          "action_label": "Open Google Cloud Console",
           "external_url": "https://console.cloud.google.com/google/maps-apis/start"
-        },
-        {
-          "id": "create-key",
-          "type": "instruction",
-          "title": "Create an API Key",
-          "body": "In the same console, go to Credentials \u2192 Create credentials \u2192 API key. Restrict the key to the four APIs you enabled above. Copy the key when it appears.",
-          "illustration": { "type": "sf_symbol", "name": "key.fill" },
-          "action_label": "I've Created It"
-        },
-        {
-          "id": "paste-key",
-          "type": "secure_input",
-          "title": "Paste the API Key",
-          "body": "Paste your Google Maps API key below. Fort Abode stores it securely in your macOS Keychain \u2014 it never goes into a config file or git repo.",
-          "illustration": { "type": "sf_symbol", "name": "lock.shield.fill" },
-          "action_label": "Next",
-          "input_config": {
-            "field_name": "GOOGLE_MAPS_API_KEY",
-            "placeholder": "AIzaSy...",
-            "validation": { "type": "regex", "pattern": "^AIza[A-Za-z0-9_-]{20,}$", "error_message": "Google Maps API keys start with AIza followed by ~35 characters" }
-          }
         },
         {
           "id": "confirm",
           "type": "completion",
           "title": "Ready to Install",
-          "body": "Your Google Maps API key will be stored in Keychain. The Weekly Rhythm Engine will use it to plan travel itineraries, commute conflicts, errand routes, and lunch suggestions on your dashboard.\n\nNote: the travel-itinerary plugin in Cowork is a separate install. If you haven't already, upload the .plugin file to Cowork via the Claude desktop app.",
+          "body": "Fort Abode will download travel-itinerary-1.0.0.mcpb from GitHub and hand it to Claude Desktop. Claude Desktop will pop up an install dialog and ask for your Google Maps API key.\n\nIf Claude Desktop isn\u2019t already running, it\u2019ll launch automatically.",
           "illustration": { "type": "sf_symbol", "name": "checkmark.circle.fill" },
-          "action_label": "Install",
-          "summary_fields": ["GOOGLE_MAPS_API_KEY"]
+          "action_label": "Install"
         }
       ]
     },

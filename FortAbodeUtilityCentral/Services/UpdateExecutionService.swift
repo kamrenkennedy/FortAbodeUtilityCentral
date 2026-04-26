@@ -22,6 +22,9 @@ actor UpdateExecutionService {
         case .shellCommand(let command, let args):
             return await runShellCommand(command, args: args)
 
+        case .mcpbDownloadAndOpen(let githubRepo, let assetPattern):
+            return await downloadAndOpenMcpb(githubRepo: githubRepo, assetPattern: assetPattern)
+
         case .none:
             return UpdateResult(success: false, output: "", errorOutput: "No update command configured")
         }
@@ -169,6 +172,103 @@ actor UpdateExecutionService {
                 errorOutput: "Failed to run setup-claude-memory --family: \(error.localizedDescription)"
             )
         }
+    }
+
+    // MARK: - .mcpb Download + Open
+
+    /// Download the latest matching .mcpb from a GitHub release and hand it off to Claude Desktop.
+    /// Claude Desktop is registered as the default handler for .mcpb files; opening the URL
+    /// triggers its native install flow (unpack, register extension, prompt for user_config like API keys).
+    private func downloadAndOpenMcpb(githubRepo: String, assetPattern: String) async -> UpdateResult {
+        let parts = githubRepo.split(separator: "/")
+        guard parts.count == 2 else {
+            return UpdateResult(success: false, output: "", errorOutput: "Invalid githubRepo: '\(githubRepo)' (expected 'owner/repo')")
+        }
+        let owner = String(parts[0])
+        let repo = String(parts[1])
+
+        // Step 1: Resolve the latest release asset matching the pattern.
+        let apiURL = URL(string: "https://api.github.com/repos/\(owner)/\(repo)/releases/latest")!
+        var apiRequest = URLRequest(url: apiURL)
+        apiRequest.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        apiRequest.timeoutInterval = 15
+
+        let assetURL: URL
+        let assetName: String
+        do {
+            let (data, response) = try await URLSession.shared.data(for: apiRequest)
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+                return UpdateResult(success: false, output: "", errorOutput: "GitHub API returned non-200 for \(githubRepo)")
+            }
+            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let assets = json["assets"] as? [[String: Any]] else {
+                return UpdateResult(success: false, output: "", errorOutput: "Could not parse GitHub release assets for \(githubRepo)")
+            }
+            guard let match = assets.first(where: { asset in
+                guard let name = asset["name"] as? String else { return false }
+                return matchesGlob(name: name, pattern: assetPattern)
+            }),
+                let name = match["name"] as? String,
+                let downloadURLString = match["browser_download_url"] as? String,
+                let url = URL(string: downloadURLString) else {
+                return UpdateResult(success: false, output: "", errorOutput: "No release asset matched pattern '\(assetPattern)' in latest release of \(githubRepo)")
+            }
+            assetURL = url
+            assetName = name
+        } catch {
+            return UpdateResult(success: false, output: "", errorOutput: "Failed to query GitHub release: \(error.localizedDescription)")
+        }
+
+        // Step 2: Download the .mcpb to ~/Downloads/. Reuse the canonical Downloads path so users
+        // can re-open the file later if Claude Desktop's install flow fails for any reason.
+        let downloadsDir = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
+            ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Downloads")
+        let destination = downloadsDir.appendingPathComponent(assetName)
+
+        do {
+            let (tempURL, response) = try await URLSession.shared.download(from: assetURL)
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+                try? FileManager.default.removeItem(at: tempURL)
+                return UpdateResult(success: false, output: "", errorOutput: "Asset download returned non-200")
+            }
+            if FileManager.default.fileExists(atPath: destination.path) {
+                try FileManager.default.removeItem(at: destination)
+            }
+            try FileManager.default.moveItem(at: tempURL, to: destination)
+        } catch {
+            return UpdateResult(success: false, output: "", errorOutput: "Failed to download asset: \(error.localizedDescription)")
+        }
+
+        // Step 3: Hand off to Claude Desktop. NSWorkspace.open uses LaunchServices to find the
+        // .mcpb handler; if Claude Desktop isn't installed, the user gets the standard "no app
+        // can open this file" sheet, which is the right surface area for that error.
+        let opened = await MainActor.run {
+            NSWorkspace.shared.open(destination)
+        }
+        if !opened {
+            return UpdateResult(
+                success: false,
+                output: "",
+                errorOutput: "Downloaded \(assetName) to \(destination.path) but couldn't open it. Make sure Claude Desktop is installed."
+            )
+        }
+
+        return UpdateResult(
+            success: true,
+            output: "Downloaded \(assetName) and handed off to Claude Desktop. Follow the install prompt to finish.",
+            errorOutput: ""
+        )
+    }
+
+    /// Tiny glob matcher — supports only `*` (greedy any-chars). Adequate for asset patterns
+    /// like `travel-itinerary-*.mcpb`. Anchors at both ends.
+    nonisolated private func matchesGlob(name: String, pattern: String) -> Bool {
+        let escaped = NSRegularExpression.escapedPattern(for: pattern)
+            .replacingOccurrences(of: "\\*", with: ".*")
+        let regexPattern = "^" + escaped + "$"
+        guard let regex = try? NSRegularExpression(pattern: regexPattern) else { return false }
+        let range = NSRange(name.startIndex..., in: name)
+        return regex.firstMatch(in: name, range: range) != nil
     }
 
     // MARK: - Shell Command

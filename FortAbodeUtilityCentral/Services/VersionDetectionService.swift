@@ -19,7 +19,29 @@ actor VersionDetectionService {
             return parseICloudTemplateVersion(relativePath: relativePath)
         case .keychainSecret(let componentId, let fieldName):
             return SecureInputStorage.read(componentId: componentId, fieldName: fieldName) != nil ? "configured" : nil
+        case .claudeExtensionManifest(let extensionId):
+            return readClaudeExtensionManifestVersion(extensionId: extensionId)
         }
+    }
+
+    // MARK: - Claude Extension Manifest (.mcpb installs)
+
+    /// Read the `version` field from a Claude Desktop extension's manifest.json.
+    /// Path: ~/Library/Application Support/Claude/Claude Extensions/{extensionId}/manifest.json
+    /// Used for components installed via .mcpb bundles (e.g. Travel Itinerary).
+    private func readClaudeExtensionManifestVersion(extensionId: String) -> String? {
+        let homeDir = FileManager.default.homeDirectoryForCurrentUser
+        let manifestPath = homeDir
+            .appendingPathComponent("Library/Application Support/Claude/Claude Extensions")
+            .appendingPathComponent(extensionId)
+            .appendingPathComponent("manifest.json")
+
+        guard let data = try? Data(contentsOf: manifestPath),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let version = json["version"] as? String else {
+            return nil
+        }
+        return version
     }
 
     // MARK: - npx Cache Scanning

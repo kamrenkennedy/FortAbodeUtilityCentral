@@ -29,6 +29,18 @@ struct WeeklyRhythmView: View {
     @State private var alertsExpanded: Bool = true
     @State private var alerts: [WeeklyRhythmAlert] = WeeklyRhythmView.makeMockedAlerts()
 
+    // Vertical zoom — controls hour-row height. Default 52pt is the desktop
+    // spec value (UPDATE-2026-04-26-desktop-mac.md week-grid table). Dragged
+    // via the WeekGridZoomSlider in weekNavRow within [40, 80] bounds. Event
+    // positions are stored in 64pt-baseline units in mocks and scaled by
+    // `hourScale` at render time (`hourHeight / 64`). When the engine wires
+    // up real events in v4.1, switch the model to hour-relative units.
+    @State private var hourHeight: CGFloat = 52
+
+    private var hourScale: CGFloat { hourHeight / 64 }
+    private var dayColumnHeight: CGFloat { hourHeight * 9 }
+    private let hourCount: Int = 9   // 8 AM → 4 PM = 9 grid rows
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
@@ -36,10 +48,10 @@ struct WeeklyRhythmView: View {
                     .overlay(alignment: .topTrailing) {
                         RunHealthPill(state: .allGood)
                             .padding(.top, Space.s10)
-                            .padding(.trailing, Space.s16)
+                            .padding(.trailing, Space.s10)
                     }
 
-                VStack(alignment: .leading, spacing: Space.s12) {
+                VStack(alignment: .leading, spacing: Space.s8) {
                     if !alerts.isEmpty {
                         alertsBannerSection
                     }
@@ -50,8 +62,8 @@ struct WeeklyRhythmView: View {
                     errandsSection
                     dayBreakdownSection
                 }
-                .padding(.horizontal, Space.s16)
-                .padding(.bottom, Space.s24)
+                .padding(.horizontal, Space.s10)
+                .padding(.bottom, Space.s16)
             }
             .frame(maxWidth: 1184, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -105,24 +117,24 @@ struct WeeklyRhythmView: View {
 
     // MARK: - Alerts banner (engine-spec.md Step 5g — location intel + conflicts)
 
+    // Alerts banner per UPDATE-2026-04-26-desktop-mac.md §`.alerts-shell` block.
+    //
+    // Outer shell (.alerts-shell): surfaceContainerLow bg, 1pt outlineVariant
+    // border, r12, padding 14×16×16. Header is just "N need attention" + chevron
+    // (the prior brandRust "● ALERTS" eyebrow is gone — the shell + per-row glow
+    // carry the visual weight now).
+    //
+    // Each alert row has its own gradient bg (warmAmber 3% mix at bottom for
+    // normal, brandRust 5% mix for `.is-urgent` kinds like commuteConflict) plus
+    // its own underglow halo (warmAmber for normal, brandRust 0.75 opacity for
+    // urgent). Action button is outlined transparent r6.
     private var alertsBannerSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
-                HStack(spacing: Space.s2) {
-                    Circle()
-                        .fill(Color.brandRust)
-                        .frame(width: 6, height: 6)
-                    Text("Alerts".uppercased())
-                        .font(.labelSM)
-                        .tracking(2.0)
-                        .foregroundStyle(Color.brandRust)
-                    Text("\(alerts.count) need attention")
-                        .font(.bodySM)
-                        .foregroundStyle(Color.onSurfaceVariant)
-                }
-
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center, spacing: 10) {
+                Text("\(alerts.count) need attention")
+                    .font(.bodyMD)
+                    .foregroundStyle(Color.onSurfaceVariant)
                 Spacer(minLength: Space.s2)
-
                 Button {
                     withAnimation(.easeOut(duration: 0.2)) {
                         alertsExpanded.toggle()
@@ -131,86 +143,29 @@ struct WeeklyRhythmView: View {
                     Image(systemName: alertsExpanded ? "chevron.up" : "chevron.down")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(Color.onSurfaceVariant)
-                        .frame(width: 22, height: 22)
+                        .frame(width: 24, height: 24)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.bottom, alertsExpanded ? Space.s4 : 0)
 
             if alertsExpanded {
-                DashboardCard(verticalPadding: Space.s2, horizontalPadding: Space.s5) {
-                    VStack(spacing: 0) {
-                        ForEach(alerts.indices, id: \.self) { i in
-                            alertRow(alerts[i])
-                            if i < alerts.count - 1 {
-                                RowSeparator()
-                            }
-                        }
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(alerts.indices, id: \.self) { i in
+                        AlertCard(alert: alerts[i])
                     }
                 }
-                .overlay(alignment: .leading) {
-                    Rectangle()
-                        .fill(Color.brandRust)
-                        .frame(width: 3)
-                        .clipShape(RoundedRectangle(cornerRadius: 2))
-                        .padding(.vertical, 4)
-                }
             }
         }
-    }
-
-    private func alertRow(_ alert: WeeklyRhythmAlert) -> some View {
-        HStack(alignment: .top, spacing: Space.s3) {
-            Image(systemName: alert.kind.symbol)
-                .font(.system(size: 14, weight: .regular))
-                .foregroundStyle(alert.kind.tint)
-                .frame(width: 32, height: 32)
-                .background(
-                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                        .fill(alert.kind.tint.opacity(0.12))
-                )
-                .padding(.top, 2)
-
-            VStack(alignment: .leading, spacing: Space.s1) {
-                HStack(spacing: Space.s2) {
-                    Text(alert.day.uppercased())
-                        .font(.labelSM)
-                        .tracking(1.5)
-                        .foregroundStyle(Color.secondaryText)
-                    Text("·")
-                        .foregroundStyle(Color.outlineVariant)
-                    Text(alert.kind.label)
-                        .font(.labelSM)
-                        .foregroundStyle(alert.kind.tint)
-                }
-
-                Text(alert.title)
-                    .font(.bodyMD.weight(.medium))
-                    .foregroundStyle(Color.onSurface)
-
-                Text(alert.detail)
-                    .font(.bodySM)
-                    .foregroundStyle(Color.onSurfaceVariant)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer(minLength: Space.s3)
-
-            if let actionLabel = alert.actionLabel {
-                Button {} label: {
-                    Text(actionLabel)
-                        .font(.labelMD.weight(.medium))
-                        .foregroundStyle(Color.onSurface)
-                        .padding(.horizontal, Space.s3)
-                        .padding(.vertical, Space.s1_5)
-                        .background(Capsule().fill(Color.surfaceContainerHigh))
-                }
-                .buttonStyle(.plain)
-                .padding(.top, 2)
-            }
-        }
-        .padding(.vertical, Space.s4)
+        .padding(EdgeInsets(top: 14, leading: 16, bottom: 16, trailing: 16))
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.surfaceContainerLow)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Color.outlineVariant.opacity(0.5), lineWidth: 1)
+        )
     }
 
     private static func makeMockedAlerts() -> [WeeklyRhythmAlert] {
@@ -448,6 +403,18 @@ struct WeeklyRhythmView: View {
 
             Spacer(minLength: Space.s4)
 
+            // Vertical zoom — small minimal slider that scales hour-row height.
+            // Only shown for the week range (irrelevant in 30-day grid).
+            if range == .week {
+                WeekGridZoomSlider(
+                    value: Binding(
+                        get: { hourHeight },
+                        set: { hourHeight = $0 }
+                    ),
+                    range: 40...80
+                )
+            }
+
             let rangeBinding = Binding<WeeklyRhythmRange>(
                 get: { range },
                 set: { range = $0 }
@@ -491,7 +458,7 @@ struct WeeklyRhythmView: View {
 
     private var dayHeaderRow: some View {
         HStack(alignment: .top, spacing: 0) {
-            Color.clear.frame(width: 56)
+            Color.clear.frame(width: 44)
             ForEach($weekDays) { $day in
                 DayHeader(day: $day)
                     .frame(maxWidth: .infinity)
@@ -499,35 +466,64 @@ struct WeeklyRhythmView: View {
         }
     }
 
+    // Week-grid body — time column on the left + 7 day columns. Horizontal
+    // hour dividers span the full grid width (across both time and day
+    // columns) so each hour reads as a discrete row, with fainter half-hour
+    // lines between them for finer eyeballing (à la Apple/Google Calendar).
+    // Vertical dividers separate adjacent days. All at outlineVariant w/
+    // tiered opacity (hour 18% > half-hour 7%).
     private var gridBody: some View {
-        HStack(alignment: .top, spacing: 0) {
-            // Time column
-            VStack(alignment: .trailing, spacing: 0) {
-                ForEach(timeLabels, id: \.self) { label in
-                    Text(label)
-                        .font(.custom("Inter-Regular", size: 10))
-                        .foregroundStyle(Color.secondaryText)
-                        .frame(width: 48, height: 64, alignment: .topTrailing)
-                        .padding(.trailing, Space.s2)
+        ZStack(alignment: .topLeading) {
+            // Background hour + half-hour dividers — full-width horizontal lines.
+            // Drawn first so day-column events render on top.
+            VStack(spacing: 0) {
+                ForEach(0..<hourCount, id: \.self) { _ in
+                    Rectangle()
+                        .fill(Color.outlineVariant.opacity(0.18))
+                        .frame(height: 1)
+                    Spacer().frame(height: max(0, hourHeight / 2 - 1))
+                    Rectangle()
+                        .fill(Color.outlineVariant.opacity(0.07))
+                        .frame(height: 1)
+                    Spacer().frame(height: max(0, hourHeight / 2 - 1))
                 }
             }
-            .frame(width: 56)
+            .frame(height: dayColumnHeight)
 
-            ForEach(weekDays.indices, id: \.self) { i in
-                DayColumn(day: weekDays[i])
+            HStack(alignment: .top, spacing: 0) {
+                // Time column
+                VStack(alignment: .trailing, spacing: 0) {
+                    ForEach(timeLabels, id: \.self) { label in
+                        Text(label)
+                            .font(.custom("Inter-Regular", size: 9))
+                            .foregroundStyle(Color.secondaryText)
+                            .frame(width: 40, height: hourHeight, alignment: .topTrailing)
+                            .padding(.trailing, Space.s1_5)
+                            .offset(y: -5)   // pull label up so it sits on top of the divider line
+                    }
+                }
+                .frame(width: 44)
+
+                ForEach(weekDays.indices, id: \.self) { i in
+                    DayColumn(
+                        day: weekDays[i],
+                        totalHeight: dayColumnHeight,
+                        hourScale: hourScale
+                    )
                     .frame(maxWidth: .infinity)
-                    .overlay(alignment: .top) {
-                        if i < weekDays.count - 1 {
+                    .overlay(alignment: .leading) {
+                        // Vertical day-divider on the LEFT of every column except the first.
+                        if i > 0 {
                             Rectangle()
-                                .fill(Color.outlineVariant.opacity(0.10))
+                                .fill(Color.outlineVariant.opacity(0.18))
                                 .frame(width: 1)
                                 .frame(maxHeight: .infinity)
-                                .frame(maxWidth: .infinity, alignment: .trailing)
                         }
                     }
                     .dropDestination(for: String.self) { droppedItems, location in
                         moveEvent(droppedItems: droppedItems, toDayIndex: i, atY: location.y)
                     }
+                }
             }
         }
     }
@@ -642,8 +638,11 @@ struct WeeklyRhythmView: View {
         // Find source day + event index
         for srcDayIndex in weekDays.indices {
             if let evtIndex = weekDays[srcDayIndex].events.firstIndex(where: { $0.id == droppedId }) {
-                // Snap drop position to nearest hour (64pt = 1 hour, starting at 8 AM = top 0)
-                let snappedTop = max(0, round(atY / 64) * 64)
+                // Convert drop position from screen pt → baseline 64pt units, snap to
+                // the nearest hour (64pt = 1 hour at baseline). The atY value comes in
+                // at the current rendered scale, so divide by hourScale first.
+                let baselineY = atY / hourScale
+                let snappedTop = max(0, round(baselineY / 64) * 64)
                 if srcDayIndex == toDayIndex {
                     weekDays[srcDayIndex].events[evtIndex].top = snappedTop
                 } else {
@@ -669,6 +668,14 @@ struct WeeklyRhythmView: View {
 
     // MARK: - Day Breakdown (engine-spec.md per-day narrative output)
 
+    // Day Breakdown section — "blocks + focus bar" pattern per
+    // UPDATE-2026-04-25-day-breakdown.md (chosen artboard "v23 / 2 + 3 combined"
+    // from day-breakdown-variants.html).
+    //
+    // Each day: head row (weekday + date + type-pill + headline) → focus bar
+    // (segments mapped across 6 AM → 9 PM, with summary on the right) → block
+    // list (glyph + title + meta + type tag). Time axis (6 AM · 9 · 12 · 3 ·
+    // 6 PM · 9) prints ONCE at the bottom of the section, not per row.
     private var dayBreakdownSection: some View {
         VStack(alignment: .leading, spacing: Space.s5) {
             SectionEyebrow(text: "Day Breakdown")
@@ -676,44 +683,98 @@ struct WeeklyRhythmView: View {
             DashboardCard(verticalPadding: Space.s2, horizontalPadding: Space.s6) {
                 VStack(spacing: 0) {
                     ForEach(dayBreakdownEntries.indices, id: \.self) { i in
-                        dayBreakdownRow(dayBreakdownEntries[i])
+                        DayBreakdownDayRow(entry: dayBreakdownEntries[i])
                         if i < dayBreakdownEntries.count - 1 {
-                            RowSeparator()
+                            Rectangle()
+                                .fill(Color.outlineVariant.opacity(0.5))
+                                .frame(height: 1)
                         }
                     }
+
+                    // Time axis — once per section, justified across the bar's
+                    // span (the 56pt right summary column is excluded from the
+                    // axis range).
+                    DayBreakdownTimeAxis()
+                        .padding(.top, Space.s4)
                 }
             }
         }
     }
 
     private let dayBreakdownEntries: [DayBreakdown] = [
-        DayBreakdown(label: "Mon · Apr 21", dayType: .admin,    body: "Catch up on inbox, file Q1 expenses, prep Tue's edit block. Light errand: post office return."),
-        DayBreakdown(label: "Tue · Apr 22", dayType: .make,     body: "Braxton edit pass 2 (3h block, 10–1). Client sync at 3. No errands routed."),
-        DayBreakdown(label: "Wed · Apr 23", dayType: .make,     body: "Rae reels cuts (3.5h, 9:30–1). Quick lab pickup mid-afternoon."),
-        DayBreakdown(label: "Thu · Apr 24", dayType: .move,     body: "Move day. Ship pass 3 of Braxton (10–12), then sync at 3. Save creative energy for Fri."),
-        DayBreakdown(label: "Fri · Apr 25", dayType: .make,     body: "Studio site DNS fix (3h). Errand: dry cleaner. Braxton sync moved here from Tue."),
-        DayBreakdown(label: "Sat · Apr 26", dayType: .recover,  body: "Long run with Tiera. Gallery drop-off at noon. Light review of Rae cuts in the afternoon."),
-        DayBreakdown(label: "Sun · Apr 27", dayType: .open,     body: "Open day — no scheduled blocks. Reserve for prep, recovery, or family time as needed.")
+        DayBreakdown(
+            weekday: "Mon", dateLabel: "Apr 21", dayType: .admin,
+            headline: "Clear the runway",
+            summary: "2h · 1 err",
+            blocks: [
+                DayBlock(title: "Inbox triage",         kind: .admin,  durationLabel: "45m",   tag: .admin),
+                DayBlock(title: "File Q1 expenses",     kind: .admin,  durationLabel: "30m",   tag: .admin),
+                DayBlock(title: "Prep Tue's edit block", kind: .focus, startHour: 14.5, endHour: 15.5, durationLabel: "1h", tag: .make),
+                DayBlock(title: "Post office return",   kind: .errand, startHour: 16.0, endHour: 16.5, durationLabel: "15m", tag: .errand)
+            ],
+            isToday: false, isPast: true
+        ),
+        DayBreakdown(
+            weekday: "Tue", dateLabel: "Apr 22", dayType: .make,
+            headline: "Deep block + client sync",
+            summary: "3h · 1 sync",
+            blocks: [
+                DayBlock(title: "Braxton edit pass 2", kind: .focus, startHour: 10.0, endHour: 13.0, durationLabel: "10–1 · 3h", tag: .make),
+                DayBlock(title: "Client sync",         kind: .sync,  startHour: 15.0, endHour: 16.0, timeLabel: "3:00 PM", tag: .sync),
+                DayBlock(title: "No errands routed",   kind: .note,  dim: true)
+            ],
+            isToday: false, isPast: true
+        ),
+        DayBreakdown(
+            weekday: "Wed", dateLabel: "Apr 23", dayType: .make,
+            headline: "Rae reels — cuts",
+            summary: "3.5h · 1 err",
+            blocks: [
+                DayBlock(title: "Rae reels — cuts", kind: .focus, startHour: 9.5, endHour: 13.0, durationLabel: "9:30–1 · 3.5h", tag: .make),
+                DayBlock(title: "Lab pickup",       kind: .errand, startHour: 14.0, endHour: 14.5, durationLabel: "mid-PM", tag: .errand)
+            ],
+            isToday: false, isPast: true
+        ),
+        DayBreakdown(
+            weekday: "Thu", dateLabel: "Apr 24", dayType: .move,
+            headline: "Ship day",
+            summary: "2h · 1 sync",
+            blocks: [
+                DayBlock(title: "Ship Braxton pass 3", kind: .focus, startHour: 10.0, endHour: 12.0, durationLabel: "10–12 · 2h", tag: .move),
+                DayBlock(title: "Client sync",         kind: .sync,  startHour: 15.0, endHour: 16.0, timeLabel: "3:00 PM", tag: .sync)
+            ],
+            isToday: true, isPast: false
+        ),
+        DayBreakdown(
+            weekday: "Fri", dateLabel: "Apr 25", dayType: .make,
+            headline: "Studio site DNS fix",
+            summary: "3h · sync · err",
+            blocks: [
+                DayBlock(title: "Studio site DNS fix",         kind: .focus,  startHour: 9.0,  endHour: 12.0, durationLabel: "3h", tag: .make),
+                DayBlock(title: "Dry cleaner",                  kind: .errand, startHour: 16.5, endHour: 17.0, tag: .errand),
+                DayBlock(title: "Braxton sync (moved from Tue)", kind: .sync,  startHour: 13.5, endHour: 14.5, tag: .sync)
+            ],
+            isToday: false, isPast: false
+        ),
+        DayBreakdown(
+            weekday: "Sat", dateLabel: "Apr 26", dayType: .recover,
+            headline: "Long run + gallery drop-off",
+            summary: "light · 1 err",
+            blocks: [
+                DayBlock(title: "Long run with Tiera", kind: .recover, startHour: 7.0,  endHour: 10.0, timeLabel: "AM"),
+                DayBlock(title: "Gallery drop-off",    kind: .errand,  startHour: 11.5, endHour: 12.0, timeLabel: "12:00 PM", tag: .errand),
+                DayBlock(title: "Light review of Rae cuts", kind: .recover, startHour: 15.0, endHour: 17.0, timeLabel: "PM", dim: true)
+            ],
+            isToday: false, isPast: false
+        ),
+        DayBreakdown(
+            weekday: "Sun", dateLabel: "Apr 27", dayType: .open,
+            headline: "No scheduled blocks",
+            summary: "—",
+            blocks: [],
+            isToday: false, isPast: false
+        )
     ]
-
-    private func dayBreakdownRow(_ entry: DayBreakdown) -> some View {
-        HStack(alignment: .top, spacing: Space.s4) {
-            VStack(alignment: .leading, spacing: Space.s1_5) {
-                Text(entry.label)
-                    .font(.bodyMD.weight(.semibold))
-                    .foregroundStyle(Color.onSurface)
-                DayTypePill(kind: entry.dayType)
-            }
-            .frame(width: 132, alignment: .leading)
-
-            Text(entry.body)
-                .font(.bodyMD)
-                .foregroundStyle(Color.onSurface)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(.vertical, Space.s4)
-    }
 
     // MARK: - Triage + Claude Proposals
 
@@ -911,10 +972,376 @@ private enum ProposalResolution {
     case declined
 }
 
-private struct DayBreakdown {
-    let label: String
+// MARK: - Day Breakdown model
+//
+// Per UPDATE-2026-04-25-day-breakdown.md — the new "blocks + focus bar"
+// pattern. Each day has:
+//   • header: weekday + date + day-type pill + optional headline (verb of day)
+//   • focus bar: time-positioned segments across 6 AM → 9 PM
+//   • block list: ordered items with kind glyph + title + meta + tag
+// Layered so it reads coarse → fine.
+
+private struct DayBreakdown: Identifiable {
+    let id = UUID()
+    let weekday: String        // "Mon"
+    let dateLabel: String      // "Apr 21"
     let dayType: DayType
-    let body: String
+    let headline: String?
+    let summary: String?       // "2h · 1 err"  — auto-fallback to "—" if nil
+    let blocks: [DayBlock]
+    let isToday: Bool
+    let isPast: Bool
+
+    var hasBar: Bool { blocks.contains { $0.startHour != nil && $0.endHour != nil } }
+}
+
+private enum DayBlockKind {
+    case focus       // ●  — Make/Move dominant block
+    case errand      // →  — warm amber
+    case sync        // ·  — onSurfaceVariant
+    case admin       // ·
+    case recover     // ·
+    case note        // ·  — soft/dim text like "No errands routed"
+}
+
+private enum DayBlockTag {
+    case admin, make, move, errand, sync
+
+    var label: String {
+        switch self {
+        case .admin:  return "Admin"
+        case .make:   return "Make"
+        case .move:   return "Move"
+        case .errand: return "Errand"
+        case .sync:   return "Sync"
+        }
+    }
+}
+
+private struct DayBlock: Identifiable {
+    let id = UUID()
+    let title: String
+    let kind: DayBlockKind
+    let startHour: Double?     // 6.0 – 21.0 → mapped to bar position
+    let endHour: Double?
+    let durationLabel: String? // "45m", "10–1 · 3h"
+    let timeLabel: String?     // "3:00 PM" — used when no duration label
+    let tag: DayBlockTag?
+    let dim: Bool
+
+    init(
+        title: String,
+        kind: DayBlockKind,
+        startHour: Double? = nil,
+        endHour: Double? = nil,
+        durationLabel: String? = nil,
+        timeLabel: String? = nil,
+        tag: DayBlockTag? = nil,
+        dim: Bool = false
+    ) {
+        self.title = title
+        self.kind = kind
+        self.startHour = startHour
+        self.endHour = endHour
+        self.durationLabel = durationLabel
+        self.timeLabel = timeLabel
+        self.tag = tag
+        self.dim = dim
+    }
+}
+
+// MARK: - Day breakdown views
+
+private struct DayBreakdownDayRow: View {
+    let entry: DayBreakdown
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            head
+            barRow
+            blocksList
+        }
+        .padding(.vertical, 18)
+        .padding(.horizontal, 4)
+        .frame(maxWidth: .infinity)
+        .background(
+            entry.isToday
+                ? Color.tertiary.opacity(0.04)
+                : Color.clear
+        )
+        .opacity(entry.isPast ? 0.7 : 1)
+    }
+
+    private var head: some View {
+        HStack(spacing: 8) {
+            HStack(spacing: 0) {
+                Text(entry.weekday)
+                    .font(.custom("Manrope", size: 13).weight(.semibold))
+                    .foregroundStyle(entry.isToday ? Color.tertiaryBright : Color.onSurface)
+                Text(" · \(entry.dateLabel)")
+                    .font(.custom("Manrope", size: 13))
+                    .foregroundStyle(Color.onSurfaceVariant)
+            }
+
+            DayTypePill(kind: entry.dayType)
+
+            Spacer(minLength: 8)
+
+            if let headline = entry.headline, !headline.isEmpty {
+                Text(headline)
+                    .font(.custom("Inter-Regular", size: 11))
+                    .foregroundStyle(Color.onSurfaceVariant)
+                    .lineLimit(1)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var barRow: some View {
+        if entry.dayType == .open && entry.blocks.isEmpty {
+            // No bar row for fully-empty Open days; the empty-state line in the
+            // block list carries the message.
+            EmptyView()
+        } else {
+            HStack(spacing: 12) {
+                DayBreakdownFocusBar(blocks: entry.blocks)
+                    .frame(maxWidth: .infinity)
+                Text(entry.summary ?? "—")
+                    .font(.custom("Inter-Regular", size: 9.5).monospacedDigit())
+                    .foregroundStyle(Color.onSurfaceVariant)
+                    .frame(width: 64, alignment: .trailing)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var blocksList: some View {
+        if entry.blocks.isEmpty {
+            Text("Reserved for prep, recovery, or family time.")
+                .font(.custom("Inter-Regular", size: 12.5).italic())
+                .foregroundStyle(Color.onSurfaceVariant)
+        } else {
+            VStack(alignment: .leading, spacing: 2) {
+                ForEach(entry.blocks) { block in
+                    DayBreakdownBlockRow(block: block)
+                }
+            }
+        }
+    }
+}
+
+// Focus bar — segments mapped from block start/end hours onto a 6 AM → 9 PM
+// (15-hour) horizontal axis. Focus/recover blocks render full bar height (6pt);
+// errand and sync render half-height (3pt) so they read as punctuation rather
+// than blocks. Track is `surfaceContainer` 6pt.
+private struct DayBreakdownFocusBar: View {
+    let blocks: [DayBlock]
+
+    private static let dayStart: Double = 6.0
+    private static let daySpan:  Double = 15.0   // 6 AM → 9 PM
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .topLeading) {
+                Capsule()
+                    .fill(Color.surfaceContainer)
+                    .frame(height: 6)
+
+                ForEach(positionedBlocks(width: proxy.size.width)) { positioned in
+                    let block = positioned.block
+                    Capsule()
+                        .fill(fill(for: block))
+                        .opacity(opacity(for: block))
+                        .frame(width: positioned.width, height: barHeight(for: block))
+                        .offset(x: positioned.x, y: barYOffset(for: block))
+                }
+            }
+            .frame(height: 6)
+        }
+        .frame(height: 6)
+    }
+
+    private struct PositionedBlock: Identifiable {
+        let id: UUID
+        let block: DayBlock
+        let x: CGFloat
+        let width: CGFloat
+    }
+
+    private func positionedBlocks(width: CGFloat) -> [PositionedBlock] {
+        blocks.compactMap { block in
+            guard let start = block.startHour, let end = block.endHour, end > start else { return nil }
+            let leftFraction  = max(0, (start - Self.dayStart) / Self.daySpan)
+            let rightFraction = min(1, (end   - Self.dayStart) / Self.daySpan)
+            let widthFraction = max(0, rightFraction - leftFraction)
+            return PositionedBlock(
+                id: block.id,
+                block: block,
+                x: width * leftFraction,
+                width: max(2, width * widthFraction)
+            )
+        }
+    }
+
+    private func fill(for block: DayBlock) -> Color {
+        switch block.kind {
+        case .focus:    return Color.tertiary
+        case .errand:   return Color.warmAmber
+        case .sync:     return Color.onSurfaceVariant
+        case .recover:  return Color.warmAmber
+        case .admin:    return Color.onSurfaceVariant
+        case .note:     return Color.clear
+        }
+    }
+
+    private func opacity(for block: DayBlock) -> Double {
+        switch block.kind {
+        case .focus:    return 1.0
+        case .errand:   return 0.55
+        case .sync:     return 0.55
+        case .recover:  return 0.35
+        case .admin:    return 0.45
+        case .note:     return 0
+        }
+    }
+
+    private func barHeight(for block: DayBlock) -> CGFloat {
+        switch block.kind {
+        case .focus, .recover: return 6
+        case .errand, .sync, .admin: return 3
+        case .note: return 0
+        }
+    }
+
+    private func barYOffset(for block: DayBlock) -> CGFloat {
+        // half-height bars vertically centered in the 6pt track
+        switch block.kind {
+        case .focus, .recover, .note: return 0
+        case .errand, .sync, .admin:  return 1.5
+        }
+    }
+}
+
+// Single block row in the per-day list — leading glyph + title + meta + tag.
+private struct DayBreakdownBlockRow: View {
+    let block: DayBlock
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(glyph)
+                .font(.custom("Inter-Medium", size: glyphSize).weight(glyphWeight))
+                .foregroundStyle(glyphColor)
+                .frame(width: 14, alignment: .center)
+
+            Text(block.title)
+                .font(.custom("Inter-Regular", size: 12.5))
+                .foregroundStyle(block.dim ? Color.onSurfaceVariant : Color.onSurface)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            if let meta = block.durationLabel ?? block.timeLabel {
+                Text(meta)
+                    .font(.custom("Inter-Regular", size: 10.5).monospacedDigit())
+                    .foregroundStyle(Color.onSurfaceVariant)
+            }
+
+            if let tag = block.tag {
+                DayBreakdownTagChip(tag: tag)
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    private var glyph: String {
+        switch block.kind {
+        case .focus:  return "●"
+        case .errand: return "→"
+        default:      return "·"
+        }
+    }
+
+    private var glyphSize: CGFloat {
+        switch block.kind {
+        case .focus:  return 9
+        case .errand: return 12
+        default:      return 14
+        }
+    }
+
+    private var glyphWeight: Font.Weight {
+        block.kind == .focus ? .semibold : .regular
+    }
+
+    private var glyphColor: Color {
+        switch block.kind {
+        case .focus:  return Color.tertiaryBright
+        case .errand: return Color.warmAmber
+        default:      return Color.onSurfaceVariant
+        }
+    }
+}
+
+// Small uppercase type tag — Admin / Make / Move / Errand / Sync.
+private struct DayBreakdownTagChip: View {
+    let tag: DayBlockTag
+
+    var body: some View {
+        Text(tag.label.uppercased())
+            .font(.custom("Inter-Medium", size: 9).weight(.semibold))
+            .tracking(0.4)
+            .foregroundStyle(textColor)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(bgColor)
+            )
+    }
+
+    private var textColor: Color {
+        switch tag {
+        case .admin:  return Color.onSurfaceVariant
+        case .make:   return Color.onSurface
+        case .move:   return Color.tertiaryBright
+        case .errand: return Color.warmAmber
+        case .sync:   return Color.onSurfaceVariant
+        }
+    }
+
+    private var bgColor: Color {
+        switch tag {
+        case .admin:  return Color.surfaceContainer
+        case .make:   return Color.surfaceContainer
+        case .move:   return Color.chipTertiaryBg
+        case .errand: return Color.warmAmberDim
+        case .sync:   return Color.surfaceContainer
+        }
+    }
+}
+
+// Time axis printed once below the day breakdown — 6 AM · 9 · 12 · 3 · 6 PM · 9.
+// Justified across the bar's span; the right summary column is excluded so the
+// labels line up under the bar segments.
+private struct DayBreakdownTimeAxis: View {
+    private let labels = ["6 AM", "9", "12", "3", "6 PM", "9"]
+
+    var body: some View {
+        HStack(spacing: 12) {
+            HStack(spacing: 0) {
+                ForEach(Array(labels.enumerated()), id: \.offset) { _, label in
+                    Text(label)
+                        .font(.custom("Inter-Regular", size: 9).monospacedDigit())
+                        .foregroundStyle(Color.onSurfaceVariant.opacity(0.55))
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .frame(maxWidth: .infinity)
+
+            // Reserve the same 64pt right gutter as the bar's summary column so
+            // the labels stay aligned with the bar's actual horizontal range.
+            Color.clear.frame(width: 64)
+        }
+    }
 }
 
 // MARK: - Alert model + kinds
@@ -926,6 +1353,241 @@ private struct WeeklyRhythmAlert: Identifiable {
     let title: String
     let detail: String
     let actionLabel: String?
+}
+
+// MARK: - Week grid zoom slider
+//
+// Small minimal slider for vertical zoom on the week calendar — drives the
+// `hourHeight` state. Track is 80pt × 2pt in surfaceContainerHigh; thumb is
+// an 8pt circle in onSurface. Tiny − / + glyphs flank the track. Drag the
+// thumb or click the glyphs to adjust. Designed to read as a "subtle utility
+// control" rather than a primary affordance.
+
+private struct WeekGridZoomSlider: View {
+    @Binding var value: CGFloat
+    let range: ClosedRange<CGFloat>
+
+    private let trackWidth: CGFloat = 72
+    private let trackHeight: CGFloat = 2
+    private let thumbSize: CGFloat = 9
+
+    private var fraction: CGFloat {
+        let span = range.upperBound - range.lowerBound
+        guard span > 0 else { return 0 }
+        return (value - range.lowerBound) / span
+    }
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "minus")
+                .font(.system(size: 8, weight: .medium))
+                .foregroundStyle(Color.onSurfaceVariant)
+                .frame(width: 12, height: 12)
+                .contentShape(Rectangle())
+                .onTapGesture { adjust(-8) }
+
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.surfaceContainerHigh)
+                    .frame(width: trackWidth, height: trackHeight)
+
+                Capsule()
+                    .fill(Color.onSurface.opacity(0.35))
+                    .frame(width: max(0, fraction * trackWidth), height: trackHeight)
+
+                Circle()
+                    .fill(Color.onSurface)
+                    .frame(width: thumbSize, height: thumbSize)
+                    .offset(x: fraction * trackWidth - thumbSize / 2)
+            }
+            .frame(width: trackWidth, height: max(thumbSize, trackHeight))
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { gesture in
+                        let raw = gesture.location.x / trackWidth
+                        let clamped = min(max(raw, 0), 1)
+                        let span = range.upperBound - range.lowerBound
+                        value = range.lowerBound + clamped * span
+                    }
+            )
+
+            Image(systemName: "plus")
+                .font(.system(size: 8, weight: .medium))
+                .foregroundStyle(Color.onSurfaceVariant)
+                .frame(width: 12, height: 12)
+                .contentShape(Rectangle())
+                .onTapGesture { adjust(8) }
+        }
+        .help("Vertical zoom")
+    }
+
+    private func adjust(_ delta: CGFloat) {
+        let next = value + delta
+        value = min(max(next, range.lowerBound), range.upperBound)
+    }
+}
+
+// MARK: - Alert card
+//
+// Translated from `.alert-row` + `.alert-row.is-urgent` in
+// family-dashboard-mockup-desktop-v1.html. Per-row gradient bg, per-row warm
+// or rust underglow, outlined action button. Sized at desktop scale: 11×13
+// padding, gap 11, radius 10, icon 26pt circle.
+
+private struct AlertCard: View {
+    let alert: WeeklyRhythmAlert
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var animate = false
+
+    private var glowTint: Color {
+        alert.kind.isUrgent ? .brandRust : .warmAmber
+    }
+
+    private var gradientBg: LinearGradient {
+        let base = Color.surfaceContainer
+        let bottom: Color = alert.kind.isUrgent
+            ? Color(light: 0x2C2624, dark: 0x2C2624)   // surfaceContainer + 5% brandRust mix
+            : Color(light: 0x2A2722, dark: 0x2A2722)   // surfaceContainer + 3% warmAmber mix
+        return LinearGradient(colors: [base, bottom], startPoint: .top, endPoint: .bottom)
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 11) {
+            // Alert icon — 26pt circle, surfaceContainerHigh bg
+            ZStack {
+                Circle().fill(Color.surfaceContainerHigh)
+                Image(systemName: alert.kind.symbol)
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(alert.kind.tint)
+            }
+            .frame(width: 26, height: 26)
+            .padding(.top, 2)
+
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 10) {
+                    Text(alert.day.uppercased())
+                        .font(.labelSM)
+                        .tracking(1.5)
+                        .foregroundStyle(Color.onSurfaceVariant)
+                    Text(alert.kind.label)
+                        .font(.labelSM)
+                        .foregroundStyle(alert.kind.isUrgent ? Color.brandRustSoft : Color.onSurfaceVariant)
+                }
+
+                Text(alert.title)
+                    .font(.bodyMD.weight(.semibold))
+                    .foregroundStyle(Color.onSurface)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(alert.detail)
+                    .font(.bodySM)
+                    .foregroundStyle(Color.onSurfaceVariant)
+                    .lineSpacing(1)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 8)
+
+            if let actionLabel = alert.actionLabel {
+                AlertActionButton(label: actionLabel) {}
+                    .padding(.top, 2)
+            }
+        }
+        .padding(EdgeInsets(top: 11, leading: 13, bottom: 11, trailing: 13))
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(gradientBg)
+        )
+        .overlay(alignment: .bottom) {
+            // Per-row underglow — warm amber (normal) or brand rust (urgent).
+            // Geometry matches `.alert-row::after` desktop spec: bottom -10pt,
+            // height 22pt, blur 10pt, 12% horizontal inset.
+            GeometryReader { proxy in
+                let glowWidth = proxy.size.width * 0.76
+                Ellipse()
+                    .fill(
+                        RadialGradient(
+                            gradient: Gradient(stops: alert.kind.isUrgent ? [
+                                .init(color: glowTint.opacity(0.60), location: 0.0),
+                                .init(color: glowTint.opacity(0.28), location: 0.35),
+                                .init(color: glowTint.opacity(0.0),  location: 0.75)
+                            ] : [
+                                .init(color: glowTint.opacity(0.35), location: 0.0),
+                                .init(color: glowTint.opacity(0.15), location: 0.40),
+                                .init(color: glowTint.opacity(0.0),  location: 0.75)
+                            ]),
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: glowWidth / 2
+                        )
+                    )
+                    .frame(width: glowWidth, height: 22)
+                    .blur(radius: 10)
+                    .opacity({
+                        let base = alert.kind.isUrgent ? 0.75 : 0.5
+                        if reduceMotion { return base }
+                        return animate ? base + 0.20 : base - 0.10
+                    }())
+                    .scaleEffect(
+                        x: reduceMotion ? 1.0 : (animate ? 1.02 : 0.96),
+                        y: 1,
+                        anchor: .center
+                    )
+                    .position(x: proxy.size.width / 2, y: 11)
+            }
+            .frame(height: 22)
+            .frame(maxWidth: .infinity)
+            .offset(y: 10)
+            .allowsHitTesting(false)
+        }
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
+                animate = true
+            }
+        }
+    }
+}
+
+// MARK: - Alert-action button (outlined, transparent)
+//
+// Per `.alert-action` desktop spec — transparent bg, 1pt outline-variant border,
+// r6, 5×11 padding, 12px font weight 500. NOT one of the standard button styles
+// because the alerts module specifically wants a quieter outlined treatment vs.
+// the filled `.alignedSecondary` used elsewhere.
+
+private struct AlertActionButton: View {
+    let label: String
+    let action: () -> Void
+
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .font(.labelLG)
+                .foregroundStyle(Color.onSurface)
+                .padding(.horizontal, 11)
+                .padding(.vertical, 5)
+                .background(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(isHovering ? Color.surfaceContainerHigh : Color.clear)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .strokeBorder(
+                            isHovering ? Color.onSurfaceVariant : Color.outlineVariant,
+                            lineWidth: 1
+                        )
+                )
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+        .animation(.easeOut(duration: 0.18), value: isHovering)
+    }
 }
 
 private enum AlertKind {
@@ -945,7 +1607,7 @@ private enum AlertKind {
 
     var symbol: String {
         switch self {
-        case .travel:          return "airplane"
+        case .travel:          return "clock"
         case .commuteConflict: return "exclamationmark.triangle.fill"
         case .errandBatch:     return "cart.fill"
         case .lunch:           return "fork.knife"
@@ -954,10 +1616,20 @@ private enum AlertKind {
 
     var tint: Color {
         switch self {
-        case .travel:          return Color.tertiary
-        case .commuteConflict: return Color.brandRust
+        case .travel:          return Color.onSurfaceVariant
+        case .commuteConflict: return Color.brandRustSoft
         case .errandBatch:     return Color.statusDraft
         case .lunch:           return Color.statusScheduled
+        }
+    }
+
+    // Urgent kinds get the brandRust gradient + underglow per spec
+    // (`.alert-row.is-urgent` in family-dashboard-mockup-desktop-v1.html).
+    // Non-urgent uses the warm-amber treatment.
+    var isUrgent: Bool {
+        switch self {
+        case .commuteConflict: return true
+        default:               return false
         }
     }
 }
@@ -1064,7 +1736,7 @@ private struct ErrandDetailSheet: View {
                         }
                     }
                 }
-                .padding(.horizontal, Space.s16)
+                .padding(.horizontal, Space.s10)
 
                 Spacer(minLength: Space.s4)
             }
@@ -1134,7 +1806,7 @@ private struct TriageDetailSheet: View {
                         actionPill(label: "Archive", symbol: "archivebox")
                     }
                 }
-                .padding(.horizontal, Space.s16)
+                .padding(.horizontal, Space.s10)
 
                 Spacer(minLength: Space.s4)
             }
@@ -1248,7 +1920,7 @@ private struct ProposalDetailSheet: View {
                         }
                     }
                 }
-                .padding(.horizontal, Space.s16)
+                .padding(.horizontal, Space.s10)
 
                 Spacer(minLength: Space.s4)
             }
@@ -1279,7 +1951,7 @@ private struct DayTypeSettingsSheet: View {
                     .font(.bodyMD)
                     .foregroundStyle(Color.onSurfaceVariant)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, Space.s16)
+                    .padding(.horizontal, Space.s10)
 
                 DashboardCard(verticalPadding: Space.s2, horizontalPadding: Space.s6) {
                     VStack(spacing: 0) {
@@ -1309,12 +1981,12 @@ private struct DayTypeSettingsSheet: View {
                         }
                     }
                 }
-                .padding(.horizontal, Space.s16)
+                .padding(.horizontal, Space.s10)
 
                 Text("Phase 5 will wire this to write your day_types config so the engine reads from the same source.")
                     .font(.bodySM)
                     .foregroundStyle(Color.secondaryText)
-                    .padding(.horizontal, Space.s16)
+                    .padding(.horizontal, Space.s10)
 
                 Spacer(minLength: Space.s4)
             }
@@ -1680,8 +2352,8 @@ private struct DayTypePill: View {
 
 private struct DayColumn: View {
     let day: WeekDay
-
-    private let totalHeight: CGFloat = 576
+    let totalHeight: CGFloat
+    let hourScale: CGFloat
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -1691,9 +2363,9 @@ private struct DayColumn: View {
 
             ForEach(day.events) { event in
                 EventBlock(event: event)
-                    .frame(height: event.height)
+                    .frame(height: event.height * hourScale)
                     .padding(.horizontal, 2)
-                    .offset(y: event.top)
+                    .offset(y: event.top * hourScale)
                     .draggable(event.id.uuidString)
             }
 
@@ -1702,7 +2374,7 @@ private struct DayColumn: View {
                     .fill(Color.tertiary)
                     .frame(height: 1.5)
                     .padding(.horizontal, 2)
-                    .offset(y: nowOffset)
+                    .offset(y: nowOffset * hourScale)
             }
         }
         .frame(maxWidth: .infinity)

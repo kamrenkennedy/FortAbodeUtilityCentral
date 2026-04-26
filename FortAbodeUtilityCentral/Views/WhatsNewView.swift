@@ -88,17 +88,9 @@ struct WhatsNewView: View {
 
                 Button(action: onDismiss) {
                     Text("Got It")
-                        .font(.labelLG.weight(.semibold))
-                        .foregroundStyle(Color.onPrimary)
-                        .frame(width: 120, height: 24)
+                        .frame(width: 120)
                 }
-                .padding(.vertical, Space.s2)
-                .background(
-                    Capsule()
-                        .fill(Color.primaryFill)
-                )
-                .buttonStyle(.plain)
-                .ctaShadow()
+                .buttonStyle(.alignedPrimary)
                 .padding(.vertical, Space.s5)
             }
         }

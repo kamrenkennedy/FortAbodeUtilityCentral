@@ -115,41 +115,39 @@ struct SetupWizardView: View {
 
     private var navigationBar: some View {
         HStack {
-            // Back button
             Button("Back") {
                 withAnimation(.easeInOut(duration: 0.25)) {
                     viewModel.goBack()
                 }
             }
+            .buttonStyle(.alignedSecondary)
             .disabled(!viewModel.canGoBack)
+            .opacity(viewModel.canGoBack ? 1 : 0.5)
             .keyboardShortcut(.leftArrow, modifiers: [])
 
             Spacer()
 
-            // External URL button (if applicable)
             if let urlString = viewModel.currentStep.externalUrl,
                let url = URL(string: urlString) {
                 Link(destination: url) {
                     HStack(spacing: 4) {
                         Text("Open")
                         Image(systemName: "arrow.up.right")
+                            .font(.system(size: 11, weight: .medium))
                     }
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
+                .buttonStyle(.alignedSecondary)
             }
 
-            // Action button
             if viewModel.isLastStep {
                 installButton
             } else {
                 Button(viewModel.currentStep.actionLabel) {
                     handleAdvance()
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.green)
-                .controlSize(.large)
+                .buttonStyle(.alignedPrimary)
                 .disabled(!viewModel.canAdvance)
+                .opacity(viewModel.canAdvance ? 1 : 0.5)
                 .keyboardShortcut(.return, modifiers: [])
             }
         }
@@ -169,14 +167,14 @@ struct SetupWizardView: View {
                 if viewModel.isInstalling {
                     ProgressView()
                         .controlSize(.small)
+                        .tint(Color.surface)
                 }
                 Text(viewModel.currentStep.actionLabel)
             }
         }
-        .buttonStyle(.borderedProminent)
-        .tint(.green)
-        .controlSize(.large)
+        .buttonStyle(.alignedPrimary)
         .disabled(viewModel.isInstalling)
+        .opacity(viewModel.isInstalling ? 0.7 : 1)
         .keyboardShortcut(.return, modifiers: [])
     }
 

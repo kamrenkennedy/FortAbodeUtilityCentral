@@ -14,7 +14,7 @@ struct RootView: View {
     var body: some View {
         HStack(spacing: 0) {
             Sidebar()
-                .frame(width: appState.sidebarCollapsed ? 64 : 240)
+                .frame(width: appState.sidebarCollapsed ? 60 : 200)
                 .animation(.easeOut(duration: 0.3), value: appState.sidebarCollapsed)
 
             destinationContent
@@ -44,7 +44,7 @@ struct RootView: View {
             ChatPanelFAB(unreadCount: appState.unreadFamilyCount) {
                 appState.openChat(.family)
             }
-            .padding(28)
+            .padding(20)
             .transition(.opacity.combined(with: .scale(scale: 0.6, anchor: .bottomTrailing)))
         }
     }

@@ -72,25 +72,17 @@ struct ActivationView: View {
                     if isActivating {
                         ProgressView()
                             .controlSize(.small)
-                            .tint(Color.onPrimary)
-                            .frame(width: 140, height: 24)
+                            .tint(Color.surface)
+                            .frame(width: 140)
                     } else {
                         Text("Activate")
-                            .font(.labelLG.weight(.semibold))
-                            .foregroundStyle(Color.onPrimary)
-                            .frame(width: 140, height: 24)
+                            .frame(width: 140)
                     }
                 }
-                .padding(.vertical, Space.s2)
-                .background(
-                    Capsule()
-                        .fill(Color.primaryFill)
-                )
-                .buttonStyle(.plain)
+                .buttonStyle(.alignedPrimary)
                 .disabled(code.isEmpty || isActivating)
                 .opacity((code.isEmpty || isActivating) ? 0.5 : 1)
                 .keyboardShortcut(.defaultAction)
-                .ctaShadow()
 
                 Spacer()
 

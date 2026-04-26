@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import AlignedDesignSystem
 
 // MARK: - Family Health Dashboard
 //
@@ -295,8 +296,7 @@ struct FamilyHealthDashboard: View {
 
             if let telURL {
                 Link("Call", destination: telURL)
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .buttonStyle(.alignedSecondaryMini)
             }
         }
         .padding(12)
@@ -380,8 +380,7 @@ struct FamilyHealthDashboard: View {
 
             if let email = agent.email, let url = URL(string: "mailto:\(email)") {
                 Link("Email", destination: url)
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .buttonStyle(.alignedSecondaryMini)
             }
         }
         .padding(12)

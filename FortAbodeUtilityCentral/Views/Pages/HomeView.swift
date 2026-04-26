@@ -14,13 +14,13 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 0) {
                 EditorialHeader(eyebrow: "Family Dashboard", title: todaysTitle)
 
-                VStack(alignment: .leading, spacing: Space.s16) {
+                VStack(alignment: .leading, spacing: Space.s10) {
                     twoColumnSection
                     thisWeekSection
                     marketplacePulseSection
                 }
-                .padding(.horizontal, Space.s16)
-                .padding(.bottom, Space.s24)
+                .padding(.horizontal, Space.s10)
+                .padding(.bottom, Space.s16)
             }
             .frame(maxWidth: 1184, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .leading)

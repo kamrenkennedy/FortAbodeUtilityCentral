@@ -13,13 +13,13 @@ struct FamilyView: View {
             VStack(alignment: .leading, spacing: 0) {
                 EditorialHeader(eyebrow: "Kennedy Family", title: "Family")
 
-                VStack(alignment: .leading, spacing: Space.s12) {
+                VStack(alignment: .leading, spacing: Space.s8) {
                     membersSection
                     healthSection
                     familyMemorySection
                 }
-                .padding(.horizontal, Space.s16)
-                .padding(.bottom, Space.s24)
+                .padding(.horizontal, Space.s10)
+                .padding(.bottom, Space.s16)
             }
             .frame(maxWidth: 1184, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .leading)

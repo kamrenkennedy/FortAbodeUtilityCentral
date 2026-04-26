@@ -10,14 +10,24 @@ import AlignedDesignSystem
 struct MarketplaceView: View {
 
     @Environment(ComponentListViewModel.self) private var viewModel
+    @Environment(AppState.self) private var appState
     @State private var wizardComponent: Component?
+
+    // Fixed-column grid driven by `appState.marketplaceColumns`. Switching the
+    // toggle reflows both Installed and Browse grids (UPDATE-2026-04-26-desktop-mac.md §2).
+    private var gridColumns: [GridItem] {
+        Array(
+            repeating: GridItem(.flexible(), spacing: Space.s3),
+            count: appState.marketplaceColumns.count
+        )
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 editorialHeader
 
-                VStack(alignment: .leading, spacing: Space.s12) {
+                VStack(alignment: .leading, spacing: Space.s8) {
                     if hasUpdatesAvailable {
                         updatesBanner
                     }
@@ -26,8 +36,8 @@ struct MarketplaceView: View {
                         browseSection
                     }
                 }
-                .padding(.horizontal, Space.s16)
-                .padding(.bottom, Space.s24)
+                .padding(.horizontal, Space.s10)
+                .padding(.bottom, Space.s16)
             }
             .frame(maxWidth: 1184, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -68,9 +78,9 @@ struct MarketplaceView: View {
             }
             .padding(.bottom, Space.s2)
         }
-        .padding(.top, Space.s24)
-        .padding(.horizontal, Space.s16)
-        .padding(.bottom, Space.s24)
+        .padding(.top, Space.s16)
+        .padding(.horizontal, Space.s10)
+        .padding(.bottom, Space.s16)
     }
 
     // MARK: - Updates banner
@@ -103,7 +113,7 @@ struct MarketplaceView: View {
 
     private var installedSection: some View {
         VStack(alignment: .leading, spacing: Space.s5) {
-            HStack(alignment: .firstTextBaseline) {
+            HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
                 Text("Installed".uppercased())
                     .font(.labelSM)
                     .tracking(2.0)
@@ -112,12 +122,13 @@ struct MarketplaceView: View {
                 Text(installedFooter)
                     .font(.bodySM)
                     .foregroundStyle(Color.onSurfaceVariant)
+                marketplaceColumnsControl
             }
 
             if viewModel.installedComponents.isEmpty {
                 emptyInstalled
             } else {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 200, maximum: 240), spacing: Space.s4)], spacing: Space.s4) {
+                LazyVGrid(columns: gridColumns, spacing: Space.s3) {
                     ForEach(viewModel.installedComponents) { component in
                         NavigationLink(value: AppDestination.componentDetail(componentId: component.id)) {
                             BentoCard(
@@ -132,6 +143,21 @@ struct MarketplaceView: View {
                 }
             }
         }
+    }
+
+    // Tiny 2up/3up toggle, top-right of Installed section per
+    // UPDATE-2026-04-26-desktop-mac.md §2.
+    private var marketplaceColumnsControl: some View {
+        let binding = Binding<MarketplaceColumns>(
+            get: { appState.marketplaceColumns },
+            set: { appState.marketplaceColumns = $0 }
+        )
+        return SegmentedTabBar(
+            options: MarketplaceColumns.allCases,
+            selection: binding,
+            label: { $0.label },
+            trailingAccessory: { _ in AnyView(EmptyView()) }
+        )
     }
 
     private var installedFooter: String {
@@ -179,7 +205,7 @@ struct MarketplaceView: View {
                     .foregroundStyle(Color.onSurfaceVariant)
             }
 
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 200, maximum: 240), spacing: Space.s4)], spacing: Space.s4) {
+            LazyVGrid(columns: gridColumns, spacing: Space.s3) {
                 ForEach(viewModel.marketplaceItems) { component in
                     NavigationLink(value: AppDestination.componentDetail(componentId: component.id)) {
                         BentoCard(
@@ -210,32 +236,31 @@ private struct CheckAllButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: Space.s2) {
+            HStack(spacing: 6) {
                 if isChecking {
-                    ProgressView().controlSize(.small)
+                    ProgressView()
+                        .controlSize(.small)
+                        .tint(Color.surface)
                 } else {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 11, weight: .medium))
                 }
                 Text("Check All")
-                    .font(.labelLG.weight(.semibold))
             }
-            .foregroundStyle(Color.onPrimary)
-            .padding(.horizontal, Space.s4)
-            .padding(.vertical, Space.s2_5)
-            .background(
-                Capsule()
-                    .fill(Color.primaryFill)
-            )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.alignedPrimary)
         .disabled(isChecking)
-        .ctaShadow()
+        .opacity(isChecking ? 0.7 : 1)
     }
 }
 
 // MARK: - Updates banner
 
+// Marketplace updates banner per UPDATE-2026-04-25.md §2b. The left-edge accent
+// strip from the prior version is intentionally removed — the warm-amber underglow
+// beneath the card now carries the visual weight. Gradient bg blends from the
+// neutral card surface (top) to a 4–5% warm-amber tint (bottom) so the glow reads
+// as light leaking out rather than a colored card.
 private struct UpdatesBanner: View {
     let count: Int
     let summary: String
@@ -246,11 +271,11 @@ private struct UpdatesBanner: View {
             HStack(spacing: Space.s5) {
                 Image(systemName: "arrow.triangle.2.circlepath")
                     .font(.system(size: 18, weight: .regular))
-                    .foregroundStyle(Color.statusDraft)
+                    .foregroundStyle(Color.warmAmber)
                     .frame(width: 44, height: 44)
                     .background(
                         RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                            .fill(Color.statusDraft.opacity(0.14))
+                            .fill(Color.warmAmber.opacity(0.14))
                     )
 
                 VStack(alignment: .leading, spacing: Space.s1) {
@@ -273,38 +298,32 @@ private struct UpdatesBanner: View {
             Spacer(minLength: Space.s4)
 
             Button(action: onInstallAll) {
-                HStack(spacing: Space.s2) {
+                HStack(spacing: 6) {
                     Text("Install all updates")
-                        .font(.labelLG.weight(.semibold))
                     Image(systemName: "arrow.down")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 11, weight: .medium))
                 }
-                .foregroundStyle(Color.onPrimary)
-                .padding(.horizontal, Space.s4)
-                .padding(.vertical, Space.s2_5)
-                .background(
-                    Capsule()
-                        .fill(Color.primaryFill)
-                )
             }
-            .buttonStyle(.plain)
-            .ctaShadow()
+            .buttonStyle(.alignedPrimary)
         }
-        .padding(Space.s5)
+        .padding(.horizontal, 28)
+        .padding(.vertical, 24)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: Radius.xl2, style: .continuous)
-                .fill(Color.cardBackground)
-                .overlay(alignment: .leading) {
-                    Rectangle()
-                        .fill(Color.statusDraft)
-                        .frame(width: 3)
-                        .clipShape(
-                            RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
-                        )
-                }
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.cardBackground,
+                            Color(light: 0xFDFAF7, dark: 0x2C2925)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
         )
         .whisperShadow()
+        .warmAmberUnderglow()
     }
 }
 
@@ -318,8 +337,11 @@ private struct BentoCard: View {
 
     @State private var isHovering = false
 
+    // BentoCard desktop sizing per UPDATE-2026-04-26-desktop-mac.md:
+    //   • padding 18pt, radius 14pt (Radius.xl2 desktop), min-height 132pt
+    //   • inner gap 8pt, mcp-icon 28×28 r6 (Radius.md desktop)
     var body: some View {
-        VStack(alignment: .leading, spacing: Space.s4) {
+        VStack(alignment: .leading, spacing: Space.s2) {
             HStack(alignment: .top) {
                 iconBadge
                 Spacer(minLength: Space.s2)
@@ -339,14 +361,14 @@ private struct BentoCard: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Spacer(minLength: Space.s4)
+            Spacer(minLength: Space.s2)
 
             footerRow
         }
-        .padding(Space.s5)
-        .frame(maxWidth: .infinity, minHeight: 180, alignment: .topLeading)
+        .padding(18)
+        .frame(maxWidth: .infinity, minHeight: 132, alignment: .topLeading)
         .background(
-            RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.xl2, style: .continuous)
                 .fill(Color.cardBackground)
         )
         .offset(y: isHovering ? -2 : 0)
@@ -359,9 +381,9 @@ private struct BentoCard: View {
 
     private var iconBadge: some View {
         Image(systemName: component.iconName)
-            .font(.system(size: 16, weight: .regular))
+            .font(.system(size: 14, weight: .regular))
             .foregroundStyle(Color.onSurfaceVariant)
-            .frame(width: 36, height: 36)
+            .frame(width: 28, height: 28)
             .background(
                 RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
                     .fill(Color.surfaceContainerHigh)
@@ -442,6 +464,8 @@ private struct BentoCard: View {
     }
 }
 
+// MiniCTAButton — used inline on per-card footers (Update / Re-auth / Install).
+// Maps to `.alignedPrimaryMini` per UPDATE-2026-04-25.md mini-variant spec.
 private struct MiniCTAButton: View {
     let label: String
     let action: () -> Void
@@ -449,16 +473,8 @@ private struct MiniCTAButton: View {
     var body: some View {
         Button(action: action) {
             Text(label)
-                .font(.labelSM.weight(.semibold))
-                .foregroundStyle(Color.onPrimary)
-                .padding(.horizontal, Space.s2_5)
-                .padding(.vertical, Space.s1)
-                .background(
-                    Capsule()
-                        .fill(Color.primaryFill)
-                )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.alignedPrimaryMini)
     }
 }
 

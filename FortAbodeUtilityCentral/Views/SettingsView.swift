@@ -24,7 +24,7 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 0) {
                 EditorialHeader(eyebrow: "Preferences", title: "Settings")
 
-                VStack(alignment: .leading, spacing: Space.s12) {
+                VStack(alignment: .leading, spacing: Space.s8) {
                     appearanceSection
                     componentChecksSection
                     appUpdatesSection
@@ -32,8 +32,8 @@ struct SettingsView: View {
                     apiKeysSection
                     advancedSection
                 }
-                .padding(.horizontal, Space.s16)
-                .padding(.bottom, Space.s24)
+                .padding(.horizontal, Space.s10)
+                .padding(.bottom, Space.s16)
             }
             .frame(maxWidth: 1184, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -338,24 +338,18 @@ private struct ThemePicker: View {
 }
 
 // MARK: - Secondary button
-
+//
+// Maps Settings inline row actions (Reset / Copy / Reveal-counterparts) to the
+// AlignedDesignSystem `.alignedSecondaryMini` style so dense-row buttons stay
+// visually aligned with marketplace per-card buttons and ComponentDetailView's
+// "Validate" / "Retry" sub-actions.
 private struct SecondaryButton: View {
     let label: String
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            Text(label)
-                .font(.labelMD.weight(.medium))
-                .foregroundStyle(Color.onSurface)
-                .padding(.horizontal, Space.s3)
-                .padding(.vertical, Space.s1_5)
-                .background(
-                    Capsule()
-                        .fill(Color.surfaceContainerHigh)
-                )
-        }
-        .buttonStyle(.plain)
+        Button(label, action: action)
+            .buttonStyle(.alignedSecondaryMini)
     }
 }
 

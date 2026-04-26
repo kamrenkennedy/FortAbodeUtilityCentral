@@ -29,6 +29,12 @@ final class AppState {
         didSet { UserDefaults.standard.set(theme.rawValue, forKey: Keys.theme) }
     }
 
+    // Marketplace bento column count — user preference per
+    // UPDATE-2026-04-26-desktop-mac.md §2. Persisted; default `.threeUp` on Mac.
+    var marketplaceColumns: MarketplaceColumns {
+        didSet { UserDefaults.standard.set(marketplaceColumns.rawValue, forKey: Keys.marketplaceColumns) }
+    }
+
     var chatPanelOpen: Bool = false
     var chatPanelExpanded: Bool = false
 
@@ -59,6 +65,8 @@ final class AppState {
         sidebarCollapsed = UserDefaults.standard.bool(forKey: Keys.sidebarCollapsed)
         let rawTheme = UserDefaults.standard.string(forKey: Keys.theme) ?? ThemePref.dark.rawValue
         theme = ThemePref(rawValue: rawTheme) ?? .dark
+        let rawColumns = UserDefaults.standard.string(forKey: Keys.marketplaceColumns) ?? MarketplaceColumns.threeUp.rawValue
+        marketplaceColumns = MarketplaceColumns(rawValue: rawColumns) ?? .threeUp
     }
 
     func openChat(_ tab: ChatTab) {
@@ -75,8 +83,30 @@ final class AppState {
     }
 
     private enum Keys {
-        static let sidebarCollapsed = "fa-sidebar-collapsed"
-        static let theme            = "fa-theme"
+        static let sidebarCollapsed   = "fa-sidebar-collapsed"
+        static let theme              = "fa-theme"
+        static let marketplaceColumns = "fa-marketplace-columns"
+    }
+}
+
+enum MarketplaceColumns: String, CaseIterable, Identifiable {
+    case twoUp   = "2up"
+    case threeUp = "3up"
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .twoUp:   return "2"
+        case .threeUp: return "3"
+        }
+    }
+
+    var count: Int {
+        switch self {
+        case .twoUp:   return 2
+        case .threeUp: return 3
+        }
     }
 }
 

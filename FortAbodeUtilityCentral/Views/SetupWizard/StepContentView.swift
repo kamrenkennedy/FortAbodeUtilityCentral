@@ -1,4 +1,5 @@
 import SwiftUI
+import AlignedDesignSystem
 
 /// Renders the input area for a setup wizard step based on its type.
 struct StepContentView: View {
@@ -81,8 +82,7 @@ struct StepContentView: View {
         }
         .disabled(viewModel.currentInputValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                   || viewModel.validationState == .validating)
-        .buttonStyle(.bordered)
-        .controlSize(.small)
+        .buttonStyle(.alignedSecondaryMini)
     }
 
     private var validationButtonLabel: String {
@@ -157,9 +157,7 @@ struct StepContentView: View {
                 } label: {
                     Label("Run", systemImage: "play.fill")
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.blue)
-                .controlSize(.large)
+                .buttonStyle(.alignedPrimary)
 
             case .running:
                 HStack(spacing: 8) {
@@ -193,8 +191,7 @@ struct StepContentView: View {
                     } label: {
                         Label("Retry", systemImage: "arrow.clockwise")
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .buttonStyle(.alignedSecondaryMini)
                 }
             }
         }

@@ -1,4 +1,5 @@
 import SwiftUI
+import AlignedDesignSystem
 
 // MARK: - Component Health Card
 
@@ -30,11 +31,10 @@ struct ComponentHealthCard: View {
                             HStack(spacing: 4) {
                                 Text("Open System Settings")
                                 Image(systemName: "arrow.up.right")
+                                    .font(.system(size: 9, weight: .medium))
                             }
-                            .font(.caption)
                         }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
+                        .buttonStyle(.alignedSecondaryMini)
                     }
                 }
                 .padding(.vertical, 10)

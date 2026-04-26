@@ -43,8 +43,8 @@ struct FeedbackView: View {
 
                     submitRow
                 }
-                .padding(.horizontal, Space.s16)
-                .padding(.bottom, Space.s24)
+                .padding(.horizontal, Space.s10)
+                .padding(.bottom, Space.s16)
             }
             .frame(maxWidth: 720, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -164,23 +164,14 @@ struct FeedbackView: View {
                 HStack(spacing: Space.s2) {
                     if viewModel.isSubmitting {
                         ProgressView().controlSize(.small)
-                            .tint(Color.onPrimary)
+                            .tint(Color.surface)
                     }
                     Text(viewModel.isSubmitting ? "Submitting…" : "Submit")
-                        .font(.labelLG.weight(.semibold))
                 }
-                .foregroundStyle(Color.onPrimary)
-                .padding(.horizontal, Space.s5)
-                .padding(.vertical, Space.s3)
-                .background(
-                    Capsule()
-                        .fill(Color.primaryFill)
-                )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.alignedPrimary)
             .disabled(isSubmitDisabled)
             .opacity(isSubmitDisabled ? 0.5 : 1)
-            .ctaShadow()
         }
     }
 

@@ -440,3 +440,218 @@ public enum WeeklyRhythmLoadStatus: Equatable, Sendable {
     /// since mocks are static, but reserved for future write-back errors.
     case error(String)
 }
+
+// MARK: - Mutations (Phase 5b — write-back)
+//
+// `WeeklyRhythmMutation` describes a user action that needs to persist
+// somewhere durable. The data source's `apply(_:)` decides which destination
+// each kind lands in: day-type → config.md; errand reorder → app-local UI
+// state; everything else → sibling `dashboard-{date}-pending.json` that the
+// engine consumes on its next run.
+//
+// Custom Codable produces a flat `{"kind": "...", ...payload}` JSON shape
+// that's readable from the engine side without Swift-specific knowledge of
+// enum-with-associated-values.
+
+public enum WeeklyRhythmMutation: Equatable, Sendable {
+    case errandDoneToggle(errandID: String, isDone: Bool)
+    case eventMove(eventID: String, newDayIndex: Int, newStartHour: Double, newEndHour: Double)
+    case proposalAccept(proposalID: String)
+    case proposalDecline(proposalID: String)
+    case dayTypeChange(weekdayName: String, newType: WRDayType)  // "Sunday" … "Saturday"
+    case errandReorder(orderedIDs: [String])
+}
+
+extension WeeklyRhythmMutation: Codable {
+    private enum CodingKeys: String, CodingKey {
+        case kind
+        case errandID, isDone
+        case eventID, newDayIndex, newStartHour, newEndHour
+        case proposalID
+        case weekdayName, newType
+        case orderedIDs
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .errandDoneToggle(let errandID, let isDone):
+            try c.encode("errandDoneToggle", forKey: .kind)
+            try c.encode(errandID, forKey: .errandID)
+            try c.encode(isDone, forKey: .isDone)
+        case .eventMove(let eventID, let newDayIndex, let newStartHour, let newEndHour):
+            try c.encode("eventMove", forKey: .kind)
+            try c.encode(eventID, forKey: .eventID)
+            try c.encode(newDayIndex, forKey: .newDayIndex)
+            try c.encode(newStartHour, forKey: .newStartHour)
+            try c.encode(newEndHour, forKey: .newEndHour)
+        case .proposalAccept(let proposalID):
+            try c.encode("proposalAccept", forKey: .kind)
+            try c.encode(proposalID, forKey: .proposalID)
+        case .proposalDecline(let proposalID):
+            try c.encode("proposalDecline", forKey: .kind)
+            try c.encode(proposalID, forKey: .proposalID)
+        case .dayTypeChange(let weekdayName, let newType):
+            try c.encode("dayTypeChange", forKey: .kind)
+            try c.encode(weekdayName, forKey: .weekdayName)
+            try c.encode(newType, forKey: .newType)
+        case .errandReorder(let orderedIDs):
+            try c.encode("errandReorder", forKey: .kind)
+            try c.encode(orderedIDs, forKey: .orderedIDs)
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let kind = try c.decode(String.self, forKey: .kind)
+        switch kind {
+        case "errandDoneToggle":
+            self = .errandDoneToggle(
+                errandID: try c.decode(String.self, forKey: .errandID),
+                isDone: try c.decode(Bool.self, forKey: .isDone)
+            )
+        case "eventMove":
+            self = .eventMove(
+                eventID: try c.decode(String.self, forKey: .eventID),
+                newDayIndex: try c.decode(Int.self, forKey: .newDayIndex),
+                newStartHour: try c.decode(Double.self, forKey: .newStartHour),
+                newEndHour: try c.decode(Double.self, forKey: .newEndHour)
+            )
+        case "proposalAccept":
+            self = .proposalAccept(proposalID: try c.decode(String.self, forKey: .proposalID))
+        case "proposalDecline":
+            self = .proposalDecline(proposalID: try c.decode(String.self, forKey: .proposalID))
+        case "dayTypeChange":
+            self = .dayTypeChange(
+                weekdayName: try c.decode(String.self, forKey: .weekdayName),
+                newType: try c.decode(WRDayType.self, forKey: .newType)
+            )
+        case "errandReorder":
+            self = .errandReorder(orderedIDs: try c.decode([String].self, forKey: .orderedIDs))
+        default:
+            throw DecodingError.dataCorruptedError(
+                forKey: .kind,
+                in: c,
+                debugDescription: "unknown WeeklyRhythmMutation kind: \(kind)"
+            )
+        }
+    }
+}
+
+// MARK: - Pending mutations file
+//
+// The wire format the app writes to
+// `{user}/dashboards/dashboard-{ISODate}-pending.json` and the engine reads on
+// its next run. `weekISODate` is the Monday of the target week — matches the
+// sibling `dashboard-{ISODate}.json` so the engine knows which week's state
+// the pending mutations apply to.
+
+public struct PendingMutationsBundle: Codable, Equatable, Sendable {
+    public var schemaVersion: Int
+    public var weekISODate: String
+    public var createdAt: Date
+    public var mutations: [PendingMutationEntry]
+
+    public init(
+        schemaVersion: Int = 1,
+        weekISODate: String,
+        createdAt: Date = Date(),
+        mutations: [PendingMutationEntry] = []
+    ) {
+        self.schemaVersion = schemaVersion
+        self.weekISODate = weekISODate
+        self.createdAt = createdAt
+        self.mutations = mutations
+    }
+}
+
+public struct PendingMutationEntry: Codable, Equatable, Identifiable, Sendable {
+    public var id: String
+    public var appliedAt: Date
+    public var mutation: WeeklyRhythmMutation
+
+    public init(
+        id: String = UUID().uuidString,
+        appliedAt: Date = Date(),
+        mutation: WeeklyRhythmMutation
+    ) {
+        self.id = id
+        self.appliedAt = appliedAt
+        self.mutation = mutation
+    }
+}
+
+// MARK: - Mutation applier
+//
+// Pure functions that apply a mutation to an in-memory snapshot. Used in two
+// places: (1) optimistic update in `WeeklyRhythmStore.apply(_:)`, and
+// (2) replay-on-load in `FileBackedWeeklyRhythmDataSource.fetch(weekOffset:)`
+// where pending mutations get layered on top of the engine's last output so
+// the user's intent survives across app restarts and engine runs that haven't
+// yet drained the pending file.
+//
+// All functions are pure (no I/O) and `Sendable` so they're safe to call from
+// the data-source actor or from `@MainActor` view code.
+
+public enum MutationApplier {
+    public static func apply(_ mutation: WeeklyRhythmMutation, to snap: inout WeeklyRhythmSnapshot) {
+        switch mutation {
+        case .errandDoneToggle(let errandID, let isDone):
+            if let i = snap.errands.firstIndex(where: { $0.id == errandID }) {
+                snap.errands[i].isDone = isDone
+            }
+
+        case .eventMove(let eventID, let newDayIndex, let newStartHour, let newEndHour):
+            for d in 0..<snap.weekDays.count {
+                if let e = snap.weekDays[d].events.firstIndex(where: { $0.id == eventID }) {
+                    var event = snap.weekDays[d].events[e]
+                    event.startHour = newStartHour
+                    event.endHour = newEndHour
+                    snap.weekDays[d].events.remove(at: e)
+                    if newDayIndex >= 0 && newDayIndex < snap.weekDays.count {
+                        snap.weekDays[newDayIndex].events.append(event)
+                    }
+                    return
+                }
+            }
+
+        case .proposalAccept(let proposalID), .proposalDecline(let proposalID):
+            snap.proposals.removeAll { $0.id == proposalID }
+
+        case .dayTypeChange(let weekdayName, let newType):
+            // Match by short name ("Mon", "Tue", …) since the snapshot's
+            // WeekDay only carries that. Caller passes the full name
+            // ("Monday") so we compare prefix-insensitively.
+            let target = String(weekdayName.prefix(3)).lowercased()
+            for i in 0..<snap.weekDays.count {
+                if snap.weekDays[i].name.lowercased().hasPrefix(target) {
+                    snap.weekDays[i].dayTypes = [newType]
+                    return
+                }
+            }
+
+        case .errandReorder(let orderedIDs):
+            // Reorder by orderedIDs; errands not present go to the end in
+            // their original relative order. Stable for partial reorderings.
+            let byID = Dictionary(uniqueKeysWithValues: snap.errands.map { ($0.id, $0) })
+            var reordered: [Errand] = []
+            var seen = Set<String>()
+            for id in orderedIDs {
+                if let e = byID[id] {
+                    reordered.append(e)
+                    seen.insert(id)
+                }
+            }
+            for e in snap.errands where !seen.contains(e.id) {
+                reordered.append(e)
+            }
+            snap.errands = reordered
+        }
+    }
+
+    public static func applyAll(_ mutations: [WeeklyRhythmMutation], to snap: inout WeeklyRhythmSnapshot) {
+        for m in mutations {
+            apply(m, to: &snap)
+        }
+    }
+}

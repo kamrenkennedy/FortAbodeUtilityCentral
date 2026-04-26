@@ -179,7 +179,7 @@ Seven entries, Mon→Sun. Each:
 ```
 
 - Engine generates these from changes since the last run + Claude's plan.
-- App shows Accept/Decline. (Phase 5b: write-back of acceptance state — out of scope for this round.)
+- App shows Accept/Decline. Acceptance state flows back via the **pending mutations file** documented below; the engine drains it on its next run.
 
 ### `errands`
 
@@ -196,7 +196,7 @@ Seven entries, Mon→Sun. Each:
 
 - `daysPending` ≥ 14 triggers the brand-rust nudge pill.
 - `routedTo` is null for unrouted errands; the app shows "Unrouted" in that case.
-- `isDone` toggle is local-only at v4.1.0 — Phase 5b will sync.
+- `isDone` toggle is queued via the pending mutations file — engine should mark the matching Apple Reminder complete on next drain.
 
 ### `dayBreakdown`
 
@@ -300,9 +300,145 @@ These heuristics are starting points — the engine team can iterate without bre
 
 ## What's NOT in this shape (yet)
 
-- **Write-back state**: when the user accepts a proposal or moves an event in the app, that mutation needs to flow back to the engine. Phase 5b adds a sibling `dashboard-{ISODate}-pending.json` written by the app and consumed by the engine on next run. Spec for that file lives in a follow-up doc.
 - **Full month view**: the 30-day grid currently uses a separate mocked path. JSON shape for that is Phase 5d.
 - **Run-Health detail**: today the app shows a single pill. Detailed component-by-component health (versions, MCP up/down) lives in `ComponentListViewModel` and isn't part of this snapshot.
+
+---
+
+## Pending mutations file (Phase 5b — write-back)
+
+When the user mutates state in the app — drag-reschedule an event, mark an errand done, accept or decline a proposal — Fort Abode persists that mutation immediately so it survives across app restarts and engine runs that haven't drained yet. Mutations route to one of three destinations depending on kind:
+
+| Mutation | Destination | Why |
+|----------|-------------|-----|
+| `dayTypeChange` | `{user}/config.md` (surgical edit to the `## Day Types` section) | Day-types are user config. Engine reads config.md on every run already. |
+| `errandReorder` | App-local `~/Library/Application Support/FortAbodeUtilityCentral/weekly-rhythm-ui-state.json` | Pure UI sort order. Engine has no concept of errand ordering. Never crosses the iCloud boundary. |
+| `errandDoneToggle`, `eventMove`, `proposalAccept`, `proposalDecline` | Sibling `dashboard-{ISODate}-pending.json` (this file) | Engine owns the durable state — Apple Reminders for errands, Google Calendar for events, Memory MCP + Notion/GCal for proposals. |
+
+### File path
+
+```
+~/Library/Mobile Documents/com~apple~CloudDocs/Kennedy Family Docs/Weekly Flow/{userName}/dashboards/dashboard-{ISODate}-pending.json
+```
+
+Sibling of the engine's `dashboard-{ISODate}.json`. Same `userName` and `ISODate` (Monday of the target week).
+
+### File shape
+
+```json
+{
+  "schemaVersion": 1,
+  "weekISODate": "2026-04-21",
+  "createdAt": "2026-04-26T14:30:12Z",
+  "mutations": [
+    {
+      "id": "8C6D2E3A-...",
+      "appliedAt": "2026-04-26T14:30:12Z",
+      "mutation": {
+        "kind": "errandDoneToggle",
+        "errandID": "err-amazon",
+        "isDone": true
+      }
+    },
+    {
+      "id": "FE7A1B22-...",
+      "appliedAt": "2026-04-26T14:32:01Z",
+      "mutation": {
+        "kind": "eventMove",
+        "eventID": "ev-thu-braxton3",
+        "newDayIndex": 4,
+        "newStartHour": 14.0,
+        "newEndHour": 16.0
+      }
+    },
+    {
+      "id": "27B5C903-...",
+      "appliedAt": "2026-04-26T14:33:55Z",
+      "mutation": {
+        "kind": "proposalAccept",
+        "proposalID": "prop-move-sync"
+      }
+    }
+  ]
+}
+```
+
+- `schemaVersion` — currently `1`. Bump on breaking changes; the engine should refuse to drain a file with an unknown version and log a warning.
+- `weekISODate` — Monday of the target week. Must match the sibling `dashboard-{ISODate}.json`.
+- `createdAt` — when the file was first written. Useful for staleness detection.
+- `mutations[]` — ordered append-only list. Each entry has a stable `id` (UUID, app-generated), an `appliedAt` timestamp (when the user took the action), and a `mutation` payload tagged with `kind`.
+
+### Mutation kinds
+
+#### `errandDoneToggle`
+
+```json
+{ "kind": "errandDoneToggle", "errandID": "err-amazon", "isDone": true }
+```
+
+Engine action: locate the matching Apple Reminder (by ID or by title match if the engine's internal ID space differs from the dashboard JSON's), mark it complete (or incomplete if `isDone: false`).
+
+#### `eventMove`
+
+```json
+{
+  "kind": "eventMove",
+  "eventID": "ev-thu-braxton3",
+  "newDayIndex": 4,
+  "newStartHour": 14.0,
+  "newEndHour": 16.0
+}
+```
+
+- `newDayIndex` — column index in the snapshot's `weekDays` array (0..6, in the engine's emitted order).
+- `newStartHour` / `newEndHour` — decimal hours, snapped to half-hour grid by the app.
+
+Engine action: call `gcal_update_event` with the new start/end. Compute the absolute date by anchoring to the week's Monday + adding `newDayIndex` days.
+
+#### `proposalAccept` / `proposalDecline`
+
+```json
+{ "kind": "proposalAccept", "proposalID": "prop-move-sync" }
+```
+
+Engine action:
+- Write `Family_Message_Calibration` Memory MCP fact (engine-spec.md §11d) so future runs weight similar proposals.
+- For `proposalAccept`: execute the side-effect described in the proposal's `proposedBlock` (Notion task update via `notion-update-page`, GCal event creation via `gcal_create_event`, etc. — whatever the engine spec §10c calls for).
+- For `proposalDecline`: just record the decision, no side-effect.
+
+### Engine drain protocol
+
+At the start of each run, the engine should:
+
+1. Glob for `{user}/dashboards/dashboard-*-pending.json`.
+2. For each file:
+   - Decode. Refuse on unknown `schemaVersion` (log a warning, skip).
+   - For each mutation entry, apply to the appropriate destination.
+   - On success: rename the file to `dashboard-{ISODate}-pending.applied-{ISO_TIMESTAMP}.json` (do NOT delete — leaves a 30-day audit breadcrumb).
+   - On any per-entry failure: leave the file in place, log the failure with the entry's `id` so subsequent runs can retry. Don't block the rest of the run.
+3. Continue with the normal run, now reading the updated source-of-truth (Reminders, GCal, Memory MCP).
+
+### Atomicity
+
+The app writes via `Data.write(options: .atomic)` which does `.tmp` + rename under the hood. The engine should drain the file after reading the entire contents (no partial-read concerns) and rename atomically too.
+
+### What the app does with this file on load
+
+To make optimistic UX survive app restarts and engine runs that haven't drained yet, `FileBackedWeeklyRhythmDataSource.fetch(weekOffset:)` runs:
+
+1. Read engine JSON → base snapshot (or fall back to mock if missing).
+2. Read pending file. For each mutation, replay onto the base snapshot via `MutationApplier.apply(_:to:)`.
+3. Read app-local UI state (errand sort order). Apply.
+4. Return the composed snapshot.
+
+So:
+- App applies a mutation → snapshot mutates immediately + pending file gets the entry → next load re-applies the same mutation on top of whatever the engine is emitting → user-visible state is consistent.
+- Engine drains pending file → renames to `…-pending.applied-{ISO}.json` → next app load doesn't replay anything (file is gone) → new engine snapshot is the source of truth.
+- Engine fails to drain (Reminders MCP down, GCal API hiccup) → pending file stays → app keeps replaying → user keeps seeing their intent.
+
+### Until the engine adopts this protocol
+
+Mutations queue indefinitely in the pending file and stay visually applied (correct UX). The user can clear stale mutations manually by deleting the file — the app doesn't expose this in the UI yet (advanced operation, deferred to Phase 5d).
 
 ---
 

@@ -22,6 +22,12 @@ public struct MockWeeklyRhythmDataSource: WeeklyRhythmDataSourceImpl {
         )
     }
 
+    /// Mocks have no durable destination. Persist always succeeds; the
+    /// optimistic update on the in-memory snapshot is the only effect.
+    public func persist(mutation: WeeklyRhythmMutation, weekOffset: Int) async -> Bool {
+        true
+    }
+
     /// Public so `FileBackedWeeklyRhythmDataSource` can fall back to the same
     /// snapshot when its file decode fails.
     public static func snapshot(weekOffset: Int) -> WeeklyRhythmSnapshot {

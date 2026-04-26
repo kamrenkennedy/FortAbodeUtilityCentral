@@ -24,6 +24,14 @@ public protocol WeeklyRhythmDataSource: AnyObject {
     /// negative values are past weeks, positive are future. Implementations
     /// should be idempotent — calling `load` twice with the same offset is OK.
     func load(weekOffset: Int) async
+
+    /// Apply a user mutation. The store applies the mutation optimistically
+    /// to the in-memory snapshot, then asks the impl to persist it to the
+    /// appropriate destination (config.md / app UI state / sibling pending
+    /// JSON file). On persist failure the snapshot is reloaded to rebase
+    /// from authoritative state.
+    @discardableResult
+    func apply(_ mutation: WeeklyRhythmMutation) async -> Bool
 }
 
 // MARK: - Runtime store
@@ -39,6 +47,10 @@ public final class WeeklyRhythmStore {
     private let impl: any WeeklyRhythmDataSourceImpl
     public private(set) var snapshot: WeeklyRhythmSnapshot?
     public private(set) var loadStatus: WeeklyRhythmLoadStatus = .idle
+    /// Last `weekOffset` passed to `load`. Mutations target this week's
+    /// pending file. Defaults to 0 so mutations applied before any load
+    /// (shouldn't happen in normal use) target the current week.
+    public private(set) var currentWeekOffset: Int = 0
 
     public init(impl: any WeeklyRhythmDataSourceImpl) {
         self.impl = impl
@@ -46,9 +58,26 @@ public final class WeeklyRhythmStore {
 
     public func load(weekOffset: Int) async {
         loadStatus = .loading
+        currentWeekOffset = weekOffset
         let result = await impl.fetch(weekOffset: weekOffset)
         snapshot = result.snapshot
         loadStatus = result.status
+    }
+
+    /// Apply a user mutation: optimistic update on the in-memory snapshot,
+    /// then persist via the impl. On persist failure, reload to rebase from
+    /// authoritative state (which drops the optimistic change).
+    @discardableResult
+    public func apply(_ mutation: WeeklyRhythmMutation) async -> Bool {
+        guard var snap = snapshot else { return false }
+        MutationApplier.apply(mutation, to: &snap)
+        snapshot = snap
+
+        let ok = await impl.persist(mutation: mutation, weekOffset: currentWeekOffset)
+        if !ok {
+            await load(weekOffset: currentWeekOffset)
+        }
+        return ok
     }
 }
 
@@ -61,6 +90,12 @@ public final class WeeklyRhythmStore {
 
 public protocol WeeklyRhythmDataSourceImpl: Sendable {
     func fetch(weekOffset: Int) async -> WeeklyRhythmFetchResult
+
+    /// Persist a user mutation to the appropriate destination. Returns true
+    /// on success. Mock impls return true unconditionally; real impls route
+    /// each kind to its durable destination (config.md / app UI state JSON /
+    /// sibling pending JSON file). Failures are logged via ErrorLogger.
+    func persist(mutation: WeeklyRhythmMutation, weekOffset: Int) async -> Bool
 }
 
 public struct WeeklyRhythmFetchResult: Sendable {

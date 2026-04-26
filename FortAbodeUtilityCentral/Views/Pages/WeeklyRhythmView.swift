@@ -69,7 +69,6 @@ struct WeeklyRhythmView: View {
     @State private var detailTriage: TriageEntry?
     @State private var detailProposal: Proposal?
     @State private var alertsExpanded: Bool = true
-    @State private var resolvedProposals: [String: ProposalResolution] = [:]
 
     // Vertical zoom — controls hour-row height. Default 52pt is the desktop
     // spec value (UPDATE-2026-04-26-desktop-mac.md week-grid table). Dragged
@@ -145,8 +144,15 @@ struct WeeklyRhythmView: View {
                 .frame(minWidth: 520, idealWidth: 640, minHeight: 480, idealHeight: 600)
         }
         .sheet(isPresented: $dayTypeSettingsOpen) {
-            DayTypeSettingsSheet()
-                .frame(minWidth: 520, idealWidth: 640, minHeight: 480, idealHeight: 600)
+            DayTypeSettingsSheet(
+                weekDays: weekDays,
+                onChange: { fullName, newType in
+                    Task {
+                        await store.apply(.dayTypeChange(weekdayName: fullName, newType: newType))
+                    }
+                }
+            )
+            .frame(minWidth: 520, idealWidth: 640, minHeight: 480, idealHeight: 600)
         }
         .sheet(isPresented: errandEditSheetBinding) {
             if let id = editingErrandID, let errand = errands.first(where: { $0.id == id }) {
@@ -166,17 +172,12 @@ struct WeeklyRhythmView: View {
         .sheet(item: $detailProposal) { proposal in
             ProposalDetailSheet(
                 proposal: proposal,
-                isResolved: resolvedProposals[proposal.id] != nil,
                 onAccept: {
-                    withAnimation(.easeOut(duration: 0.3)) {
-                        resolvedProposals[proposal.id] = .accepted
-                    }
+                    Task { await store.apply(.proposalAccept(proposalID: proposal.id)) }
                     detailProposal = nil
                 },
                 onDecline: {
-                    withAnimation(.easeOut(duration: 0.3)) {
-                        resolvedProposals[proposal.id] = .declined
-                    }
+                    Task { await store.apply(.proposalDecline(proposalID: proposal.id)) }
                     detailProposal = nil
                 }
             )
@@ -641,9 +642,11 @@ struct WeeklyRhythmView: View {
                             errand: errand,
                             onOpen: { editingErrandID = errand.id },
                             onToggleDone: {
-                                // TODO[Phase 5b]: write-back the toggle to the engine.
-                                // The data source is read-only at v4.1 — mutations
-                                // currently no-op until JSON-state input lands.
+                                Task {
+                                    await store.apply(
+                                        .errandDoneToggle(errandID: errand.id, isDone: !errand.isDone)
+                                    )
+                                }
                             }
                         )
                         .draggable(errand.id)
@@ -676,22 +679,60 @@ struct WeeklyRhythmView: View {
         errands.filter { !$0.isDone }
     }
 
-    // Phase 5a: drag-to-reorder is wired up in the UI (drop targets still
-    // accept drops) but mutations don't persist to the engine yet. Returning
-    // `false` keeps the dropped item visually in its origin until write-back
-    // (Phase 5b) lands.
-    //
-    // TODO[Phase 5b]: thread these through the data source — likely a
-    // `WeeklyRhythmDataSource.applyMutation(_:)` method that writes a sibling
-    // `dashboard-{date}-pending.json` for the engine to consume.
+    // Phase 5b: mutations flow through `store.apply(_:)`. Optimistic update
+    // applies to the in-memory snapshot immediately; the data source persists
+    // to `{user}/dashboards/dashboard-{ISODate}-pending.json` for `eventMove`
+    // and to the app-local UI state JSON for `errandReorder`. Engine drains
+    // the pending file on its next run.
     @discardableResult
     private func reorderErrands(droppedItems: [String], beforeId: String) -> Bool {
-        return false
+        let dropped = Set(droppedItems)
+        let current = errands.map(\.id)
+        var remaining = current.filter { !dropped.contains($0) }
+        // Insert dropped items before beforeId (or at end if beforeId was itself dropped)
+        if let insertAt = remaining.firstIndex(of: beforeId) {
+            remaining.insert(contentsOf: droppedItems, at: insertAt)
+        } else {
+            remaining.append(contentsOf: droppedItems)
+        }
+        Task { await store.apply(.errandReorder(orderedIDs: remaining)) }
+        return true
     }
 
     @discardableResult
     private func moveEvent(droppedItems: [String], toDayIndex: Int, atY: CGFloat) -> Bool {
-        return false
+        guard let droppedID = droppedItems.first else { return false }
+        guard let snap = store.snapshot else { return false }
+
+        // Locate the source event so we can preserve its duration.
+        var source: WREvent?
+        for day in snap.weekDays {
+            if let e = day.events.first(where: { $0.id == droppedID }) {
+                source = e
+                break
+            }
+        }
+        guard let source else { return false }
+
+        // Convert pixel y → hour (relative to grid's visible-start at 6 AM).
+        // Snap to the nearest half-hour for predictable placement.
+        let unscaledY = atY / hourScale
+        let rawHour = (unscaledY / 64) + 6.0
+        let snappedStart = (rawHour * 2).rounded() / 2  // half-hour grid
+        let duration = source.endHour - source.startHour
+        let snappedEnd = snappedStart + duration
+
+        Task {
+            await store.apply(
+                .eventMove(
+                    eventID: droppedID,
+                    newDayIndex: toDayIndex,
+                    newStartHour: snappedStart,
+                    newEndHour: snappedEnd
+                )
+            )
+        }
+        return true
     }
 
     // MARK: - Day Breakdown (engine-spec.md per-day narrative output)
@@ -822,9 +863,9 @@ struct WeeklyRhythmView: View {
         }
     }
 
-    private var visibleProposals: [Proposal] {
-        proposals.filter { resolvedProposals[$0.id] == nil }
-    }
+    // Phase 5b: accepted/declined proposals are filtered out of the snapshot
+    // by `MutationApplier`, so `visibleProposals` is just the snapshot's list.
+    private var visibleProposals: [Proposal] { proposals }
 
     private var proposalCountLabel: String {
         let count = visibleProposals.count
@@ -839,14 +880,6 @@ struct WeeklyRhythmView: View {
             Text("All proposals reviewed")
                 .font(.bodySM)
                 .foregroundStyle(Color.onSurfaceVariant)
-            Button("Reset") {
-                withAnimation(.easeOut(duration: 0.3)) {
-                    resolvedProposals.removeAll()
-                }
-            }
-            .buttonStyle(.plain)
-            .font(.labelSM.weight(.medium))
-            .foregroundStyle(Color.tertiary)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, Space.s4)
@@ -873,9 +906,7 @@ struct WeeklyRhythmView: View {
 
             HStack(spacing: Space.s1) {
                 Button {
-                    withAnimation(.easeOut(duration: 0.3)) {
-                        resolvedProposals[proposal.id] = .declined
-                    }
+                    Task { await store.apply(.proposalDecline(proposalID: proposal.id)) }
                 } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 11, weight: .semibold))
@@ -889,9 +920,7 @@ struct WeeklyRhythmView: View {
                 .help("Decline")
 
                 Button {
-                    withAnimation(.easeOut(duration: 0.3)) {
-                        resolvedProposals[proposal.id] = .accepted
-                    }
+                    Task { await store.apply(.proposalAccept(proposalID: proposal.id)) }
                 } label: {
                     Image(systemName: "checkmark")
                         .font(.system(size: 11, weight: .semibold))
@@ -1656,7 +1685,6 @@ private struct TriageDetailSheet: View {
 
 private struct ProposalDetailSheet: View {
     let proposal: Proposal
-    let isResolved: Bool
     let onAccept: () -> Void
     let onDecline: () -> Void
     @Environment(\.dismiss) private var dismiss
@@ -1693,41 +1721,31 @@ private struct ProposalDetailSheet: View {
                         }
                     }
 
-                    if !isResolved {
-                        HStack(spacing: Space.s2) {
-                            Spacer()
-                            Button(action: onDecline) {
-                                Text("Decline")
-                                    .font(.labelLG.weight(.medium))
-                                    .foregroundStyle(Color.onSurface)
-                                    .padding(.horizontal, Space.s4)
-                                    .padding(.vertical, Space.s2_5)
-                                    .background(Capsule().fill(Color.surfaceContainerHigh))
-                            }
-                            .buttonStyle(.plain)
-
-                            Button(action: onAccept) {
-                                HStack(spacing: Space.s1_5) {
-                                    Image(systemName: "checkmark")
-                                        .font(.system(size: 12, weight: .semibold))
-                                    Text("Accept")
-                                        .font(.labelLG.weight(.semibold))
-                                }
-                                .foregroundStyle(Color.onTertiary)
+                    HStack(spacing: Space.s2) {
+                        Spacer()
+                        Button(action: onDecline) {
+                            Text("Decline")
+                                .font(.labelLG.weight(.medium))
+                                .foregroundStyle(Color.onSurface)
                                 .padding(.horizontal, Space.s4)
                                 .padding(.vertical, Space.s2_5)
-                                .background(Capsule().fill(Color.tertiary))
+                                .background(Capsule().fill(Color.surfaceContainerHigh))
+                        }
+                        .buttonStyle(.plain)
+
+                        Button(action: onAccept) {
+                            HStack(spacing: Space.s1_5) {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 12, weight: .semibold))
+                                Text("Accept")
+                                    .font(.labelLG.weight(.semibold))
                             }
-                            .buttonStyle(.plain)
+                            .foregroundStyle(Color.onTertiary)
+                            .padding(.horizontal, Space.s4)
+                            .padding(.vertical, Space.s2_5)
+                            .background(Capsule().fill(Color.tertiary))
                         }
-                    } else {
-                        HStack(spacing: Space.s2) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(Color.statusScheduled)
-                            Text("Resolved — close to dismiss")
-                                .font(.bodySM)
-                                .foregroundStyle(Color.onSurfaceVariant)
-                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, Space.s10)
@@ -1750,6 +1768,8 @@ private struct ProposalDetailSheet: View {
 // MARK: - Day Type Settings sheet
 
 private struct DayTypeSettingsSheet: View {
+    let weekDays: [WeekDay]
+    let onChange: (String, WRDayType) -> Void
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -1757,7 +1777,7 @@ private struct DayTypeSettingsSheet: View {
             VStack(alignment: .leading, spacing: Space.s6) {
                 EditorialHeader(eyebrow: "Settings", title: "Day Types")
 
-                Text("Define the day-type vocabulary the engine uses for your week. Each type can stack additively (a day can be both Creative and Personal). One type can be marked exclusive (Off) — picking it replaces all others on that day.")
+                Text("Tap a type to set the day's primary mode. Edits write to your config.md so the engine picks them up on its next run.")
                     .font(.bodyMD)
                     .foregroundStyle(Color.onSurfaceVariant)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1765,25 +1785,9 @@ private struct DayTypeSettingsSheet: View {
 
                 DashboardCard(verticalPadding: Space.s2, horizontalPadding: Space.s6) {
                     VStack(spacing: 0) {
-                        ForEach(DayType.allCases, id: \.self) { type in
-                            HStack(spacing: Space.s3) {
-                                Circle()
-                                    .fill(type.tint)
-                                    .frame(width: 12, height: 12)
-
-                                Text(type.label)
-                                    .font(.bodyMD.weight(.medium))
-                                    .foregroundStyle(Color.onSurface)
-
-                                Spacer(minLength: Space.s2)
-
-                                Text("Stackable")
-                                    .font(.bodySM)
-                                    .foregroundStyle(Color.onSurfaceVariant)
-                            }
-                            .padding(.vertical, Space.s3)
-
-                            if type != DayType.allCases.last {
+                        ForEach(weekDays) { day in
+                            dayRow(day)
+                            if day.id != weekDays.last?.id {
                                 Rectangle()
                                     .fill(Color.outlineVariant.opacity(0.18))
                                     .frame(height: 1)
@@ -1792,11 +1796,6 @@ private struct DayTypeSettingsSheet: View {
                     }
                 }
                 .padding(.horizontal, Space.s10)
-
-                Text("Phase 5 will wire this to write your day_types config so the engine reads from the same source.")
-                    .font(.bodySM)
-                    .foregroundStyle(Color.secondaryText)
-                    .padding(.horizontal, Space.s10)
 
                 Spacer(minLength: Space.s4)
             }
@@ -1808,6 +1807,62 @@ private struct DayTypeSettingsSheet: View {
                 Button("Close") { dismiss() }
             }
         }
+    }
+
+    @ViewBuilder
+    private func dayRow(_ day: WeekDay) -> some View {
+        let fullName = Self.fullName(for: day.name)
+        let current = day.primaryDayType
+        VStack(alignment: .leading, spacing: Space.s2) {
+            HStack(spacing: Space.s3) {
+                Text(fullName)
+                    .font(.bodyMD.weight(.medium))
+                    .foregroundStyle(Color.onSurface)
+                    .frame(width: 96, alignment: .leading)
+
+                Spacer(minLength: Space.s2)
+
+                HStack(spacing: Space.s1_5) {
+                    ForEach(WRDayType.allCases, id: \.self) { type in
+                        Button {
+                            onChange(fullName, type)
+                        } label: {
+                            HStack(spacing: 6) {
+                                Circle()
+                                    .fill(type.tint)
+                                    .frame(width: 8, height: 8)
+                                Text(type.label)
+                                    .font(.labelSM.weight(.medium))
+                                    .foregroundStyle(
+                                        type == current ? Color.onTertiary : Color.onSurface
+                                    )
+                            }
+                            .padding(.horizontal, Space.s3)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule().fill(
+                                    type == current ? Color.tertiary : Color.surfaceContainerHigh
+                                )
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        .padding(.vertical, Space.s3)
+    }
+
+    /// Map a WeekDay's short `name` ("Mon") to a full English name ("Monday")
+    /// for display and for the mutation. Defaults to the short name itself if
+    /// nothing matches (engine could emit any string).
+    private static func fullName(for shortName: String) -> String {
+        let map: [String: String] = [
+            "sun": "Sunday", "mon": "Monday", "tue": "Tuesday",
+            "wed": "Wednesday", "thu": "Thursday", "fri": "Friday",
+            "sat": "Saturday"
+        ]
+        return map[shortName.prefix(3).lowercased()] ?? shortName
     }
 }
 

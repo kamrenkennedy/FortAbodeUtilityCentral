@@ -23,6 +23,8 @@
 		18317CE6CA9311E67496A0AA /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FB784FE53060D8FF7EEE72 /* AppState.swift */; };
 		1BE2080AB4AF9C0D5DDF3A05 /* SetupWizardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00E7940EB3A6AD0DB6A38C2F /* SetupWizardViewModel.swift */; };
 		2B92C1E7ECA9DC4D7DC50F0E /* FeedbackService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DACD2838A1C216461103AE6 /* FeedbackService.swift */; };
+		2C7ED0531E56C8235AFCE6BC /* PendingMutationsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F5E929A9A401F87718B0983 /* PendingMutationsStore.swift */; };
+		355F6705C0380EC8CCED0279 /* WeeklyRhythmUIStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80DD857A1CB762AC7991C68C /* WeeklyRhythmUIStateStore.swift */; };
 		377AE9482D6974941E963E1B /* FamilyMemoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14788FA8AC138E58AD03BFC7 /* FamilyMemoryView.swift */; };
 		386B5A369D88921474EC50B4 /* VersionComparisonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0AC8F02FED91F42FC4EB00 /* VersionComparisonTests.swift */; };
 		38D925B340A40492A5DB7FAC /* FeedbackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3757BEFBB847475D0690FF32 /* FeedbackView.swift */; };
@@ -74,6 +76,7 @@
 		C3404068D33521F15C9DAC34 /* whats-new.json in Resources */ = {isa = PBXBuildFile; fileRef = CB4031837BBE075B7CEF1484 /* whats-new.json */; };
 		CA4CA8134B5255875DB1AF2A /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 8B75BAAFED90C32A32CA2420 /* Sparkle */; };
 		CB346FEB794E23991188381B /* CoworkSkillService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B5DB8AEAB5C2C6F4D2DCE /* CoworkSkillService.swift */; };
+		DC42DBCAD25AF1F2F3FDFF8D /* ConfigMdEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DB01C9B5FC7912CFB5BBD2A /* ConfigMdEditor.swift */; };
 		DF4E9A21418662B5D610866B /* ChangelogEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91BE7F2F52EFF582932E8B9D /* ChangelogEntry.swift */; };
 		DFEE2E123FFC73F011AA13EB /* ClaudeChatPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 767920B3A5A38AFD4081D133 /* ClaudeChatPane.swift */; };
 		E2A034CE471A68B4E0222C3E /* FamilyMemoryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8599C33B343D91784A3618B0 /* FamilyMemoryModels.swift */; };
@@ -124,6 +127,7 @@
 		3DACD2838A1C216461103AE6 /* FeedbackService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackService.swift; sourceTree = "<group>"; };
 		418F1A3FCCAA74A9749BDE1E /* WeeklyRhythmPathResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmPathResolver.swift; sourceTree = "<group>"; };
 		48EB2A999B000B9AC11BB0DD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		4DB01C9B5FC7912CFB5BBD2A /* ConfigMdEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigMdEditor.swift; sourceTree = "<group>"; };
 		50C8FB18F4E77DC49B18BFA9 /* engine-spec.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "engine-spec.md"; sourceTree = "<group>"; };
 		52A1E55BD560971A940F171A /* VersionDetectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionDetectionService.swift; sourceTree = "<group>"; };
 		5914439D10E470294A91A039 /* FortAbodeUtilityCentral.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FortAbodeUtilityCentral.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -139,9 +143,11 @@
 		782EFED7B8F2AD1265BCF690 /* ComponentRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentRegistry.swift; sourceTree = "<group>"; };
 		7D874D5A2A3528B406492C6B /* FullDiskAccessService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullDiskAccessService.swift; sourceTree = "<group>"; };
 		7FB63D56853D1FFB0742D448 /* MarketplaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketplaceView.swift; sourceTree = "<group>"; };
+		80DD857A1CB762AC7991C68C /* WeeklyRhythmUIStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmUIStateStore.swift; sourceTree = "<group>"; };
 		8599C33B343D91784A3618B0 /* FamilyMemoryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyMemoryModels.swift; sourceTree = "<group>"; };
 		8BECADF7B96CB7D3842E642F /* ActivationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivationView.swift; sourceTree = "<group>"; };
 		8ED7ECBE41703B1FC4EB0791 /* GitHubServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubServiceTests.swift; sourceTree = "<group>"; };
+		8F5E929A9A401F87718B0983 /* PendingMutationsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingMutationsStore.swift; sourceTree = "<group>"; };
 		910E96CDC9E2B2E4595DEFA8 /* claude-md-template.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "claude-md-template.md"; sourceTree = "<group>"; };
 		91BE7F2F52EFF582932E8B9D /* ChangelogEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangelogEntry.swift; sourceTree = "<group>"; };
 		9646955BDB7A4F405EB1FDF0 /* SetupValidationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupValidationService.swift; sourceTree = "<group>"; };
@@ -336,10 +342,13 @@
 		82E51D3240B7F28EAF8D7089 /* WeeklyRhythm */ = {
 			isa = PBXGroup;
 			children = (
+				4DB01C9B5FC7912CFB5BBD2A /* ConfigMdEditor.swift */,
 				9F2F5EA39EAE9558037F9670 /* FileBackedWeeklyRhythmDataSource.swift */,
 				5EF56794AE0F9F09B953BC13 /* MockWeeklyRhythmDataSource.swift */,
+				8F5E929A9A401F87718B0983 /* PendingMutationsStore.swift */,
 				2E417AC3384F05962FA62588 /* WeeklyRhythmDataSource.swift */,
 				418F1A3FCCAA74A9749BDE1E /* WeeklyRhythmPathResolver.swift */,
+				80DD857A1CB762AC7991C68C /* WeeklyRhythmUIStateStore.swift */,
 			);
 			path = WeeklyRhythm;
 			sourceTree = "<group>";
@@ -571,6 +580,7 @@
 				78A108105A88096647C68196 /* ComponentHealthCard.swift in Sources */,
 				F37E0647A0A8D347473AA752 /* ComponentListViewModel.swift in Sources */,
 				63DF7D1C11E3A188E94C469F /* ComponentRegistry.swift in Sources */,
+				DC42DBCAD25AF1F2F3FDFF8D /* ConfigMdEditor.swift in Sources */,
 				CB346FEB794E23991188381B /* CoworkSkillService.swift in Sources */,
 				C0FDF12D701AEAEE4331FF13 /* Destination.swift in Sources */,
 				07BA11DC7D460A01979E6F21 /* ErrorLogger.swift in Sources */,
@@ -595,6 +605,7 @@
 				4BC30361A3F18D7A991A72EE /* MockWeeklyRhythmDataSource.swift in Sources */,
 				84EF3894AB836BBA01A7FB6A /* NotificationService.swift in Sources */,
 				3DAC043E1F1CE49D3F91AA79 /* PageScaffold.swift in Sources */,
+				2C7ED0531E56C8235AFCE6BC /* PendingMutationsStore.swift in Sources */,
 				4C29C765E197C8C5C27D8BC2 /* RootView.swift in Sources */,
 				5AB3F1610DB5361CAC618ECC /* SecureInputStorage.swift in Sources */,
 				ADE9797A2E5EE7EB3C461ED6 /* SettingsView.swift in Sources */,
@@ -613,6 +624,7 @@
 				9C5B1ABB80EFFEF201C62AAB /* WeeklyRhythmDataSource.swift in Sources */,
 				7CFA90087FA5CC19AFC67353 /* WeeklyRhythmPathResolver.swift in Sources */,
 				A1F5C83EBA3836D3FFACAC5D /* WeeklyRhythmService.swift in Sources */,
+				355F6705C0380EC8CCED0279 /* WeeklyRhythmUIStateStore.swift in Sources */,
 				3B1B8E9B129468193257A0A2 /* WeeklyRhythmView.swift in Sources */,
 				61D6E60947EC0AEB30BF7D97 /* WhatsNewView.swift in Sources */,
 			);

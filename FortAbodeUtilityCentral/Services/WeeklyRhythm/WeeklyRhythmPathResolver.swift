@@ -93,5 +93,20 @@ public struct WeeklyRhythmPathResolver: Sendable {
         public func dashboardJSONPath(for userName: String, isoDate: String) -> String {
             "\(dashboardsDir(for: userName))/dashboard-\(isoDate).json"
         }
+
+        /// Sibling of `dashboardJSONPath` that the app writes to with queued
+        /// user mutations (errand done, event move, proposal accept/decline).
+        /// The engine drains it on its next run and renames to
+        /// `…-pending.applied-{ISO}.json` for audit. See
+        /// `Resources/dashboard-json-shape.md` for the engine-side spec.
+        public func pendingMutationsPath(for userName: String, isoDate: String) -> String {
+            "\(dashboardsDir(for: userName))/dashboard-\(isoDate)-pending.json"
+        }
+
+        /// Path to `{user}/config.md`. The engine reads this on every run; the
+        /// app writes day-type edits surgically here.
+        public func configPath(for userName: String) -> String {
+            "\(userFolder(userName))/config.md"
+        }
     }
 }

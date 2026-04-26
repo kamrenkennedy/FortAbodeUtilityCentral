@@ -31,10 +31,12 @@
 		3B8CF00712BD137247649E22 /* VersionDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52A1E55BD560971A940F171A /* VersionDetectionService.swift */; };
 		3DAC043E1F1CE49D3F91AA79 /* PageScaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC9BDBAE1BA8CDCF7640CE6B /* PageScaffold.swift */; };
 		49AFDBE9BAB4BDF2520332FF /* VersionDetectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE4CB53B5CB04DACA0FDC375 /* VersionDetectionTests.swift */; };
+		4BC30361A3F18D7A991A72EE /* MockWeeklyRhythmDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EF56794AE0F9F09B953BC13 /* MockWeeklyRhythmDataSource.swift */; };
 		4C29C765E197C8C5C27D8BC2 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1341A36E69A185933A6187F4 /* RootView.swift */; };
 		4CB55B39A51109E2D3DAE9F1 /* ChatPanelHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C3580CD173E87DCBCC770F4 /* ChatPanelHeader.swift */; };
 		527E21E6BC0AA688C00FA4E9 /* GitHubServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ED7ECBE41703B1FC4EB0791 /* GitHubServiceTests.swift */; };
 		52D654FD0BE7A805B4F3F1A3 /* FamilyHealthDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2743470CF6F7A2E42396FAC /* FamilyHealthDashboard.swift */; };
+		53AEA16097825500F8268329 /* FileBackedWeeklyRhythmDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F2F5EA39EAE9558037F9670 /* FileBackedWeeklyRhythmDataSource.swift */; };
 		5AB3F1610DB5361CAC618ECC /* SecureInputStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88614DCA2B0E6155C755D3C /* SecureInputStorage.swift */; };
 		61D6E60947EC0AEB30BF7D97 /* WhatsNewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16FB3766D3708E744FA90472 /* WhatsNewView.swift */; };
 		639646812B867787DB59AD83 /* FullDiskAccessService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D874D5A2A3528B406492C6B /* FullDiskAccessService.swift */; };
@@ -43,6 +45,7 @@
 		64CA5B5EAAFCDA5C06236011 /* FortAbodeUtilityCentralApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F9DE0077075CA77D29FF77 /* FortAbodeUtilityCentralApp.swift */; };
 		6CD4E6A5F0EC7CA6EA53E11B /* FamilyChatPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = D71386BF1C667590FCF48FB8 /* FamilyChatPane.swift */; };
 		78A108105A88096647C68196 /* ComponentHealthCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EB2DD0D3E1CBC8A343C150 /* ComponentHealthCard.swift */; };
+		7CFA90087FA5CC19AFC67353 /* WeeklyRhythmPathResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 418F1A3FCCAA74A9749BDE1E /* WeeklyRhythmPathResolver.swift */; };
 		7F7577B11C2D1F70D5E6F9B7 /* ChatComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B245C0720A4C0BC3EBC09BF2 /* ChatComposer.swift */; };
 		84EF3894AB836BBA01A7FB6A /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA1C59FBAA6BF53EE5F93CE0 /* NotificationService.swift */; };
 		8C46F547DCED96736E019D49 /* ComponentRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB0B45EFBB7DD5A133107515 /* ComponentRegistryTests.swift */; };
@@ -50,7 +53,9 @@
 		916EBC0C31B8473B1C50C325 /* FamilyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01FF0FA5D6DBEBF7A139D6FD /* FamilyView.swift */; };
 		91905EBBC828F6BCDF09EF1A /* AlignedDesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 5D70F17E7114E90E5762C0DB /* AlignedDesignSystem */; };
 		91D50E1EB920B8C40D6B33FB /* ClaudeDesktopConfigService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A49ABEA06B33CB1666AD17A0 /* ClaudeDesktopConfigService.swift */; };
+		9C5B1ABB80EFFEF201C62AAB /* WeeklyRhythmDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E417AC3384F05962FA62588 /* WeeklyRhythmDataSource.swift */; };
 		A1F5C83EBA3836D3FFACAC5D /* WeeklyRhythmService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66C0B457A755E70A4E21D034 /* WeeklyRhythmService.swift */; };
+		A1F93FFFAC5814DE06CC88AF /* WeeklyRhythm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A84C5B5B9F422E0FEA151CF0 /* WeeklyRhythm.swift */; };
 		A2B2C6005EF42A9C341F8826 /* FilePinningService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72B3F9599ED98BC09073C78C /* FilePinningService.swift */; };
 		A57EFCA453010BE0DB621F72 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 48EB2A999B000B9AC11BB0DD /* Assets.xcassets */; };
 		A5D861B2D8E9BA0284E7ECF6 /* UpdateStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754EF798D1DADA467A6A6D84 /* UpdateStatus.swift */; };
@@ -110,16 +115,19 @@
 		18F6C3CFC3DE69126D5C70F1 /* SidebarCollapseButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarCollapseButton.swift; sourceTree = "<group>"; };
 		1EB57DA95F7124E0519B2C86 /* ErrorLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorLogger.swift; sourceTree = "<group>"; };
 		21A8F7C1C7370A480AA42749 /* weekly-rhythm-plugin-bundle */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "weekly-rhythm-plugin-bundle"; path = "Resources/weekly-rhythm-plugin-bundle"; sourceTree = SOURCE_ROOT; };
+		2E417AC3384F05962FA62588 /* WeeklyRhythmDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmDataSource.swift; sourceTree = "<group>"; };
 		354B5DB8AEAB5C2C6F4D2DCE /* CoworkSkillService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoworkSkillService.swift; sourceTree = "<group>"; };
 		3757BEFBB847475D0690FF32 /* FeedbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackView.swift; sourceTree = "<group>"; };
 		37EB2DD0D3E1CBC8A343C150 /* ComponentHealthCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentHealthCard.swift; sourceTree = "<group>"; };
 		3AB3D27CB30E231A6EF2EF26 /* ChatPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPanel.swift; sourceTree = "<group>"; };
 		3C3580CD173E87DCBCC770F4 /* ChatPanelHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPanelHeader.swift; sourceTree = "<group>"; };
 		3DACD2838A1C216461103AE6 /* FeedbackService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackService.swift; sourceTree = "<group>"; };
+		418F1A3FCCAA74A9749BDE1E /* WeeklyRhythmPathResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmPathResolver.swift; sourceTree = "<group>"; };
 		48EB2A999B000B9AC11BB0DD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		50C8FB18F4E77DC49B18BFA9 /* engine-spec.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "engine-spec.md"; sourceTree = "<group>"; };
 		52A1E55BD560971A940F171A /* VersionDetectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionDetectionService.swift; sourceTree = "<group>"; };
 		5914439D10E470294A91A039 /* FortAbodeUtilityCentral.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FortAbodeUtilityCentral.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5EF56794AE0F9F09B953BC13 /* MockWeeklyRhythmDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockWeeklyRhythmDataSource.swift; sourceTree = "<group>"; };
 		66C0B457A755E70A4E21D034 /* WeeklyRhythmService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmService.swift; sourceTree = "<group>"; };
 		67CBAA3E68AE042FD8F6FFDF /* ClaudeCodeConfigService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeCodeConfigService.swift; sourceTree = "<group>"; };
 		69E67AB0BE82AA7AE5E6F418 /* CheckForUpdatesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckForUpdatesView.swift; sourceTree = "<group>"; };
@@ -138,8 +146,10 @@
 		91BE7F2F52EFF582932E8B9D /* ChangelogEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangelogEntry.swift; sourceTree = "<group>"; };
 		9646955BDB7A4F405EB1FDF0 /* SetupValidationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupValidationService.swift; sourceTree = "<group>"; };
 		9A1B1F334020349AF1BB567F /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
+		9F2F5EA39EAE9558037F9670 /* FileBackedWeeklyRhythmDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBackedWeeklyRhythmDataSource.swift; sourceTree = "<group>"; };
 		A100840E6248DECFE28C4DBF /* FortAbodeUtilityCentralTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FortAbodeUtilityCentralTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A49ABEA06B33CB1666AD17A0 /* ClaudeDesktopConfigService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeDesktopConfigService.swift; sourceTree = "<group>"; };
+		A84C5B5B9F422E0FEA151CF0 /* WeeklyRhythm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythm.swift; sourceTree = "<group>"; };
 		A88614DCA2B0E6155C755D3C /* SecureInputStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureInputStorage.swift; sourceTree = "<group>"; };
 		AC9BDBAE1BA8CDCF7640CE6B /* PageScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageScaffold.swift; sourceTree = "<group>"; };
 		B245C0720A4C0BC3EBC09BF2 /* ChatComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatComposer.swift; sourceTree = "<group>"; };
@@ -215,6 +225,7 @@
 				E343B9250E53EF5FE8057DAE /* UpdateExecutionService.swift */,
 				52A1E55BD560971A940F171A /* VersionDetectionService.swift */,
 				66C0B457A755E70A4E21D034 /* WeeklyRhythmService.swift */,
+				82E51D3240B7F28EAF8D7089 /* WeeklyRhythm */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -322,6 +333,17 @@
 			path = Pages;
 			sourceTree = "<group>";
 		};
+		82E51D3240B7F28EAF8D7089 /* WeeklyRhythm */ = {
+			isa = PBXGroup;
+			children = (
+				9F2F5EA39EAE9558037F9670 /* FileBackedWeeklyRhythmDataSource.swift */,
+				5EF56794AE0F9F09B953BC13 /* MockWeeklyRhythmDataSource.swift */,
+				2E417AC3384F05962FA62588 /* WeeklyRhythmDataSource.swift */,
+				418F1A3FCCAA74A9749BDE1E /* WeeklyRhythmPathResolver.swift */,
+			);
+			path = WeeklyRhythm;
+			sourceTree = "<group>";
+		};
 		9D7AAC079B3E5A312C8D72E2 /* State */ = {
 			isa = PBXGroup;
 			children = (
@@ -342,6 +364,7 @@
 				8599C33B343D91784A3618B0 /* FamilyMemoryModels.swift */,
 				F67306E0D4DE7A228BD944B8 /* HealthCheck.swift */,
 				754EF798D1DADA467A6A6D84 /* UpdateStatus.swift */,
+				A84C5B5B9F422E0FEA151CF0 /* WeeklyRhythm.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -560,6 +583,7 @@
 				2B92C1E7ECA9DC4D7DC50F0E /* FeedbackService.swift in Sources */,
 				38D925B340A40492A5DB7FAC /* FeedbackView.swift in Sources */,
 				39ACD4EE2996FF40E684E287 /* FeedbackViewModel.swift in Sources */,
+				53AEA16097825500F8268329 /* FileBackedWeeklyRhythmDataSource.swift in Sources */,
 				A2B2C6005EF42A9C341F8826 /* FilePinningService.swift in Sources */,
 				64CA5B5EAAFCDA5C06236011 /* FortAbodeUtilityCentralApp.swift in Sources */,
 				639646812B867787DB59AD83 /* FullDiskAccessService.swift in Sources */,
@@ -568,6 +592,7 @@
 				F4855FF4FA0E88D59716A23B /* HomeView.swift in Sources */,
 				05E6CAD0B79916E67AD9C87D /* KeychainService.swift in Sources */,
 				8FEB14627351680D4959D1BF /* MarketplaceView.swift in Sources */,
+				4BC30361A3F18D7A991A72EE /* MockWeeklyRhythmDataSource.swift in Sources */,
 				84EF3894AB836BBA01A7FB6A /* NotificationService.swift in Sources */,
 				3DAC043E1F1CE49D3F91AA79 /* PageScaffold.swift in Sources */,
 				4C29C765E197C8C5C27D8BC2 /* RootView.swift in Sources */,
@@ -584,6 +609,9 @@
 				112863CDD6F3C554DAF8C3A9 /* UpdateExecutionService.swift in Sources */,
 				A5D861B2D8E9BA0284E7ECF6 /* UpdateStatus.swift in Sources */,
 				3B8CF00712BD137247649E22 /* VersionDetectionService.swift in Sources */,
+				A1F93FFFAC5814DE06CC88AF /* WeeklyRhythm.swift in Sources */,
+				9C5B1ABB80EFFEF201C62AAB /* WeeklyRhythmDataSource.swift in Sources */,
+				7CFA90087FA5CC19AFC67353 /* WeeklyRhythmPathResolver.swift in Sources */,
 				A1F5C83EBA3836D3FFACAC5D /* WeeklyRhythmService.swift in Sources */,
 				3B1B8E9B129468193257A0A2 /* WeeklyRhythmView.swift in Sources */,
 				61D6E60947EC0AEB30BF7D97 /* WhatsNewView.swift in Sources */,

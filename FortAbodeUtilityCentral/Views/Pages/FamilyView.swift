@@ -263,8 +263,8 @@ private struct FamilyMemberCard: View {
                         .tracking(1.5)
                         .foregroundStyle(Color.secondaryText)
 
-                    ForEach(recent.indices, id: \.self) { i in
-                        Text(recent[i])
+                    ForEach(Array(recent.enumerated()), id: \.offset) { _, line in
+                        Text(line)
                             .font(.bodyMD)
                             .foregroundStyle(Color.onSurface)
                             .fixedSize(horizontal: false, vertical: true)
@@ -288,9 +288,9 @@ private struct HealthGroup: View {
                 .foregroundStyle(Color.onSurface)
 
             VStack(spacing: 0) {
-                ForEach(rows.indices, id: \.self) { i in
-                    rows[i]
-                    if i < rows.count - 1 {
+                ForEach(Array(rows.enumerated()), id: \.offset) { offset, row in
+                    row
+                    if offset < rows.count - 1 {
                         RowSeparator()
                     }
                 }
@@ -342,8 +342,8 @@ private struct ActionItemsGroup: View {
                 .foregroundStyle(Color.onSurface)
 
             VStack(alignment: .leading, spacing: Space.s3) {
-                ForEach(items.indices, id: \.self) { i in
-                    actionItemRow(items[i])
+                ForEach(items) { item in
+                    actionItemRow(item)
                 }
             }
         }
@@ -363,7 +363,8 @@ private struct ActionItemsGroup: View {
     }
 }
 
-private struct ActionItem {
+private struct ActionItem: Identifiable {
+    let id = UUID()
     let text: String
     let isDone: Bool
 }

@@ -14,20 +14,62 @@ enum WeeklyRhythmRange: Hashable {
     case thirtyDay
 }
 
+// Phase 5 wire-up: types lifted to `Models/WeeklyRhythm.swift` and stamped on
+// engine output via `WeeklyRhythmDataSource`. Some type names diverged from
+// the prior in-file privates so the public Models layer reads cleanly across
+// all consumers; these typealiases keep the existing view body code working
+// unchanged where the rename was purely cosmetic.
+private typealias DayType = WRDayType
+private typealias AlertKind = WRAlertKind
+private typealias EventKind = WREventKind
+private typealias Event = WREvent
+
+// View-only extensions on the Codable Models types — colors and behavior flags
+// that don't belong in the data model but the renderer needs. Living here keeps
+// `Models/WeeklyRhythm.swift` SwiftUI-free and Codable-clean.
+
+private extension WRDayType {
+    var tint: Color {
+        switch self {
+        case .make:    return Color.statusScheduled
+        case .move:    return Color.tertiary
+        case .recover: return Color.brandRust
+        case .admin:   return Color.statusDraft
+        case .open:    return Color.statusNeutral
+        }
+    }
+
+    /// engine-spec.md §Day Types: an exclusive type (e.g. Off) replaces all
+    /// others — the dropdown hides its plus cell. None of the redesign HTML's
+    /// 5 mock types are exclusive; v4.1 wiring may surface real exclusives.
+    var isExclusive: Bool { false }
+}
+
+private extension WRAlertKind {
+    var tint: Color {
+        switch self {
+        case .travel:          return Color.onSurfaceVariant
+        case .commuteConflict: return Color.brandRustSoft
+        case .errandBatch:     return Color.statusDraft
+        case .lunch:           return Color.statusScheduled
+        }
+    }
+}
+
 struct WeeklyRhythmView: View {
-    @State private var resolvedProposals: [UUID: ProposalResolution] = [:]
+    @Environment(WeeklyRhythmStore.self) private var store
+
+    // Transient UI state — view-only, NOT engine-emitted. Stays @State.
     @State private var weekOffset: Int = 0
     @State private var range: WeeklyRhythmRange = .week
-    @State private var selectedProjectId: UUID?
+    @State private var selectedProjectId: String?
     @State private var detailProject: PulseProject?
-    @State private var weekDays: [WeekDay] = WeeklyRhythmView.makeMockedWeekDays()
-    @State private var errands: [Errand] = WeeklyRhythmView.makeMockedErrands()
     @State private var dayTypeSettingsOpen: Bool = false
-    @State private var editingErrandID: UUID?
+    @State private var editingErrandID: String?
     @State private var detailTriage: TriageEntry?
     @State private var detailProposal: Proposal?
     @State private var alertsExpanded: Bool = true
-    @State private var alerts: [WeeklyRhythmAlert] = WeeklyRhythmView.makeMockedAlerts()
+    @State private var resolvedProposals: [String: ProposalResolution] = [:]
 
     // Vertical zoom — controls hour-row height. Default 52pt is the desktop
     // spec value (UPDATE-2026-04-26-desktop-mac.md week-grid table). Dragged
@@ -37,16 +79,45 @@ struct WeeklyRhythmView: View {
     // up real events in v4.1, switch the model to hour-relative units.
     @State private var hourHeight: CGFloat = 52
 
+    // MARK: - Snapshot reads
+    //
+    // The view consumes per-section arrays through these computed accessors so
+    // the existing render code (e.g. `alerts.indices`, `pulseProjects.count`)
+    // works unchanged after the data-source rewire. nil snapshot → empty array
+    // → existing empty-state branches render naturally.
+
+    private var snapshot: WeeklyRhythmSnapshot? { store.snapshot }
+    private var weekMetadata: WeekMetadata { snapshot?.weekMetadata ?? WeekMetadata(eyebrow: "", title: "—") }
+    private var todaysBrief: TodaysBrief? { snapshot?.todaysBrief }
+    private var pulseProjects: [PulseProject] { snapshot?.pulseProjects ?? [] }
+    private var alerts: [WeeklyRhythmAlert] { snapshot?.alerts ?? [] }
+    private var weekDays: [WeekDay] { snapshot?.weekDays ?? [] }
+    private var triageItems: [TriageEntry] { snapshot?.triage ?? [] }
+    private var proposals: [Proposal] { snapshot?.proposals ?? [] }
+    private var errands: [Errand] { snapshot?.errands ?? [] }
+    private var dayBreakdownEntries: [DayBreakdown] { snapshot?.dayBreakdown ?? [] }
+    private var runHealth: RunHealth { snapshot?.runHealth ?? .allGood }
+
     private var hourScale: CGFloat { hourHeight / 64 }
-    private var dayColumnHeight: CGFloat { hourHeight * 9 }
-    private let hourCount: Int = 9   // 8 AM → 4 PM = 9 grid rows
+    private var dayColumnHeight: CGFloat { hourHeight * CGFloat(hourCount) }
+    // 6 AM → 9 PM = 16 hourly grid rows. Same axis the day-breakdown focus bar
+    // uses, so events that fall outside 8–4 PM ("dinner with Tiera at 7", "Long
+    // run at 6 AM") show up on the calendar instead of getting clipped.
+    private let hourCount: Int = 16
+    private let visibleStartHour: Double = 6.0   // top of the rendered grid
+    /// Default-visible hours (rendered card height = `defaultVisibleHours * 64`
+    /// at default zoom). The card stays this tall regardless of zoom; the user
+    /// scrolls to see hours outside the window. Apple Calendar / Google Calendar /
+    /// Notion Calendar all use this pattern — fixed card, scrollable contents.
+    private let defaultVisibleHours: CGFloat = 10
+    private var visibleWindowHeight: CGFloat { defaultVisibleHours * 64 }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                EditorialHeader(eyebrow: "Week 17", title: "April 21 — 27")
+                EditorialHeader(eyebrow: weekMetadata.eyebrow, title: weekMetadata.title)
                     .overlay(alignment: .topTrailing) {
-                        RunHealthPill(state: .allGood)
+                        RunHealthPill(state: runHealthDisplayState)
                             .padding(.top, Space.s10)
                             .padding(.trailing, Space.s10)
                     }
@@ -78,10 +149,15 @@ struct WeeklyRhythmView: View {
                 .frame(minWidth: 520, idealWidth: 640, minHeight: 480, idealHeight: 600)
         }
         .sheet(isPresented: errandEditSheetBinding) {
-            if let id = editingErrandID, let index = errands.firstIndex(where: { $0.id == id }) {
-                ErrandDetailSheet(errand: $errands[index])
+            if let id = editingErrandID, let errand = errands.first(where: { $0.id == id }) {
+                // Phase 5a: value-copy + local @State inside the sheet. Edits
+                // are not yet persisted back to the engine — write-back is 5b.
+                ErrandDetailSheet(initialErrand: errand)
                     .frame(minWidth: 480, idealWidth: 560, minHeight: 420, idealHeight: 520)
             }
+        }
+        .task(id: weekOffset) {
+            await store.load(weekOffset: weekOffset)
         }
         .sheet(item: $detailTriage) { entry in
             TriageDetailSheet(entry: entry)
@@ -113,6 +189,16 @@ struct WeeklyRhythmView: View {
             get: { editingErrandID != nil },
             set: { if !$0 { editingErrandID = nil } }
         )
+    }
+
+    /// Map our Codable `RunHealth` model onto the existing `RunHealthPill.State`
+    /// enum. The pill type is a view-only thing — we don't make it Codable.
+    private var runHealthDisplayState: RunHealthPill.State {
+        switch runHealth {
+        case .allGood:           return .allGood
+        case .warning(let msg):  return .warning(msg)
+        case .error(let msg):    return .error(msg)
+        }
     }
 
     // MARK: - Alerts banner (engine-spec.md Step 5g — location intel + conflicts)
@@ -151,8 +237,8 @@ struct WeeklyRhythmView: View {
 
             if alertsExpanded {
                 VStack(alignment: .leading, spacing: 10) {
-                    ForEach(alerts.indices, id: \.self) { i in
-                        AlertCard(alert: alerts[i])
+                    ForEach(alerts) { alert in
+                        AlertCard(alert: alert)
                     }
                 }
             }
@@ -168,63 +254,47 @@ struct WeeklyRhythmView: View {
         )
     }
 
-    private static func makeMockedAlerts() -> [WeeklyRhythmAlert] {
-        [
-            WeeklyRhythmAlert(
-                kind: .travel,
-                day: "Saturday",
-                title: "Gallery drop-off — 12 PM downtown",
-                detail: "18 min drive each way. Plan a 30 min buffer for parking + load-in.",
-                actionLabel: "View itinerary"
-            ),
-            WeeklyRhythmAlert(
-                kind: .commuteConflict,
-                day: "Friday",
-                title: "Tight commute window before Braxton sync",
-                detail: "Studio-site DNS work runs to noon, but the dry cleaner closes at 12:30 — fits with a buffer or push to Saturday.",
-                actionLabel: "Reschedule"
-            )
-        ]
-    }
-
     // MARK: - Today's Brief (engine-spec.md Step 6 + day-type narrative)
 
+    @ViewBuilder
     private var todaysBriefSection: some View {
-        DashboardCard(verticalPadding: Space.s5, horizontalPadding: Space.s6) {
-            HStack(alignment: .top, spacing: Space.s5) {
-                VStack(alignment: .leading, spacing: Space.s3) {
-                    HStack(spacing: Space.s2) {
-                        DayTypePill(kind: .move)
-                        Text("Today · Thursday April 24")
+        if let brief = todaysBrief {
+            DashboardCard(verticalPadding: Space.s5, horizontalPadding: Space.s6) {
+                HStack(alignment: .top, spacing: Space.s5) {
+                    VStack(alignment: .leading, spacing: Space.s3) {
+                        HStack(spacing: Space.s2) {
+                            DayTypePill(kind: brief.dayType)
+                            Text(brief.label)
+                                .font(.labelSM)
+                                .tracking(1.5)
+                                .foregroundStyle(Color.secondaryText)
+                        }
+
+                        Text(brief.narrative)
+                            .font(.bodyMD)
+                            .foregroundStyle(Color.onSurface)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+
+                    VStack(alignment: .leading, spacing: Space.s2) {
+                        Text("Week Goals".uppercased())
                             .font(.labelSM)
                             .tracking(1.5)
                             .foregroundStyle(Color.secondaryText)
+
+                        HStack(alignment: .lastTextBaseline, spacing: 4) {
+                            Text("\(brief.weekGoalsComplete)")
+                                .font(.custom("Manrope", size: 28).weight(.light))
+                                .foregroundStyle(Color.onSurface)
+                            Text("of \(brief.weekGoalsTotal)")
+                                .font(.bodySM)
+                                .foregroundStyle(Color.onSurfaceVariant)
+                        }
+
+                        GoalsProgressBar(complete: brief.weekGoalsComplete, total: brief.weekGoalsTotal)
+                            .frame(width: 120, height: 4)
                     }
-
-                    Text("Ship pass 3 of Braxton edit, then prep for Tiera's birthday window.")
-                        .font(.bodyMD)
-                        .foregroundStyle(Color.onSurface)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .frame(maxWidth: .infinity, alignment: .topLeading)
-
-                VStack(alignment: .leading, spacing: Space.s2) {
-                    Text("Week Goals".uppercased())
-                        .font(.labelSM)
-                        .tracking(1.5)
-                        .foregroundStyle(Color.secondaryText)
-
-                    HStack(alignment: .lastTextBaseline, spacing: 4) {
-                        Text("3")
-                            .font(.custom("Manrope", size: 28).weight(.light))
-                            .foregroundStyle(Color.onSurface)
-                        Text("of 5")
-                            .font(.bodySM)
-                            .foregroundStyle(Color.onSurfaceVariant)
-                    }
-
-                    GoalsProgressBar(complete: 3, total: 5)
-                        .frame(width: 120, height: 4)
                 }
             }
         }
@@ -252,15 +322,6 @@ struct WeeklyRhythmView: View {
             }
         }
     }
-
-    private let pulseProjects: [PulseProject] = [
-        PulseProject(status: .review, statusLabel: "In review", title: "Braxton edit", touched: "Touched 4h ago", action: "Pass 3 → client today"),
-        PulseProject(status: .draft, statusLabel: "Draft", title: "Downtown Gallery delivery", touched: "Touched yesterday", action: "Sat 12pm drop-off"),
-        PulseProject(status: .scheduled, statusLabel: "Scheduled", title: "Rae reels", touched: "Touched 2 days ago", action: "Review Sat 3pm"),
-        PulseProject(status: .neutral, statusLabel: "Idle", title: "Aligned suite landing", touched: "Touched 6 days ago", action: "Waiting on Tiera copy"),
-        PulseProject(status: .error, statusLabel: "Blocked", title: "Studio site rebuild", touched: "Touched 9 days ago", action: "Domain DNS issue"),
-        PulseProject(status: .scheduled, statusLabel: "Scheduled", title: "May newsletter", touched: "Touched today", action: "Outline due Mon")
-    ]
 
     // MARK: - Week Grid
 
@@ -295,8 +356,28 @@ struct WeeklyRhythmView: View {
 
                     switch range {
                     case .week:
+                        // Day headers stay above the scroll region so they
+                        // remain visible while the user scrolls hours.
                         dayHeaderRow
-                        gridBody
+
+                        // Grid body lives inside a fixed-height ScrollView so
+                        // zooming inflates the contents (more pixels per hour)
+                        // without inflating the card itself. Apple Calendar /
+                        // Google Calendar / Notion Calendar pattern.
+                        ScrollViewReader { proxy in
+                            ScrollView(.vertical, showsIndicators: true) {
+                                gridBody
+                                    .frame(height: dayColumnHeight)
+                            }
+                            .frame(height: visibleWindowHeight)
+                            .onAppear {
+                                // Scroll the grid so 8 AM sits at the visible
+                                // top by default — the prior fixed window. User
+                                // can scroll up to reach 6/7 AM or down for
+                                // evening events.
+                                proxy.scrollTo("hour-8", anchor: .top)
+                            }
+                        }
                     case .thirtyDay:
                         thirtyDayGrid
                     }
@@ -459,8 +540,8 @@ struct WeeklyRhythmView: View {
     private var dayHeaderRow: some View {
         HStack(alignment: .top, spacing: 0) {
             Color.clear.frame(width: 44)
-            ForEach($weekDays) { $day in
-                DayHeader(day: $day)
+            ForEach(weekDays) { day in
+                DayHeader(day: day)
                     .frame(maxWidth: .infinity)
             }
         }
@@ -491,29 +572,32 @@ struct WeeklyRhythmView: View {
             .frame(height: dayColumnHeight)
 
             HStack(alignment: .top, spacing: 0) {
-                // Time column
+                // Time column — each label tagged with its hour ID so
+                // ScrollViewReader can target a specific hour (default scroll
+                // jumps to "hour-8" = 8 AM on appearance).
                 VStack(alignment: .trailing, spacing: 0) {
-                    ForEach(timeLabels, id: \.self) { label in
+                    ForEach(Array(timeLabels.enumerated()), id: \.offset) { index, label in
                         Text(label)
                             .font(.custom("Inter-Regular", size: 9))
                             .foregroundStyle(Color.secondaryText)
                             .frame(width: 40, height: hourHeight, alignment: .topTrailing)
                             .padding(.trailing, Space.s1_5)
                             .offset(y: -5)   // pull label up so it sits on top of the divider line
+                            .id("hour-\(Int(visibleStartHour) + index)")
                     }
                 }
                 .frame(width: 44)
 
-                ForEach(weekDays.indices, id: \.self) { i in
+                ForEach(Array(weekDays.enumerated()), id: \.element.id) { index, day in
                     DayColumn(
-                        day: weekDays[i],
+                        day: day,
                         totalHeight: dayColumnHeight,
                         hourScale: hourScale
                     )
                     .frame(maxWidth: .infinity)
                     .overlay(alignment: .leading) {
                         // Vertical day-divider on the LEFT of every column except the first.
-                        if i > 0 {
+                        if index > 0 {
                             Rectangle()
                                 .fill(Color.outlineVariant.opacity(0.18))
                                 .frame(width: 1)
@@ -521,47 +605,19 @@ struct WeeklyRhythmView: View {
                         }
                     }
                     .dropDestination(for: String.self) { droppedItems, location in
-                        moveEvent(droppedItems: droppedItems, toDayIndex: i, atY: location.y)
+                        moveEvent(droppedItems: droppedItems, toDayIndex: index, atY: location.y)
                     }
                 }
             }
         }
     }
 
-    private let timeLabels = ["8 AM", "9 AM", "10 AM", "11 AM", "12 PM", "1 PM", "2 PM", "3 PM", "4 PM"]
+    private let timeLabels = [
+        "6 AM", "7 AM", "8 AM", "9 AM", "10 AM", "11 AM",
+        "12 PM", "1 PM", "2 PM", "3 PM", "4 PM", "5 PM",
+        "6 PM", "7 PM", "8 PM", "9 PM"
+    ]
 
-    private static func makeMockedWeekDays() -> [WeekDay] {
-        [
-            WeekDay(name: "Mon", num: "21", dayTypes: [.admin], isToday: false, events: [
-                Event(top: 64, height: 96, time: "9 — 10:30 AM", title: "Inbox triage", kind: .regular),
-                Event(top: 256, height: 32, time: nil, title: "Errand: post office", kind: .errand),
-                Event(top: 384, height: 64, time: "2 — 3 PM", title: "Ops review", kind: .accent)
-            ]),
-            WeekDay(name: "Tue", num: "22", dayTypes: [.make], isToday: false, events: [
-                Event(top: 128, height: 192, time: "10 AM — 1 PM", title: "Braxton edit · pass 2", kind: .regular),
-                Event(top: 448, height: 64, time: "3 — 4 PM", title: "Braxton sync", kind: .accent)
-            ]),
-            WeekDay(name: "Wed", num: "23", dayTypes: [.make], isToday: false, events: [
-                Event(top: 96, height: 224, time: "9:30 AM — 1 PM", title: "Rae reels · cuts", kind: .regular),
-                Event(top: 320, height: 32, time: nil, title: "Errand: lab pickup", kind: .errand)
-            ]),
-            WeekDay(name: "Thu · today", num: "24", dayTypes: [.move, .recover], isToday: true, events: [
-                Event(top: 128, height: 128, time: "10 AM — 12 PM", title: "Braxton edit · pass 3", kind: .regular),
-                Event(top: 448, height: 64, time: "3 — 4 PM", title: "Braxton sync", kind: .accent)
-            ], nowLineOffset: 352),
-            WeekDay(name: "Fri", num: "25", dayTypes: [.make], isToday: false, events: [
-                Event(top: 64, height: 192, time: "9 AM — 12 PM", title: "Studio site · DNS fix", kind: .regular),
-                Event(top: 288, height: 32, time: nil, title: "Errand: dry cleaner", kind: .errand),
-                Event(top: 448, height: 64, time: "3 — 4 PM", title: "Braxton sync (moved)", kind: .accent)
-            ]),
-            WeekDay(name: "Sat", num: "26", dayTypes: [.recover], isToday: false, events: [
-                Event(top: 32, height: 96, time: "8:30 — 10 AM", title: "Long run · with Tiera", kind: .regular),
-                Event(top: 256, height: 32, time: "12 PM", title: "Gallery drop-off", kind: .accent),
-                Event(top: 448, height: 64, time: "3 — 4 PM", title: "Rae reels · review", kind: .regular)
-            ]),
-            WeekDay(name: "Sun", num: "27", dayTypes: [.open], isToday: false, events: [])
-        ]
-    }
 
     // MARK: - Errands (smart routing pool — engine-spec.md Errand Handling)
 
@@ -580,17 +636,21 @@ struct WeeklyRhythmView: View {
 
             DashboardCard(verticalPadding: Space.s2, horizontalPadding: Space.s6) {
                 VStack(spacing: 0) {
-                    ForEach(pendingErrands.indices, id: \.self) { i in
-                        let actualIndex = errands.firstIndex(where: { $0.id == pendingErrands[i].id })!
+                    ForEach(pendingErrands) { errand in
                         ErrandRow(
-                            errand: $errands[actualIndex],
-                            onOpen: { editingErrandID = errands[actualIndex].id }
+                            errand: errand,
+                            onOpen: { editingErrandID = errand.id },
+                            onToggleDone: {
+                                // TODO[Phase 5b]: write-back the toggle to the engine.
+                                // The data source is read-only at v4.1 — mutations
+                                // currently no-op until JSON-state input lands.
+                            }
                         )
-                        .draggable(errands[actualIndex].id.uuidString)
+                        .draggable(errand.id)
                         .dropDestination(for: String.self) { droppedItems, _ in
-                            reorderErrands(droppedItems: droppedItems, beforeId: errands[actualIndex].id)
+                            reorderErrands(droppedItems: droppedItems, beforeId: errand.id)
                         }
-                        if i < pendingErrands.count - 1 {
+                        if errand.id != pendingErrands.last?.id {
                             RowSeparator()
                         }
                     }
@@ -616,54 +676,22 @@ struct WeeklyRhythmView: View {
         errands.filter { !$0.isDone }
     }
 
+    // Phase 5a: drag-to-reorder is wired up in the UI (drop targets still
+    // accept drops) but mutations don't persist to the engine yet. Returning
+    // `false` keeps the dropped item visually in its origin until write-back
+    // (Phase 5b) lands.
+    //
+    // TODO[Phase 5b]: thread these through the data source — likely a
+    // `WeeklyRhythmDataSource.applyMutation(_:)` method that writes a sibling
+    // `dashboard-{date}-pending.json` for the engine to consume.
     @discardableResult
-    private func reorderErrands(droppedItems: [String], beforeId: UUID) -> Bool {
-        guard let droppedString = droppedItems.first,
-              let droppedId = UUID(uuidString: droppedString),
-              let fromIndex = errands.firstIndex(where: { $0.id == droppedId }),
-              let toIndex = errands.firstIndex(where: { $0.id == beforeId }),
-              fromIndex != toIndex
-        else { return false }
-        let item = errands.remove(at: fromIndex)
-        let insertIndex = fromIndex < toIndex ? toIndex - 1 : toIndex
-        errands.insert(item, at: insertIndex)
-        return true
+    private func reorderErrands(droppedItems: [String], beforeId: String) -> Bool {
+        return false
     }
 
     @discardableResult
     private func moveEvent(droppedItems: [String], toDayIndex: Int, atY: CGFloat) -> Bool {
-        guard let droppedString = droppedItems.first,
-              let droppedId = UUID(uuidString: droppedString)
-        else { return false }
-        // Find source day + event index
-        for srcDayIndex in weekDays.indices {
-            if let evtIndex = weekDays[srcDayIndex].events.firstIndex(where: { $0.id == droppedId }) {
-                // Convert drop position from screen pt → baseline 64pt units, snap to
-                // the nearest hour (64pt = 1 hour at baseline). The atY value comes in
-                // at the current rendered scale, so divide by hourScale first.
-                let baselineY = atY / hourScale
-                let snappedTop = max(0, round(baselineY / 64) * 64)
-                if srcDayIndex == toDayIndex {
-                    weekDays[srcDayIndex].events[evtIndex].top = snappedTop
-                } else {
-                    var moved = weekDays[srcDayIndex].events.remove(at: evtIndex)
-                    moved.top = snappedTop
-                    weekDays[toDayIndex].events.append(moved)
-                }
-                return true
-            }
-        }
         return false
-    }
-
-    private static func makeMockedErrands() -> [Errand] {
-        [
-            Errand(title: "Return Amazon package",     location: "Downtown · 12 min",     daysPending: 2,  routedTo: "Mon · post office"),
-            Errand(title: "Pick up film samples",      location: "Lab · 18 min",          daysPending: 5,  routedTo: "Wed · lab pickup"),
-            Errand(title: "Drop off gear for cleaning",location: "Dry cleaner · 8 min",   daysPending: 9,  routedTo: "Fri · dry cleaner"),
-            Errand(title: "New driver's license photo",location: "DMV · 22 min",          daysPending: 17, routedTo: nil),
-            Errand(title: "Order Tiera's gift",        location: nil,                     daysPending: 4,  routedTo: nil)
-        ]
     }
 
     // MARK: - Day Breakdown (engine-spec.md per-day narrative output)
@@ -682,9 +710,9 @@ struct WeeklyRhythmView: View {
 
             DashboardCard(verticalPadding: Space.s2, horizontalPadding: Space.s6) {
                 VStack(spacing: 0) {
-                    ForEach(dayBreakdownEntries.indices, id: \.self) { i in
-                        DayBreakdownDayRow(entry: dayBreakdownEntries[i])
-                        if i < dayBreakdownEntries.count - 1 {
+                    ForEach(dayBreakdownEntries) { entry in
+                        DayBreakdownDayRow(entry: entry)
+                        if entry.id != dayBreakdownEntries.last?.id {
                             Rectangle()
                                 .fill(Color.outlineVariant.opacity(0.5))
                                 .frame(height: 1)
@@ -700,81 +728,6 @@ struct WeeklyRhythmView: View {
             }
         }
     }
-
-    private let dayBreakdownEntries: [DayBreakdown] = [
-        DayBreakdown(
-            weekday: "Mon", dateLabel: "Apr 21", dayType: .admin,
-            headline: "Clear the runway",
-            summary: "2h · 1 err",
-            blocks: [
-                DayBlock(title: "Inbox triage",         kind: .admin,  durationLabel: "45m",   tag: .admin),
-                DayBlock(title: "File Q1 expenses",     kind: .admin,  durationLabel: "30m",   tag: .admin),
-                DayBlock(title: "Prep Tue's edit block", kind: .focus, startHour: 14.5, endHour: 15.5, durationLabel: "1h", tag: .make),
-                DayBlock(title: "Post office return",   kind: .errand, startHour: 16.0, endHour: 16.5, durationLabel: "15m", tag: .errand)
-            ],
-            isToday: false, isPast: true
-        ),
-        DayBreakdown(
-            weekday: "Tue", dateLabel: "Apr 22", dayType: .make,
-            headline: "Deep block + client sync",
-            summary: "3h · 1 sync",
-            blocks: [
-                DayBlock(title: "Braxton edit pass 2", kind: .focus, startHour: 10.0, endHour: 13.0, durationLabel: "10–1 · 3h", tag: .make),
-                DayBlock(title: "Client sync",         kind: .sync,  startHour: 15.0, endHour: 16.0, timeLabel: "3:00 PM", tag: .sync),
-                DayBlock(title: "No errands routed",   kind: .note,  dim: true)
-            ],
-            isToday: false, isPast: true
-        ),
-        DayBreakdown(
-            weekday: "Wed", dateLabel: "Apr 23", dayType: .make,
-            headline: "Rae reels — cuts",
-            summary: "3.5h · 1 err",
-            blocks: [
-                DayBlock(title: "Rae reels — cuts", kind: .focus, startHour: 9.5, endHour: 13.0, durationLabel: "9:30–1 · 3.5h", tag: .make),
-                DayBlock(title: "Lab pickup",       kind: .errand, startHour: 14.0, endHour: 14.5, durationLabel: "mid-PM", tag: .errand)
-            ],
-            isToday: false, isPast: true
-        ),
-        DayBreakdown(
-            weekday: "Thu", dateLabel: "Apr 24", dayType: .move,
-            headline: "Ship day",
-            summary: "2h · 1 sync",
-            blocks: [
-                DayBlock(title: "Ship Braxton pass 3", kind: .focus, startHour: 10.0, endHour: 12.0, durationLabel: "10–12 · 2h", tag: .move),
-                DayBlock(title: "Client sync",         kind: .sync,  startHour: 15.0, endHour: 16.0, timeLabel: "3:00 PM", tag: .sync)
-            ],
-            isToday: true, isPast: false
-        ),
-        DayBreakdown(
-            weekday: "Fri", dateLabel: "Apr 25", dayType: .make,
-            headline: "Studio site DNS fix",
-            summary: "3h · sync · err",
-            blocks: [
-                DayBlock(title: "Studio site DNS fix",         kind: .focus,  startHour: 9.0,  endHour: 12.0, durationLabel: "3h", tag: .make),
-                DayBlock(title: "Dry cleaner",                  kind: .errand, startHour: 16.5, endHour: 17.0, tag: .errand),
-                DayBlock(title: "Braxton sync (moved from Tue)", kind: .sync,  startHour: 13.5, endHour: 14.5, tag: .sync)
-            ],
-            isToday: false, isPast: false
-        ),
-        DayBreakdown(
-            weekday: "Sat", dateLabel: "Apr 26", dayType: .recover,
-            headline: "Long run + gallery drop-off",
-            summary: "light · 1 err",
-            blocks: [
-                DayBlock(title: "Long run with Tiera", kind: .recover, startHour: 7.0,  endHour: 10.0, timeLabel: "AM"),
-                DayBlock(title: "Gallery drop-off",    kind: .errand,  startHour: 11.5, endHour: 12.0, timeLabel: "12:00 PM", tag: .errand),
-                DayBlock(title: "Light review of Rae cuts", kind: .recover, startHour: 15.0, endHour: 17.0, timeLabel: "PM", dim: true)
-            ],
-            isToday: false, isPast: false
-        ),
-        DayBreakdown(
-            weekday: "Sun", dateLabel: "Apr 27", dayType: .open,
-            headline: "No scheduled blocks",
-            summary: "—",
-            blocks: [],
-            isToday: false, isPast: false
-        )
-    ]
 
     // MARK: - Triage + Claude Proposals
 
@@ -800,9 +753,9 @@ struct WeeklyRhythmView: View {
                 }
 
                 VStack(spacing: 0) {
-                    ForEach(triageItems.indices, id: \.self) { i in
-                        triageRow(triageItems[i])
-                        if i < triageItems.count - 1 {
+                    ForEach(triageItems) { entry in
+                        triageRow(entry)
+                        if entry.id != triageItems.last?.id {
                             RowSeparator()
                         }
                     }
@@ -811,18 +764,13 @@ struct WeeklyRhythmView: View {
         }
     }
 
-    private let triageItems: [TriageEntry] = [
-        TriageEntry(status: .error, title: "Re: Downtown Gallery — proof timing?", meta: "Marisol · client · 2h ago"),
-        TriageEntry(status: .draft, title: "Studio site DNS — propagation report", meta: "Cloudflare · 6h ago"),
-        TriageEntry(status: .draft, title: "Tiera shared a Memory edit — review?", meta: "Family Memory · yesterday")
-    ]
 
     private func triageRow(_ entry: TriageEntry) -> some View {
         Button {
             detailTriage = entry
         } label: {
             HStack(alignment: .top, spacing: Space.s3) {
-                StatusDot(entry.status)
+                StatusDot(entry.status.styleKind)
                     .padding(.top, 7)
 
                 VStack(alignment: .leading, spacing: Space.s1) {
@@ -873,12 +821,6 @@ struct WeeklyRhythmView: View {
             }
         }
     }
-
-    private let proposals: [Proposal] = [
-        Proposal(title: "Move Braxton sync from Tue to Fri", reasoning: "You asked earlier today. Same call link, same duration."),
-        Proposal(title: "Add 1h prep block Friday morning", reasoning: "Before the moved Braxton sync — based on past pattern."),
-        Proposal(title: "Snooze \"Studio site DNS\" until Mon", reasoning: "Cloudflare propagation reports settle within 24h.")
-    ]
 
     private var visibleProposals: [Proposal] {
         proposals.filter { resolvedProposals[$0.id] == nil }
@@ -964,89 +906,6 @@ struct WeeklyRhythmView: View {
             }
             .padding(.top, 1)
         }
-    }
-}
-
-private enum ProposalResolution {
-    case accepted
-    case declined
-}
-
-// MARK: - Day Breakdown model
-//
-// Per UPDATE-2026-04-25-day-breakdown.md — the new "blocks + focus bar"
-// pattern. Each day has:
-//   • header: weekday + date + day-type pill + optional headline (verb of day)
-//   • focus bar: time-positioned segments across 6 AM → 9 PM
-//   • block list: ordered items with kind glyph + title + meta + tag
-// Layered so it reads coarse → fine.
-
-private struct DayBreakdown: Identifiable {
-    let id = UUID()
-    let weekday: String        // "Mon"
-    let dateLabel: String      // "Apr 21"
-    let dayType: DayType
-    let headline: String?
-    let summary: String?       // "2h · 1 err"  — auto-fallback to "—" if nil
-    let blocks: [DayBlock]
-    let isToday: Bool
-    let isPast: Bool
-
-    var hasBar: Bool { blocks.contains { $0.startHour != nil && $0.endHour != nil } }
-}
-
-private enum DayBlockKind {
-    case focus       // ●  — Make/Move dominant block
-    case errand      // →  — warm amber
-    case sync        // ·  — onSurfaceVariant
-    case admin       // ·
-    case recover     // ·
-    case note        // ·  — soft/dim text like "No errands routed"
-}
-
-private enum DayBlockTag {
-    case admin, make, move, errand, sync
-
-    var label: String {
-        switch self {
-        case .admin:  return "Admin"
-        case .make:   return "Make"
-        case .move:   return "Move"
-        case .errand: return "Errand"
-        case .sync:   return "Sync"
-        }
-    }
-}
-
-private struct DayBlock: Identifiable {
-    let id = UUID()
-    let title: String
-    let kind: DayBlockKind
-    let startHour: Double?     // 6.0 – 21.0 → mapped to bar position
-    let endHour: Double?
-    let durationLabel: String? // "45m", "10–1 · 3h"
-    let timeLabel: String?     // "3:00 PM" — used when no duration label
-    let tag: DayBlockTag?
-    let dim: Bool
-
-    init(
-        title: String,
-        kind: DayBlockKind,
-        startHour: Double? = nil,
-        endHour: Double? = nil,
-        durationLabel: String? = nil,
-        timeLabel: String? = nil,
-        tag: DayBlockTag? = nil,
-        dim: Bool = false
-    ) {
-        self.title = title
-        self.kind = kind
-        self.startHour = startHour
-        self.endHour = endHour
-        self.durationLabel = durationLabel
-        self.timeLabel = timeLabel
-        self.tag = tag
-        self.dim = dim
     }
 }
 
@@ -1162,7 +1021,7 @@ private struct DayBreakdownFocusBar: View {
     }
 
     private struct PositionedBlock: Identifiable {
-        let id: UUID
+        let id: String
         let block: DayBlock
         let x: CGFloat
         let width: CGFloat
@@ -1342,17 +1201,6 @@ private struct DayBreakdownTimeAxis: View {
             Color.clear.frame(width: 64)
         }
     }
-}
-
-// MARK: - Alert model + kinds
-
-private struct WeeklyRhythmAlert: Identifiable {
-    let id = UUID()
-    let kind: AlertKind
-    let day: String
-    let title: String
-    let detail: String
-    let actionLabel: String?
 }
 
 // MARK: - Week grid zoom slider
@@ -1590,50 +1438,6 @@ private struct AlertActionButton: View {
     }
 }
 
-private enum AlertKind {
-    case travel
-    case commuteConflict
-    case errandBatch
-    case lunch
-
-    var label: String {
-        switch self {
-        case .travel:          return "Travel"
-        case .commuteConflict: return "Commute conflict"
-        case .errandBatch:     return "Errand batch"
-        case .lunch:           return "Lunch"
-        }
-    }
-
-    var symbol: String {
-        switch self {
-        case .travel:          return "clock"
-        case .commuteConflict: return "exclamationmark.triangle.fill"
-        case .errandBatch:     return "cart.fill"
-        case .lunch:           return "fork.knife"
-        }
-    }
-
-    var tint: Color {
-        switch self {
-        case .travel:          return Color.onSurfaceVariant
-        case .commuteConflict: return Color.brandRustSoft
-        case .errandBatch:     return Color.statusDraft
-        case .lunch:           return Color.statusScheduled
-        }
-    }
-
-    // Urgent kinds get the brandRust gradient + underglow per spec
-    // (`.alert-row.is-urgent` in family-dashboard-mockup-desktop-v1.html).
-    // Non-urgent uses the warm-amber treatment.
-    var isUrgent: Bool {
-        switch self {
-        case .commuteConflict: return true
-        default:               return false
-        }
-    }
-}
-
 // MARK: - Run Health pill (engine-spec.md run health diagnostic)
 
 private struct RunHealthPill: View {
@@ -1690,8 +1494,14 @@ private struct RunHealthPill: View {
 // MARK: - Errand Detail sheet (edit fields)
 
 private struct ErrandDetailSheet: View {
-    @Binding var errand: Errand
+    let initialErrand: Errand
+    @State private var errand: Errand
     @Environment(\.dismiss) private var dismiss
+
+    init(initialErrand: Errand) {
+        self.initialErrand = initialErrand
+        self._errand = State(initialValue: initialErrand)
+    }
 
     var body: some View {
         ScrollView {
@@ -1780,7 +1590,7 @@ private struct TriageDetailSheet: View {
 
                 VStack(alignment: .leading, spacing: Space.s5) {
                     HStack(spacing: Space.s2) {
-                        StatusDot(entry.status)
+                        StatusDot(entry.status.styleKind)
                         Text(entry.meta)
                             .font(.bodyMD)
                             .foregroundStyle(Color.onSurfaceVariant)
@@ -2102,7 +1912,7 @@ private struct ProjectPulseCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: Space.s2) {
-                StatusDot(project.status)
+                StatusDot(project.status.styleKind)
                 Text(project.statusLabel.uppercased())
                     .font(.system(size: 10, weight: .medium))
                     .tracking(1.2)
@@ -2149,19 +1959,13 @@ private struct ProjectPulseCard: View {
     }
 }
 
-private struct PulseProject: Identifiable {
-    let id = UUID()
-    let status: StatusKind
-    let statusLabel: String
-    let title: String
-    let touched: String
-    let action: String
-}
-
 // MARK: - Day header + column
 
 private struct DayHeader: View {
-    @Binding var day: WeekDay
+    // Phase 5a: read-only day header. The inline DayTypeEditor (which mutated
+    // a binding into day.dayTypes) is gone; day-type editing flows through the
+    // gear-icon → DayTypeSettingsSheet path until write-back lands in 5b.
+    let day: WeekDay
 
     var body: some View {
         VStack(alignment: .center, spacing: Space.s1) {
@@ -2172,7 +1976,12 @@ private struct DayHeader: View {
                 .font(.headlineMD)
                 .foregroundStyle(day.isToday ? Color.tertiary : Color.onSurface)
 
-            DayTypeEditor(types: $day.dayTypes)
+            VStack(spacing: 3) {
+                ForEach(day.sortedDayTypes, id: \.self) { type in
+                    DayTypePill(kind: type)
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+            }
         }
         .padding(.vertical, Space.s2)
         .padding(.horizontal, Space.s2)
@@ -2362,19 +2171,22 @@ private struct DayColumn: View {
                 .frame(height: totalHeight)
 
             ForEach(day.events) { event in
+                // Hour-relative positioning per the engine JSON spec — 8 AM is
+                // the visible top of the grid (offset 0). 64pt baseline × hourScale
+                // = current hourHeight, so the math collapses to (h × hourHeight).
                 EventBlock(event: event)
-                    .frame(height: event.height * hourScale)
+                    .frame(height: (event.endHour - event.startHour) * 64 * hourScale)
                     .padding(.horizontal, 2)
-                    .offset(y: event.top * hourScale)
-                    .draggable(event.id.uuidString)
+                    .offset(y: (event.startHour - 6.0) * 64 * hourScale)
+                    .draggable(event.id)
             }
 
-            if let nowOffset = day.nowLineOffset {
+            if let nowHour = day.nowLineHour {
                 Rectangle()
                     .fill(Color.tertiary)
                     .frame(height: 1.5)
                     .padding(.horizontal, 2)
-                    .offset(y: nowOffset * hourScale)
+                    .offset(y: (nowHour - 6.0) * 64 * hourScale)
             }
         }
         .frame(maxWidth: .infinity)
@@ -2424,51 +2236,20 @@ private struct EventBlock: View {
     }
 }
 
-// MARK: - Models
-
-private struct WeekDay: Identifiable {
-    let id = UUID()
-    let name: String
-    let num: String
-    var dayTypes: Set<DayType>
-    let isToday: Bool
-    var events: [Event]
-    var nowLineOffset: CGFloat? = nil
-
-    // Stable ordering of pills (so toggling doesn't reshuffle visually).
-    var sortedDayTypes: [DayType] {
-        DayType.allCases.filter { dayTypes.contains($0) }
-    }
-
-    // First active type, or .open as a sane fallback for downstream UI that
-    // surfaces a single representation (e.g. day breakdown narrative).
-    var primaryDayType: DayType {
-        sortedDayTypes.first ?? .open
-    }
-}
-
-// MARK: - Errand model + row
-
-private struct Errand: Identifiable {
-    let id = UUID()
-    var title: String
-    var location: String?
-    var daysPending: Int
-    var routedTo: String?
-    var isDone: Bool = false
-}
+// MARK: - Errand row
+//
+// Per Phase 5a wire-up: takes the errand by value + a callback for toggle-done
+// since the data source is read-only at this stage. Parent routes the callback
+// to a TODO until Phase 5b adds write-back to the engine.
 
 private struct ErrandRow: View {
-    @Binding var errand: Errand
+    let errand: Errand
     let onOpen: () -> Void
+    let onToggleDone: () -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: Space.s3) {
-            Button {
-                withAnimation(.easeOut(duration: 0.3)) {
-                    errand.isDone.toggle()
-                }
-            } label: {
+            Button(action: onToggleDone) {
                 ZStack {
                     RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
                         .strokeBorder(errand.isDone ? Color.statusScheduled : Color.outlineVariant, lineWidth: 1.5)
@@ -2558,65 +2339,6 @@ private struct DaysPendingPill: View {
     }
 }
 
-private enum DayType: CaseIterable, Hashable {
-    case make, move, recover, admin, open
-
-    var label: String {
-        switch self {
-        case .make:    return "Make"
-        case .move:    return "Move"
-        case .recover: return "Recover"
-        case .admin:   return "Admin"
-        case .open:    return "Open"
-        }
-    }
-
-    var tint: Color {
-        switch self {
-        case .make:    return Color.statusScheduled
-        case .move:    return Color.tertiary
-        case .recover: return Color.brandRust
-        case .admin:   return Color.statusDraft
-        case .open:    return Color.statusNeutral
-        }
-    }
-
-    // Engine-spec.md §Day Types: an exclusive type (e.g. Off) replaces all
-    // others — the dropdown hides its plus cell. None of the redesign HTML's
-    // 5 mock types are exclusive; Phase 5 wires the user's real config which
-    // may include Off or similar.
-    var isExclusive: Bool { false }
-}
-
-private struct Event: Identifiable {
-    let id = UUID()
-    var top: CGFloat
-    var height: CGFloat
-    let time: String?
-    let title: String
-    let kind: EventKind
-}
-
-private enum EventKind {
-    case regular, accent, errand
-}
-
-private struct TriageEntry: Identifiable, Hashable {
-    let id = UUID()
-    let status: StatusKind
-    let title: String
-    let meta: String
-
-    static func == (lhs: TriageEntry, rhs: TriageEntry) -> Bool { lhs.id == rhs.id }
-    func hash(into hasher: inout Hasher) { hasher.combine(id) }
-}
-
-private struct Proposal: Identifiable {
-    let id = UUID()
-    let title: String
-    let reasoning: String
-}
-
 // MARK: - Project Detail sheet
 
 private struct ProjectDetailSheet: View {
@@ -2686,7 +2408,7 @@ private struct ProjectDetailSheet: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
             HStack(spacing: Space.s2) {
-                StatusDot(project.status)
+                StatusDot(project.status.styleKind)
                 Text(project.statusLabel.uppercased())
                     .font(.system(size: 10, weight: .medium))
                     .tracking(1.2)

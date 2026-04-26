@@ -127,6 +127,12 @@ struct FortAbodeUtilityCentralApp: App {
     @State private var updaterService: AppUpdaterService
     @State private var appState = AppState()
 
+    // Weekly Rhythm data source — Phase 5a wire. Default impl is FileBacked
+    // with a mock fallback, so the moment the engine starts emitting JSON to
+    // `~/.../Weekly Flow/{user}/dashboards/dashboard-{date}.json` the app picks
+    // it up automatically. Until then, mock data keeps the UI populated.
+    @State private var weeklyRhythmStore = WeeklyRhythmStore(impl: FileBackedWeeklyRhythmDataSource())
+
     // Sparkle updater controller — starts checking for updates automatically
     private let updaterController: SPUStandardUpdaterController
 
@@ -164,6 +170,7 @@ struct FortAbodeUtilityCentralApp: App {
                         .environment(viewModel)
                         .environment(updaterService)
                         .environment(appState)
+                        .environment(weeklyRhythmStore)
                 } else {
                     ProgressView("Loading...")
                         .frame(minWidth: 900, minHeight: 600)

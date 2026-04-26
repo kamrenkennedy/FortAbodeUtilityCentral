@@ -218,9 +218,9 @@ struct SettingsView: View {
 
             DashboardCard(verticalPadding: Space.s2, horizontalPadding: Space.s6) {
                 VStack(spacing: 0) {
-                    ForEach(apiKeys.indices, id: \.self) { i in
-                        APIKeyRow(entry: apiKeys[i])
-                        if i < apiKeys.count - 1 {
+                    ForEach(apiKeys) { entry in
+                        APIKeyRow(entry: entry)
+                        if entry.id != apiKeys.last?.id {
                             RowSeparator()
                         }
                     }
@@ -355,7 +355,8 @@ private struct SecondaryButton: View {
 
 // MARK: - API key row
 
-private struct APIKeyEntry {
+private struct APIKeyEntry: Identifiable {
+    let id = UUID()
     let label: String
     let masked: String
 }

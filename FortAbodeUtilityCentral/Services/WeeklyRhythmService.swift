@@ -6,14 +6,21 @@ import Foundation
 actor WeeklyRhythmService {
 
     private let fm = FileManager.default
+    private let pathResolver = WeeklyRhythmPathResolver()
 
     private var homePath: String {
         fm.homeDirectoryForCurrentUser.path
     }
 
-    /// iCloud path where Weekly Rhythm lives
+    /// iCloud path where Weekly Rhythm lives. Resolves the canonical folder
+    /// (`Weekly Flow` first, then `Weekly Rhythm` legacy) on machines that have
+    /// either; falls back to the canonical `Weekly Flow` path for new setups so
+    /// `setupWeeklyFlow` creates the folder under the canonical name.
     private var weeklyFlowPath: String {
-        "\(homePath)/Library/Mobile Documents/com~apple~CloudDocs/Kennedy Family Docs/Weekly Rhythm"
+        if let resolved = pathResolver.resolve() {
+            return resolved.rootPath
+        }
+        return WeeklyRhythmPathResolver.ResolvedRoot.weeklyFlow.path
     }
 
     private var deployedEnginSpec: String { "\(weeklyFlowPath)/engine-spec.md" }

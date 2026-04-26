@@ -12,7 +12,7 @@ struct HomeView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                EditorialHeader(eyebrow: "Family Dashboard", title: todaysTitle)
+                EditorialHeader(eyebrow: "Dashboard", title: todaysTitle)
 
                 VStack(alignment: .leading, spacing: Space.s10) {
                     twoColumnSection
@@ -180,9 +180,9 @@ private struct TriageCard: View {
     var body: some View {
         DashboardCard(isHoverable: true) {
             VStack(spacing: 0) {
-                ForEach(items.indices, id: \.self) { i in
-                    triageRow(items[i])
-                    if i < items.count - 1 {
+                ForEach(items) { item in
+                    triageRow(item)
+                    if item.id != items.last?.id {
                         RowSeparator()
                     }
                 }
@@ -219,7 +219,8 @@ private struct TriageCard: View {
     }
 }
 
-private struct TriageItem {
+private struct TriageItem: Identifiable {
+    let id = UUID()
     let status: StatusKind
     let title: String
     let meta: String
@@ -280,9 +281,8 @@ private struct ThisWeekCard: View {
             }
 
             VStack(alignment: .leading, spacing: Space.s4) {
-                ForEach(events.indices, id: \.self) { i in
-                    let (time, title, meta) = events[i]
-                    eventRow(time: time, title: title, meta: meta)
+                ForEach(Array(events.enumerated()), id: \.offset) { _, event in
+                    eventRow(time: event.0, title: event.1, meta: event.2)
                 }
             }
         }
@@ -323,9 +323,9 @@ private struct MarketplacePulseCard: View {
     var body: some View {
         DashboardCard(isHoverable: true) {
             VStack(spacing: 0) {
-                ForEach(items.indices, id: \.self) { i in
-                    pulseRow(items[i])
-                    if i < items.count - 1 {
+                ForEach(items) { item in
+                    pulseRow(item)
+                    if item.id != items.last?.id {
                         RowSeparator()
                     }
                 }
@@ -379,7 +379,8 @@ private enum PulseKind {
     case installed
 }
 
-private struct PulseItem {
+private struct PulseItem: Identifiable {
+    let id = UUID()
     let kind: PulseKind
     let title: String
     let meta: String

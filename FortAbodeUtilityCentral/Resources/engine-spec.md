@@ -1,4 +1,4 @@
-<!-- Engine Spec v2.1.0 — Managed by Fort Abode — Updates to this file are picked up on next skill run -->
+<!-- Engine Spec v2.2.0 — Managed by Fort Abode — Updates to this file are picked up on next skill run -->
 
 # Weekly Rhythm Engine
 
@@ -353,6 +353,249 @@ Parse from memory:
 **Step 4b — Config fallback:** If today maps to "Personal" in the day type schedule.
 
 **If protected:** Pull Reminders only. Show tasks due today + overdue. Suppress everything else.
+
+---
+
+## Step 4c — Drain Pending Mutations
+
+When the user edits state in Fort Abode (v4.x and later) — drag-reschedules an event, marks an errand done, accepts a proposal, RSVPs to an invite, edits a triage entry — the app captures each change as a JSON mutation entry in a sibling file alongside the engine's dashboard output:
+
+```
+{icloud_path}/dashboards/dashboard-{ISODate}.json           ← engine-emitted (existing)
+{icloud_path}/dashboards/dashboard-{ISODate}-pending.json   ← app-emitted (new in v2.2.0)
+```
+
+The pending file accumulates user mutations until the engine drains it. Fort Abode handles optimistic UI and replay-on-load locally, but the actual side-effects on Apple Reminders, Google Calendar, Memory MCP, and Notion only happen when this step runs.
+
+**This step must run before Step 5** so subsequent input pulls read the post-edit state of every source-of-truth.
+
+### Pending file shape
+
+```json
+{
+  "schemaVersion": 1,
+  "weekISODate": "2026-04-21",
+  "createdAt": "2026-04-26T14:30:12Z",
+  "mutations": [
+    {
+      "id": "8C6D2E3A-...",
+      "appliedAt": "2026-04-26T14:30:12Z",
+      "mutation": {
+        "kind": "errandDoneToggle",
+        "errandID": "err-amazon",
+        "isDone": true
+      }
+    }
+  ]
+}
+```
+
+- `schemaVersion` — currently `1`. If unknown, the engine logs a warning and skips the file (does NOT rename or drain).
+- `weekISODate` — the Monday of the target week (matches the sibling `dashboard-{ISODate}.json`).
+- `createdAt` — when the file was first written. Used to sort multiple pending files in order.
+- `mutations[]` — append-only ordered list. Each entry has a stable UUID `id`, `appliedAt` timestamp, and a `mutation` payload tagged with `kind`.
+
+### Drain protocol
+
+1. **Glob** for `{icloud_path}/dashboards/dashboard-*-pending.json`. Exclude any path matching `*-pending.applied-*.json` — those are already-drained audit copies.
+2. **Sort** matched files by `createdAt` ascending so older intent applies first.
+3. **For each file:**
+   1. Read and decode as JSON.
+   2. If `schemaVersion` is unknown (anything other than `1`): log `[drain] file={name} schemaVersion={n} unknown, skipped` and move on. Do NOT rename — leave it for a future engine version that knows how to parse it.
+   3. **For each mutation entry**, dispatch by `mutation.kind` per the table below. Per-entry failures are logged with the entry's `id` and the engine continues with the next entry — never abort the whole drain on one bad mutation.
+   4. **On full-file processing complete** (every entry either applied or individually logged as failed): rename the file atomically to `dashboard-{ISODate}-pending.applied-{ISO_TIMESTAMP}.json` (e.g. `dashboard-2026-04-21-pending.applied-2026-04-26T08-02-15.json`). Do NOT delete — the rename leaves a 30-day audit breadcrumb that helps diagnose state drift. `mv` on the same filesystem is atomic on macOS.
+4. Continue with Step 5 (Pull Inputs). The engine now reads the updated source-of-truth.
+
+### Mutation kinds
+
+#### `errandDoneToggle`
+
+```json
+{ "kind": "errandDoneToggle", "errandID": "err-amazon", "isDone": true }
+```
+
+**Action:** Apple Reminders MCP. Locate the matching Reminder by `errandID` (or by title-prefix match if the dashboard's emitted ID space differs from the engine's internal IDs). Mark complete (`isDone: true`) or un-complete (`isDone: false`).
+
+#### `eventMove`
+
+```json
+{
+  "kind": "eventMove",
+  "eventID": "ev-thu-braxton3",
+  "newDayIndex": 4,
+  "newStartHour": 14.0,
+  "newEndHour": 16.0
+}
+```
+
+**Action:** Google Calendar MCP — `gcal_update_event`. Compute the new ISO start/end:
+- Anchor to the week's Monday (from `weekISODate`).
+- Add `newDayIndex` days (0 = Monday, 6 = Sunday — must match the engine's emitted `weekDays` array order).
+- `newStartHour * 60` minutes = offset within the day (e.g. `14.0` → 14:00, `14.5` → 14:30).
+- Same for `newEndHour`.
+
+#### `eventEdit`
+
+```json
+{
+  "kind": "eventEdit",
+  "eventID": "ev-thu-braxton3",
+  "patch": {
+    "title": "Braxton edit · pass 3 (revised)",
+    "dayOfWeek": "Friday",
+    "typeTag": "Make",
+    "startTime": "10:00 AM",
+    "duration": "3 hours",
+    "notes": "Move to Friday — Tuesday is over-booked."
+  }
+}
+```
+
+All `patch` fields are optional — only fields the user changed are present. Per-field actions:
+
+- **`dayOfWeek` + `startTime` + `duration`**: parse to ISO start/end and `gcal_update_event`. Patterns:
+  - Time: `^(\d+):(\d+)\s+(AM|PM)$` (e.g. `"10:00 AM"` → 10.0, `"2:30 PM"` → 14.5)
+  - Duration: `^(\d+(?:\.\d+)?)\s+(hours?|min)$` (e.g. `"3 hours"` → 3.0, `"30 min"` → 0.5, `"1.5 hours"` → 1.5)
+- **`title`**: `gcal_update_event` with new summary.
+- **`notes`**: `gcal_update_event` with notes appended to event description.
+- **`typeTag`**: NO GCal action. Type tags are engine state — reflected on the next dashboard generation by re-categorizing the event during render.
+
+#### `reminderEdit`
+
+```json
+{
+  "kind": "reminderEdit",
+  "reminderID": "rem-amazon-return",
+  "patch": {
+    "title": "Return Amazon package — moved to Tuesday",
+    "dueDay": "Tuesday",
+    "list": "Errands",
+    "tag": "Move",
+    "notes": "Drop off after the gallery delivery."
+  }
+}
+```
+
+**Action:** Apple Reminders MCP — `update_reminder` with the matching ID. Apply per patch:
+- `title` → reminder title
+- `dueDay` → due date (parse `"Tuesday"` etc. relative to the current week's Monday)
+- `list` → list move
+- `notes` → reminder notes
+- `tag` → engine state, no Reminders state change
+
+#### `triageEdit`
+
+```json
+{
+  "kind": "triageEdit",
+  "triageID": "tri-marisol",
+  "patch": {
+    "followUp": "Tomorrow morning",
+    "dismissReason": "Resolved via Slack thread",
+    "disposition": "dismiss"
+  }
+}
+```
+
+**Action:**
+- `disposition: "dismiss"` → write a `Triage_History` fact in Memory MCP (same dedup mechanism as Step 11b-ii — the item won't re-surface on next run). Format: `[YYYY-MM-DD] Dismissed: '{title}' — {dismissReason or "no reason given"}`.
+- `disposition: "snooze"` → write a `Triage_Snooze` fact in Memory MCP with the resurface timestamp parsed from `followUp`. Step 5 should consult this entity and skip snoozed items until the resurface time has passed.
+- `disposition: "reply"` → leave the item in triage but tag with the user's intent for the next run's display. Store as a `Triage_Intent` fact.
+
+#### `triageRsvp`
+
+```json
+{ "kind": "triageRsvp", "triageID": "tri-team-sync", "response": "accept" }
+```
+
+`response` is one of `"accept" | "tentative" | "decline" | "cleared"`.
+
+**Action:** Locate the underlying Google Calendar invite via the triage item's `pending_invite` linkage (engine state — when emitting `pending_invite` triage items, the engine records which calendar event ID the invite came from). Then call `gcal_respond_to_event`:
+- `accept` → `accepted`
+- `tentative` → `tentative`
+- `decline` → `declined`
+- `cleared` → revert to `needsAction` if the API allows it; otherwise no-op + log
+
+#### `errandEdit`
+
+```json
+{
+  "kind": "errandEdit",
+  "errandID": "err-amazon",
+  "patch": {
+    "title": "Return Amazon package",
+    "location": "Downtown · 12 min",
+    "routedTo": "Monday",
+    "notes": "After morning run.",
+    "isDone": false
+  }
+}
+```
+
+**Action:** Apple Reminders MCP — `update_reminder` for title / list / due-date / completion state. `routedTo` is engine state and reflects on the next dashboard generation's errand routing — not a Reminders state change. `location` and `notes` go into the Reminders entry's notes field.
+
+#### `proposalAccept` / `proposalDecline`
+
+```json
+{ "kind": "proposalAccept", "proposalID": "prop-move-sync" }
+```
+
+**Action:**
+- For BOTH: write a calibration fact to Memory MCP under `Family_Message_Calibration` (same shape as Step 11d) so future runs weight similar proposals. Format: `[YYYY-MM-DD] {accepted|declined}: '{proposal title}' — {reason if any}`.
+- For `proposalAccept`: also execute the side-effect described in the proposal's `proposedBlock` (per Step 10c) — typically a `notion-update-page` call for a Notion task update, or a `gcal_create_event` call for a calendar block creation. Match the action to the proposal's `actionKind`.
+- For `proposalDecline`: just record the decision in Memory MCP, no side-effect.
+
+#### `dayTypeChange` and `errandReorder` — should NOT appear in pending file
+
+These mutation kinds are routed by the app to other destinations and should never reach the pending file:
+
+- `dayTypeChange` → Fort Abode writes directly to `{icloud_path}/config.md` under the `## Day Types` section. The engine reads config on every run, so changes apply automatically with no drain action.
+- `errandReorder` → app-local UI sort order at `~/Library/Application Support/FortAbodeUtilityCentral/weekly-rhythm-ui-state.json`. Pure UX state — never crosses the iCloud boundary.
+
+If either kind appears in a pending file (defensive case — app bug or hand-crafted file), log `[drain] mutation={kind} id={id} unexpected — should not be in pending file, skipped` and skip the entry. Do NOT fail the whole file.
+
+### Idempotency and safety
+
+The protocol is naturally idempotent so retries are safe:
+
+- Apple Reminders mark-complete on an already-complete reminder is a no-op.
+- `gcal_update_event` to the same target time/title is a no-op.
+- Memory MCP fact insertion deduplicates on entity + content.
+- `gcal_respond_to_event` to the user's existing response is a no-op.
+
+If the engine drains a file but crashes before the rename, the next run reads the same file and re-applies — no state corruption. If the rename succeeds but a per-entry action failed earlier, the failure is logged with the entry's `id` (one log line per failed entry — that's the audit). The engine does NOT retry per-entry failures across runs — the user can manually re-edit if needed.
+
+**Atomicity:** Fort Abode writes pending files via `Data.write(.atomic)` (under-the-hood `.tmp` + rename), so the engine never reads a half-written file. The engine's rename is also atomic on the same filesystem.
+
+### Logging
+
+Every drain action emits a structured log entry. These flow into the Step 13 Run Report and surface in the dashboard's Run Health detail modal.
+
+Format:
+
+```
+[drain] mutation={kind} id={id} applied
+[drain] mutation={kind} id={id} failed: {error}
+[drain] file={name} drained ok, renamed to *-pending.applied-{ISO}.json
+[drain] file={name} schemaVersion={n} unknown, skipped
+[drain] mutation={kind} id={id} unexpected — should not be in pending file, skipped
+```
+
+### Required MCPs for this step
+
+- File system access to `{icloud_path}/dashboards/`
+- Apple Reminders MCP (errand toggles, reminder edits, errand edits)
+- Google Calendar MCP (event moves/edits, RSVP responses)
+- Memory MCP (proposal calibration, triage dismissals/snoozes, triage intent)
+- Notion MCP (proposal acceptance side-effects when the proposed block is a task update)
+
+If any required MCP is unavailable when an entry needs it, log the failure for that entry with the MCP name and continue. The file stays in place for retry on the next run when the MCP is back.
+
+### Graceful degradation
+
+- **No pending file present:** silently skip this step. Almost every run on a single-Mac setup will have nothing to drain — Fort Abode only writes a pending file when the user has actually edited something.
+- **Pending file present but empty mutations array:** rename to `applied` immediately (no work to do, just close out the file).
+- **Folder access denied (Cowork sandbox):** if Step 1a-ii has already mounted folder access, this step works the same way. If folder access is unavailable, log `[drain] folder access unavailable, skipped` and continue — Fort Abode-side mutations will accumulate until the next run with full access.
 
 ---
 

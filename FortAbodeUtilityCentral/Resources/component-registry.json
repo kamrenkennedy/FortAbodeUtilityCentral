@@ -335,7 +335,12 @@
         "relative_path": "Kennedy Family Docs/Weekly Rhythm/dashboard-template.html"
       }
     },
-    "update_source": "none",
+    "update_source": {
+      "github_release": {
+        "owner": "kamrenkennedy",
+        "repo": "weekly-rhythm"
+      }
+    },
     "update_command": "none",
     "setup_flow": {
       "id": "weekly-rhythm-setup",

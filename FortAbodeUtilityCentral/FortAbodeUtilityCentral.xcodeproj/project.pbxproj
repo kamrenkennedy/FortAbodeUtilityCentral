@@ -24,7 +24,9 @@
 		15DC17F5631A4CF72E02C261 /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = D59852CE50DAEC545C6B0C0E /* ChatMessage.swift */; };
 		18317CE6CA9311E67496A0AA /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FB784FE53060D8FF7EEE72 /* AppState.swift */; };
 		1BE2080AB4AF9C0D5DDF3A05 /* SetupWizardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00E7940EB3A6AD0DB6A38C2F /* SetupWizardViewModel.swift */; };
+		25D74F095E9237042C25585C /* MCPProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DF8C7B7AABE2431944A25E9 /* MCPProbe.swift */; };
 		2914B8F6E862FE0B1914BFAE /* WeeklyRhythmEngineStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD284AB922259409852EBE73 /* WeeklyRhythmEngineStore.swift */; };
+		2B07591CF9F2646F8B903101 /* MissingMCPsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 412B13C7BB1BF39888717812 /* MissingMCPsSheet.swift */; };
 		2B92C1E7ECA9DC4D7DC50F0E /* FeedbackService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DACD2838A1C216461103AE6 /* FeedbackService.swift */; };
 		2C512BA73630DE2CCC93F99F /* AlignedSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F6F08569570B37845FC1387 /* AlignedSheet.swift */; };
 		2C7ED0531E56C8235AFCE6BC /* PendingMutationsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F5E929A9A401F87718B0983 /* PendingMutationsStore.swift */; };
@@ -143,6 +145,7 @@
 		3C3580CD173E87DCBCC770F4 /* ChatPanelHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPanelHeader.swift; sourceTree = "<group>"; };
 		3DACD2838A1C216461103AE6 /* FeedbackService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackService.swift; sourceTree = "<group>"; };
 		3F6F08569570B37845FC1387 /* AlignedSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignedSheet.swift; sourceTree = "<group>"; };
+		412B13C7BB1BF39888717812 /* MissingMCPsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissingMCPsSheet.swift; sourceTree = "<group>"; };
 		418F1A3FCCAA74A9749BDE1E /* WeeklyRhythmPathResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmPathResolver.swift; sourceTree = "<group>"; };
 		47821DD2E2C90209AADE1131 /* TriageRsvpControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TriageRsvpControl.swift; sourceTree = "<group>"; };
 		48EB2A999B000B9AC11BB0DD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -164,6 +167,7 @@
 		767920B3A5A38AFD4081D133 /* ClaudeChatPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeChatPane.swift; sourceTree = "<group>"; };
 		782EFED7B8F2AD1265BCF690 /* ComponentRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentRegistry.swift; sourceTree = "<group>"; };
 		7D874D5A2A3528B406492C6B /* FullDiskAccessService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullDiskAccessService.swift; sourceTree = "<group>"; };
+		7DF8C7B7AABE2431944A25E9 /* MCPProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPProbe.swift; sourceTree = "<group>"; };
 		7FB63D56853D1FFB0742D448 /* MarketplaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketplaceView.swift; sourceTree = "<group>"; };
 		80DD857A1CB762AC7991C68C /* WeeklyRhythmUIStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmUIStateStore.swift; sourceTree = "<group>"; };
 		83171E1A838C0577BABFF23F /* EditEventSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditEventSheet.swift; sourceTree = "<group>"; };
@@ -236,6 +240,7 @@
 			isa = PBXGroup;
 			children = (
 				DBFD216C2A59D0C5332408B4 /* ClaudeCLIDetector.swift */,
+				7DF8C7B7AABE2431944A25E9 /* MCPProbe.swift */,
 				DCC66F9F30443EC4D0D153F9 /* WeeklyRhythmEngineRunner.swift */,
 				CD284AB922259409852EBE73 /* WeeklyRhythmEngineStore.swift */,
 				5C01EEE9A69F8B9DE4572C90 /* WeeklyRhythmSkillInstaller.swift */,
@@ -371,6 +376,7 @@
 				83171E1A838C0577BABFF23F /* EditEventSheet.swift */,
 				564A22B818E62E0E1921A86F /* EditTriageSheet.swift */,
 				0A7111D9656E3FA9D7F6F054 /* GhostBorderFieldDropdown.swift */,
+				412B13C7BB1BF39888717812 /* MissingMCPsSheet.swift */,
 				AC9BDBAE1BA8CDCF7640CE6B /* PageScaffold.swift */,
 				BD5F1C96EFA4D647FFDA57BB /* RunHealthDetailSheet.swift */,
 				9462C3630F3A00A990888CA2 /* RunHealthPill.swift */,
@@ -667,7 +673,9 @@
 				63B0BCA2036A45DF148B3C37 /* HealthCheck.swift in Sources */,
 				F4855FF4FA0E88D59716A23B /* HomeView.swift in Sources */,
 				05E6CAD0B79916E67AD9C87D /* KeychainService.swift in Sources */,
+				25D74F095E9237042C25585C /* MCPProbe.swift in Sources */,
 				8FEB14627351680D4959D1BF /* MarketplaceView.swift in Sources */,
+				2B07591CF9F2646F8B903101 /* MissingMCPsSheet.swift in Sources */,
 				4BC30361A3F18D7A991A72EE /* MockWeeklyRhythmDataSource.swift in Sources */,
 				84EF3894AB836BBA01A7FB6A /* NotificationService.swift in Sources */,
 				3DAC043E1F1CE49D3F91AA79 /* PageScaffold.swift in Sources */,

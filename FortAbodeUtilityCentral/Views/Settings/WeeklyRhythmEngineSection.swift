@@ -19,6 +19,7 @@ struct WeeklyRhythmEngineSection: View {
     @AppStorage(AppSettingsKey.weeklyRhythmEngineLastRunAt)         private var lastRunAtTimestamp: Double = 0
     @AppStorage(AppSettingsKey.weeklyRhythmEngineLastRunSucceeded)  private var lastRunSucceeded: Bool = false
     @AppStorage(AppSettingsKey.weeklyRhythmEngineLastRunSummary)    private var lastRunSummary: String = ""
+    @AppStorage(AppSettingsKey.weeklyRhythmEngineCLIPathOverride)   private var cliPathOverride: String = ""
 
     @State private var installSheetOpen: Bool = false
     @State private var detecting: Bool = false
@@ -30,6 +31,8 @@ struct WeeklyRhythmEngineSection: View {
             DashboardCard(verticalPadding: Space.s2, horizontalPadding: Space.s6) {
                 VStack(spacing: 0) {
                     cliStatusRow
+                    RowSeparator()
+                    customCLIPathRow
                     RowSeparator()
                     runNowRow
                     RowSeparator()
@@ -83,6 +86,62 @@ struct WeeklyRhythmEngineSection: View {
             }
         }
         .padding(.vertical, Space.s4)
+    }
+
+    private var customCLIPathRow: some View {
+        HStack(alignment: .top, spacing: Space.s4) {
+            VStack(alignment: .leading, spacing: Space.s1) {
+                Text("Custom CLI path")
+                    .font(.bodyMD.weight(.medium))
+                    .foregroundStyle(Color.onSurface)
+                Text(customCLIPathSubtitle)
+                    .font(.bodySM)
+                    .foregroundStyle(Color.onSurfaceVariant)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: Space.s2)
+
+            HStack(spacing: Space.s2) {
+                Button("Browse…") {
+                    selectCustomCLIBinary()
+                }
+                .buttonStyle(.alignedSecondaryMini)
+
+                if !cliPathOverride.isEmpty {
+                    Button("Clear") {
+                        cliPathOverride = ""
+                        Task { await engineStore.detectCLI() }
+                    }
+                    .buttonStyle(.alignedSecondaryMini)
+                }
+            }
+        }
+        .padding(.vertical, Space.s4)
+    }
+
+    private var customCLIPathSubtitle: String {
+        if cliPathOverride.isEmpty {
+            return "Pin a specific `claude` binary if auto-detection picks the wrong one."
+        }
+        return cliPathOverride
+    }
+
+    private func selectCustomCLIBinary() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.treatsFilePackagesAsDirectories = true
+        // Allow showing hidden directories so users can pick a binary in
+        // ~/.local/bin or similar.
+        panel.showsHiddenFiles = true
+        panel.message = "Select your `claude` CLI binary"
+
+        if panel.runModal() == .OK, let url = panel.url {
+            cliPathOverride = url.path
+            Task { await engineStore.detectCLI() }
+        }
     }
 
     private var runNowRow: some View {

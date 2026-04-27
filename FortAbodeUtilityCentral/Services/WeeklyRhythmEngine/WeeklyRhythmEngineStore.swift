@@ -23,6 +23,7 @@ public final class WeeklyRhythmEngineStore {
         case running(progress: String)
         case installingSkill(progress: String)
         case needsSkill
+        case missingMCPs([MCPProbe.Requirement])
         case succeeded(result: RunResult)
         case failed(error: String)
     }
@@ -30,19 +31,23 @@ public final class WeeklyRhythmEngineStore {
     public private(set) var runState: RunState = .idle
     public private(set) var cliDetection: ClaudeCLIDetector.Result = .notFound
     public private(set) var lastRunResult: RunResult?
+    public private(set) var lastMCPProbe: MCPProbe.ProbeResult?
 
     private let detector: ClaudeCLIDetector
     private let runner: WeeklyRhythmEngineRunner
     private let installer: WeeklyRhythmSkillInstaller
+    private let mcpProbe: MCPProbe
 
     public init(
         detector: ClaudeCLIDetector = ClaudeCLIDetector(),
         runner: WeeklyRhythmEngineRunner = WeeklyRhythmEngineRunner(),
-        installer: WeeklyRhythmSkillInstaller = WeeklyRhythmSkillInstaller()
+        installer: WeeklyRhythmSkillInstaller = WeeklyRhythmSkillInstaller(),
+        mcpProbe: MCPProbe = MCPProbe()
     ) {
         self.detector = detector
         self.runner = runner
         self.installer = installer
+        self.mcpProbe = mcpProbe
         self.lastRunResult = Self.loadPersistedLastRun()
     }
 
@@ -92,7 +97,38 @@ public final class WeeklyRhythmEngineStore {
             return
         }
 
+        // MCP pre-flight — if any required group is uncovered, hand back to
+        // the UI for a "Run anyway?" decision. Probe failures fail open.
+        let probe = await mcpProbe.probe(cliPath: path)
+        lastMCPProbe = probe
+        if !probe.probeFailed {
+            let missing = MCPProbe.missingRequirements(in: probe.connected)
+            if !missing.isEmpty {
+                runState = .missingMCPs(missing)
+                return
+            }
+        }
+
         await runEngine(cliPath: path)
+    }
+
+    /// Bypass the missing-MCP warning and run anyway. Called from the warning
+    /// sheet's "Run anyway" button — the engine might still partial-succeed
+    /// even with one MCP missing, so we don't hard-block.
+    public func runAnywayAfterMissingMCPs() async {
+        guard case .found(let path, _) = cliDetection else {
+            runState = .failed(error: "Claude CLI not found.")
+            return
+        }
+        await runEngine(cliPath: path)
+    }
+
+    /// Drop the `.missingMCPs` state back to idle when the user dismisses the
+    /// warning sheet without proceeding.
+    public func cancelMissingMCPs() async {
+        if case .missingMCPs = runState {
+            runState = .idle
+        }
     }
 
     /// Drop the `.needsSkill` state back to idle when the user dismisses the

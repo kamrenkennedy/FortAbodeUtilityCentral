@@ -21,6 +21,7 @@ struct WeeklyRhythmRunControl: View {
     let onPillTap: () -> Void
 
     @Environment(WeeklyRhythmEngineStore.self) private var engineStore
+    @Environment(AppState.self) private var appState
 
     @AppStorage(AppSettingsKey.weeklyRhythmEngineScheduleEnabled)  private var scheduleEnabled: Bool = false
     @AppStorage(AppSettingsKey.weeklyRhythmEngineScheduleHour)     private var scheduleHour: Int = 8
@@ -57,6 +58,24 @@ struct WeeklyRhythmRunControl: View {
                 }
             )
             .frame(minWidth: 480, idealWidth: 540, minHeight: 360, idealHeight: 420)
+        }
+        .sheet(isPresented: missingMCPsBinding) {
+            if case .missingMCPs(let missing) = engineStore.runState {
+                MissingMCPsSheet(
+                    missing: missing,
+                    onRunAnyway: {
+                        Task { await engineStore.runAnywayAfterMissingMCPs() }
+                    },
+                    onOpenMarketplace: {
+                        appState.selectedDestination = .marketplace
+                        Task { await engineStore.cancelMissingMCPs() }
+                    },
+                    onDismiss: {
+                        Task { await engineStore.cancelMissingMCPs() }
+                    }
+                )
+                .frame(minWidth: 480, idealWidth: 540, minHeight: 360, idealHeight: 460)
+            }
         }
     }
 
@@ -129,6 +148,23 @@ struct WeeklyRhythmRunControl: View {
             set: { presented in
                 if !presented, engineStore.runState == .needsSkill {
                     Task { await engineStore.cancelNeedsSkill() }
+                }
+            }
+        )
+    }
+
+    /// Binding for the missingMCPs sheet — same pattern, different state case.
+    private var missingMCPsBinding: Binding<Bool> {
+        Binding(
+            get: {
+                if case .missingMCPs = engineStore.runState { return true }
+                return false
+            },
+            set: { presented in
+                if !presented {
+                    if case .missingMCPs = engineStore.runState {
+                        Task { await engineStore.cancelMissingMCPs() }
+                    }
                 }
             }
         )

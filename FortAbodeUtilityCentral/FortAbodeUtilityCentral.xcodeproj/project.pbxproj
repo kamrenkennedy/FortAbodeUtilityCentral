@@ -25,6 +25,7 @@
 		2B92C1E7ECA9DC4D7DC50F0E /* FeedbackService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DACD2838A1C216461103AE6 /* FeedbackService.swift */; };
 		2C512BA73630DE2CCC93F99F /* AlignedSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F6F08569570B37845FC1387 /* AlignedSheet.swift */; };
 		2C7ED0531E56C8235AFCE6BC /* PendingMutationsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F5E929A9A401F87718B0983 /* PendingMutationsStore.swift */; };
+		330A710170B2B74902D579D5 /* EditTriageSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 564A22B818E62E0E1921A86F /* EditTriageSheet.swift */; };
 		355F6705C0380EC8CCED0279 /* WeeklyRhythmUIStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80DD857A1CB762AC7991C68C /* WeeklyRhythmUIStateStore.swift */; };
 		377AE9482D6974941E963E1B /* FamilyMemoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14788FA8AC138E58AD03BFC7 /* FamilyMemoryView.swift */; };
 		386B5A369D88921474EC50B4 /* VersionComparisonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0AC8F02FED91F42FC4EB00 /* VersionComparisonTests.swift */; };
@@ -57,6 +58,7 @@
 		91905EBBC828F6BCDF09EF1A /* AlignedDesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 5D70F17E7114E90E5762C0DB /* AlignedDesignSystem */; };
 		91D50E1EB920B8C40D6B33FB /* ClaudeDesktopConfigService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A49ABEA06B33CB1666AD17A0 /* ClaudeDesktopConfigService.swift */; };
 		9C5B1ABB80EFFEF201C62AAB /* WeeklyRhythmDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E417AC3384F05962FA62588 /* WeeklyRhythmDataSource.swift */; };
+		A05720BF393011B270ABE894 /* EditEventSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83171E1A838C0577BABFF23F /* EditEventSheet.swift */; };
 		A1F5C83EBA3836D3FFACAC5D /* WeeklyRhythmService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66C0B457A755E70A4E21D034 /* WeeklyRhythmService.swift */; };
 		A1F93FFFAC5814DE06CC88AF /* WeeklyRhythm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A84C5B5B9F422E0FEA151CF0 /* WeeklyRhythm.swift */; };
 		A2B2C6005EF42A9C341F8826 /* FilePinningService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72B3F9599ED98BC09073C78C /* FilePinningService.swift */; };
@@ -77,6 +79,7 @@
 		C3404068D33521F15C9DAC34 /* whats-new.json in Resources */ = {isa = PBXBuildFile; fileRef = CB4031837BBE075B7CEF1484 /* whats-new.json */; };
 		CA4CA8134B5255875DB1AF2A /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 8B75BAAFED90C32A32CA2420 /* Sparkle */; };
 		CB346FEB794E23991188381B /* CoworkSkillService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B5DB8AEAB5C2C6F4D2DCE /* CoworkSkillService.swift */; };
+		D0927D0CC5D148C03FD75CB4 /* GhostBorderFieldDropdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A7111D9656E3FA9D7F6F054 /* GhostBorderFieldDropdown.swift */; };
 		DC42DBCAD25AF1F2F3FDFF8D /* ConfigMdEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DB01C9B5FC7912CFB5BBD2A /* ConfigMdEditor.swift */; };
 		DF4E9A21418662B5D610866B /* ChangelogEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91BE7F2F52EFF582932E8B9D /* ChangelogEntry.swift */; };
 		DFEE2E123FFC73F011AA13EB /* ClaudeChatPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 767920B3A5A38AFD4081D133 /* ClaudeChatPane.swift */; };
@@ -113,6 +116,7 @@
 		032C293DBDA62F6DEA4FCB24 /* AppUpdaterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdaterService.swift; sourceTree = "<group>"; };
 		03AD9F9995E212DEDA199051 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		04657FBC8960E17F4E585ECA /* StepContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StepContentView.swift; sourceTree = "<group>"; };
+		0A7111D9656E3FA9D7F6F054 /* GhostBorderFieldDropdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GhostBorderFieldDropdown.swift; sourceTree = "<group>"; };
 		0C827BD5D498E86D1F3BEC2D /* GitHubService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubService.swift; sourceTree = "<group>"; };
 		1341A36E69A185933A6187F4 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		14788FA8AC138E58AD03BFC7 /* FamilyMemoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyMemoryView.swift; sourceTree = "<group>"; };
@@ -134,6 +138,7 @@
 		4DB01C9B5FC7912CFB5BBD2A /* ConfigMdEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigMdEditor.swift; sourceTree = "<group>"; };
 		50C8FB18F4E77DC49B18BFA9 /* engine-spec.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "engine-spec.md"; sourceTree = "<group>"; };
 		52A1E55BD560971A940F171A /* VersionDetectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionDetectionService.swift; sourceTree = "<group>"; };
+		564A22B818E62E0E1921A86F /* EditTriageSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditTriageSheet.swift; sourceTree = "<group>"; };
 		5914439D10E470294A91A039 /* FortAbodeUtilityCentral.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FortAbodeUtilityCentral.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5EF56794AE0F9F09B953BC13 /* MockWeeklyRhythmDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockWeeklyRhythmDataSource.swift; sourceTree = "<group>"; };
 		66C0B457A755E70A4E21D034 /* WeeklyRhythmService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmService.swift; sourceTree = "<group>"; };
@@ -148,6 +153,7 @@
 		7D874D5A2A3528B406492C6B /* FullDiskAccessService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullDiskAccessService.swift; sourceTree = "<group>"; };
 		7FB63D56853D1FFB0742D448 /* MarketplaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketplaceView.swift; sourceTree = "<group>"; };
 		80DD857A1CB762AC7991C68C /* WeeklyRhythmUIStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmUIStateStore.swift; sourceTree = "<group>"; };
+		83171E1A838C0577BABFF23F /* EditEventSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditEventSheet.swift; sourceTree = "<group>"; };
 		8599C33B343D91784A3618B0 /* FamilyMemoryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyMemoryModels.swift; sourceTree = "<group>"; };
 		8BECADF7B96CB7D3842E642F /* ActivationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivationView.swift; sourceTree = "<group>"; };
 		8ED7ECBE41703B1FC4EB0791 /* GitHubServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubServiceTests.swift; sourceTree = "<group>"; };
@@ -329,6 +335,9 @@
 			isa = PBXGroup;
 			children = (
 				3F6F08569570B37845FC1387 /* AlignedSheet.swift */,
+				83171E1A838C0577BABFF23F /* EditEventSheet.swift */,
+				564A22B818E62E0E1921A86F /* EditTriageSheet.swift */,
+				0A7111D9656E3FA9D7F6F054 /* GhostBorderFieldDropdown.swift */,
 				AC9BDBAE1BA8CDCF7640CE6B /* PageScaffold.swift */,
 				47821DD2E2C90209AADE1131 /* TriageRsvpControl.swift */,
 			);
@@ -590,6 +599,8 @@
 				DC42DBCAD25AF1F2F3FDFF8D /* ConfigMdEditor.swift in Sources */,
 				CB346FEB794E23991188381B /* CoworkSkillService.swift in Sources */,
 				C0FDF12D701AEAEE4331FF13 /* Destination.swift in Sources */,
+				A05720BF393011B270ABE894 /* EditEventSheet.swift in Sources */,
+				330A710170B2B74902D579D5 /* EditTriageSheet.swift in Sources */,
 				07BA11DC7D460A01979E6F21 /* ErrorLogger.swift in Sources */,
 				6CD4E6A5F0EC7CA6EA53E11B /* FamilyChatPane.swift in Sources */,
 				52D654FD0BE7A805B4F3F1A3 /* FamilyHealthDashboard.swift in Sources */,
@@ -604,6 +615,7 @@
 				A2B2C6005EF42A9C341F8826 /* FilePinningService.swift in Sources */,
 				64CA5B5EAAFCDA5C06236011 /* FortAbodeUtilityCentralApp.swift in Sources */,
 				639646812B867787DB59AD83 /* FullDiskAccessService.swift in Sources */,
+				D0927D0CC5D148C03FD75CB4 /* GhostBorderFieldDropdown.swift in Sources */,
 				06CB33690CC14595E2E99291 /* GitHubService.swift in Sources */,
 				63B0BCA2036A45DF148B3C37 /* HealthCheck.swift in Sources */,
 				F4855FF4FA0E88D59716A23B /* HomeView.swift in Sources */,

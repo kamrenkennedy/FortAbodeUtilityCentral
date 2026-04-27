@@ -73,6 +73,10 @@ struct WeeklyRhythmView: View {
     /// since the engine drains the pending file and re-emits authoritative
     /// state (where invites have either been resolved or remain pending).
     @State private var rsvpSelections: [String: RsvpResponse] = [:]
+    /// ID of the event currently open in the EditEventSheet, or nil when
+    /// no edit is in flight. The sheet looks up the event by ID rather than
+    /// holding a value copy so optimistic snapshot updates flow through.
+    @State private var editingEventID: String?
 
     // Vertical zoom — controls hour-row height. Default 52pt is the desktop
     // spec value (UPDATE-2026-04-26-desktop-mac.md week-grid table). Dragged
@@ -177,8 +181,33 @@ struct WeeklyRhythmView: View {
             await store.load(weekOffset: weekOffset)
         }
         .sheet(item: $detailTriage) { entry in
-            TriageDetailSheet(entry: entry)
-                .frame(minWidth: 480, idealWidth: 560, minHeight: 360, idealHeight: 440)
+            EditTriageSheet(
+                entry: entry,
+                reasoning: triageReasoning(for: entry),
+                onSave: { patch in
+                    Task { await store.apply(.triageEdit(triageID: entry.id, patch: patch)) }
+                },
+                onDismiss: { detailTriage = nil }
+            )
+            .frame(minWidth: 720, idealWidth: 760, minHeight: 460, idealHeight: 560)
+        }
+        .sheet(isPresented: editEventSheetBinding) {
+            if let id = editingEventID, let event = findEvent(byID: id) {
+                EditEventSheet(
+                    event: event,
+                    reasoning: eventReasoning(for: event),
+                    onSave: { patch in
+                        Task { await store.apply(.eventEdit(eventID: event.id, patch: patch)) }
+                    },
+                    onDelete: {
+                        // Local-only optimistic remove; engine will reconcile on next run.
+                        // No dedicated mutation case yet — surface as a `.errandDoneToggle`-style
+                        // signal once the engine drain spec gains delete semantics.
+                    },
+                    onDismiss: { editingEventID = nil }
+                )
+                .frame(minWidth: 720, idealWidth: 760, minHeight: 460, idealHeight: 580)
+            }
         }
         .sheet(item: $detailProposal) { proposal in
             ProposalDetailSheet(
@@ -201,6 +230,44 @@ struct WeeklyRhythmView: View {
             get: { editingErrandID != nil },
             set: { if !$0 { editingErrandID = nil } }
         )
+    }
+
+    private var editEventSheetBinding: Binding<Bool> {
+        Binding(
+            get: { editingEventID != nil },
+            set: { if !$0 { editingEventID = nil } }
+        )
+    }
+
+    /// Locate an event by ID across all weekDays. Used by the edit sheet to
+    /// resolve `editingEventID` to a live event from the snapshot — keeping
+    /// the sheet in sync with optimistic mutations.
+    private func findEvent(byID id: String) -> WREvent? {
+        for day in weekDays {
+            if let e = day.events.first(where: { $0.id == id }) {
+                return e
+            }
+        }
+        return nil
+    }
+
+    /// Placeholder reasoning text. Future: engine emits per-item reasoning
+    /// via the dashboard JSON; this helper reads from the snapshot.
+    private func eventReasoning(for event: WREvent) -> String {
+        "This block came from the engine's most recent run. Adjust the time, day, or duration here — changes queue in the pending file and the engine reconciles on its next run."
+    }
+
+    private func triageReasoning(for entry: TriageEntry) -> String {
+        switch entry.kind {
+        case .pendingInvite:
+            return "Calendar invite from \(entry.meta). RSVP inline or open Edit to set a follow-up plus dismiss reason."
+        case .overdueTask:
+            return "This task slipped past its scheduled day. Pick a new follow-up time or dismiss with a reason."
+        case .needsTimeBlock:
+            return "Engine flagged this for a time block but couldn't auto-place it. Edit to manually schedule or dismiss."
+        case .other:
+            return "Engine queued this for review based on recent activity in the source thread."
+        }
     }
 
     /// Map our Codable `RunHealth` model onto the existing `RunHealthPill.State`
@@ -604,7 +671,8 @@ struct WeeklyRhythmView: View {
                     DayColumn(
                         day: day,
                         totalHeight: dayColumnHeight,
-                        hourScale: hourScale
+                        hourScale: hourScale,
+                        onEditEvent: { event in editingEventID = event.id }
                     )
                     .frame(maxWidth: .infinity)
                     .overlay(alignment: .leading) {
@@ -1743,81 +1811,6 @@ private struct ErrandDetailSheet: View {
     }
 }
 
-// MARK: - Triage Detail sheet (read-only with mock actions)
-
-private struct TriageDetailSheet: View {
-    let entry: TriageEntry
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Space.s5) {
-                EditorialHeader(eyebrow: "Triage", title: entry.title)
-
-                VStack(alignment: .leading, spacing: Space.s5) {
-                    HStack(spacing: Space.s2) {
-                        StatusDot(entry.status.styleKind)
-                        Text(entry.meta)
-                            .font(.bodyMD)
-                            .foregroundStyle(Color.onSurfaceVariant)
-                    }
-
-                    DashboardCard(verticalPadding: Space.s4, horizontalPadding: Space.s4) {
-                        VStack(alignment: .leading, spacing: Space.s2) {
-                            Text("Snippet".uppercased())
-                                .font(.labelSM)
-                                .tracking(1.0)
-                                .foregroundStyle(Color.secondaryText)
-                            Text(snippetForEntry(entry))
-                                .font(.bodyMD)
-                                .foregroundStyle(Color.onSurface)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-
-                    HStack(spacing: Space.s2) {
-                        actionPill(label: "Mark Read", symbol: "envelope.open")
-                        actionPill(label: "Reply", symbol: "arrowshape.turn.up.left")
-                        actionPill(label: "Snooze", symbol: "clock")
-                        actionPill(label: "Archive", symbol: "archivebox")
-                    }
-                }
-                .padding(.horizontal, Space.s10)
-
-                Spacer(minLength: Space.s4)
-            }
-            .padding(.vertical, Space.s8)
-            .frame(maxWidth: 720, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .background(Color.surface)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Close") { dismiss() }
-            }
-        }
-    }
-
-    private func snippetForEntry(_ entry: TriageEntry) -> String {
-        // Mocked snippet text. Phase 5 wires the real source (Gmail/Reminders/Memory).
-        "Mock preview of the source content. Phase 5 will fetch the real snippet (Gmail thread, Reminders item, Family Memory edit, etc) based on the triage source."
-    }
-
-    private func actionPill(label: String, symbol: String) -> some View {
-        Button {} label: {
-            HStack(spacing: Space.s1_5) {
-                Image(systemName: symbol).font(.system(size: 12))
-                Text(label).font(.labelMD.weight(.medium))
-            }
-            .foregroundStyle(Color.onSurface)
-            .padding(.horizontal, Space.s3)
-            .padding(.vertical, Space.s2)
-            .background(Capsule().fill(Color.surfaceContainerHigh))
-        }
-        .buttonStyle(.plain)
-    }
-}
-
 // MARK: - Proposal Detail sheet
 
 private struct ProposalDetailSheet: View {
@@ -2355,6 +2348,7 @@ private struct DayColumn: View {
     let day: WeekDay
     let totalHeight: CGFloat
     let hourScale: CGFloat
+    let onEditEvent: (WREvent) -> Void
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -2366,11 +2360,15 @@ private struct DayColumn: View {
                 // Hour-relative positioning per the engine JSON spec — 8 AM is
                 // the visible top of the grid (offset 0). 64pt baseline × hourScale
                 // = current hourHeight, so the math collapses to (h × hourHeight).
-                EventBlock(event: event)
-                    .frame(height: (event.endHour - event.startHour) * 64 * hourScale)
-                    .padding(.horizontal, 2)
-                    .offset(y: (event.startHour - 6.0) * 64 * hourScale)
-                    .draggable(event.id)
+                Button { onEditEvent(event) } label: {
+                    EventBlock(event: event)
+                        .frame(height: (event.endHour - event.startHour) * 64 * hourScale)
+                        .padding(.horizontal, 2)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .offset(y: (event.startHour - 6.0) * 64 * hourScale)
+                .draggable(event.id)
             }
 
             if let nowHour = day.nowLineHour {

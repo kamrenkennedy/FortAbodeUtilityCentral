@@ -83,6 +83,7 @@
 		E2A034CE471A68B4E0222C3E /* FamilyMemoryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8599C33B343D91784A3618B0 /* FamilyMemoryModels.swift */; };
 		E39F0B6F301568824A772E71 /* Component.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7E990CE834E05B52EAF553 /* Component.swift */; };
 		EB1961D3A6B1297856EF3C69 /* ComponentDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A394C02034C7CEDA5FA603 /* ComponentDetailView.swift */; };
+		EC2CC8D874906D44ABAA6C72 /* TriageRsvpControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47821DD2E2C90209AADE1131 /* TriageRsvpControl.swift */; };
 		ED44975C50A6C6A64F4954DE /* CheckForUpdatesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E67AB0BE82AA7AE5E6F418 /* CheckForUpdatesView.swift */; };
 		EE0563F9E4C13C649D44F181 /* Sidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = D107F8C5D300A4F18DF49A3F /* Sidebar.swift */; };
 		EF6A84B87BF7C01CF51F88F6 /* StepContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04657FBC8960E17F4E585ECA /* StepContentView.swift */; };
@@ -128,6 +129,7 @@
 		3DACD2838A1C216461103AE6 /* FeedbackService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackService.swift; sourceTree = "<group>"; };
 		3F6F08569570B37845FC1387 /* AlignedSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignedSheet.swift; sourceTree = "<group>"; };
 		418F1A3FCCAA74A9749BDE1E /* WeeklyRhythmPathResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmPathResolver.swift; sourceTree = "<group>"; };
+		47821DD2E2C90209AADE1131 /* TriageRsvpControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TriageRsvpControl.swift; sourceTree = "<group>"; };
 		48EB2A999B000B9AC11BB0DD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		4DB01C9B5FC7912CFB5BBD2A /* ConfigMdEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigMdEditor.swift; sourceTree = "<group>"; };
 		50C8FB18F4E77DC49B18BFA9 /* engine-spec.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "engine-spec.md"; sourceTree = "<group>"; };
@@ -328,6 +330,7 @@
 			children = (
 				3F6F08569570B37845FC1387 /* AlignedSheet.swift */,
 				AC9BDBAE1BA8CDCF7640CE6B /* PageScaffold.swift */,
+				47821DD2E2C90209AADE1131 /* TriageRsvpControl.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -621,6 +624,7 @@
 				B7C538A5D2630B86AEF3E048 /* SidebarCollapseButton.swift in Sources */,
 				EF6A84B87BF7C01CF51F88F6 /* StepContentView.swift in Sources */,
 				A97EBD40591158370B2039CC /* StepIllustrationView.swift in Sources */,
+				EC2CC8D874906D44ABAA6C72 /* TriageRsvpControl.swift in Sources */,
 				112863CDD6F3C554DAF8C3A9 /* UpdateExecutionService.swift in Sources */,
 				A5D861B2D8E9BA0284E7ECF6 /* UpdateStatus.swift in Sources */,
 				3B8CF00712BD137247649E22 /* VersionDetectionService.swift in Sources */,

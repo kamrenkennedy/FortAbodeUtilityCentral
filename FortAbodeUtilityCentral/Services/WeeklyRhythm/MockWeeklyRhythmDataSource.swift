@@ -168,9 +168,10 @@ public struct MockWeeklyRhythmDataSource: WeeklyRhythmDataSourceImpl {
     // MARK: - Triage
 
     private static let triage: [TriageEntry] = [
-        TriageEntry(id: "tri-marisol", status: .error, title: "Re: Downtown Gallery — proof timing?",  meta: "Marisol · client · 2h ago"),
-        TriageEntry(id: "tri-cf",      status: .draft, title: "Studio site DNS — propagation report", meta: "Cloudflare · 6h ago"),
-        TriageEntry(id: "tri-tiera",   status: .draft, title: "Tiera shared a Memory edit — review?", meta: "Family Memory · yesterday")
+        TriageEntry(id: "tri-marisol",   status: .error, title: "Re: Downtown Gallery — proof timing?",      meta: "Marisol · client · 2h ago", kind: .other),
+        TriageEntry(id: "tri-cf",        status: .draft, title: "Studio site DNS — propagation report",     meta: "Cloudflare · 6h ago", kind: .other),
+        TriageEntry(id: "tri-team-sync", status: .draft, title: "Design Review — Friday 2pm",                meta: "Pierre · invite · pending RSVP", kind: .pendingInvite),
+        TriageEntry(id: "tri-tiera",     status: .draft, title: "Tiera shared a Memory edit — review?",      meta: "Family Memory · yesterday", kind: .other)
     ]
 
     // MARK: - Proposals

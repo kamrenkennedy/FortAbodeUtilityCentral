@@ -269,13 +269,44 @@ public struct TriageEntry: Codable, Equatable, Identifiable, Hashable, Sendable 
     public var status: WRStatusKind
     public var title: String        // "Re: Downtown Gallery — proof timing?"
     public var meta: String         // "Marisol · client · 2h ago"
+    /// Source category from engine-spec.md §triage. Drives row-level
+    /// affordances — RSVP buttons render only on `.pendingInvite`.
+    public var kind: TriageKind
 
-    public init(id: String, status: WRStatusKind, title: String, meta: String) {
+    public init(
+        id: String,
+        status: WRStatusKind,
+        title: String,
+        meta: String,
+        kind: TriageKind = .other
+    ) {
         self.id = id
         self.status = status
         self.title = title
         self.meta = meta
+        self.kind = kind
     }
+
+    // Custom Codable so older JSON without `kind` decodes to `.other`.
+    private enum CodingKeys: String, CodingKey {
+        case id, status, title, meta, kind
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        status = try c.decode(WRStatusKind.self, forKey: .status)
+        title = try c.decode(String.self, forKey: .title)
+        meta = try c.decode(String.self, forKey: .meta)
+        kind = try c.decodeIfPresent(TriageKind.self, forKey: .kind) ?? .other
+    }
+}
+
+public enum TriageKind: String, Codable, Hashable, Sendable {
+    case overdueTask
+    case pendingInvite
+    case needsTimeBlock
+    case other
 }
 
 // MARK: - Proposals

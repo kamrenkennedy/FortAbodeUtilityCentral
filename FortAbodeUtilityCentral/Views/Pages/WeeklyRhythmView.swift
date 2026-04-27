@@ -69,6 +69,10 @@ struct WeeklyRhythmView: View {
     @State private var detailTriage: TriageEntry?
     @State private var detailProposal: Proposal?
     @State private var alertsExpanded: Bool = true
+    /// Local-only RSVP selection per triage entry. Resets on snapshot reload
+    /// since the engine drains the pending file and re-emits authoritative
+    /// state (where invites have either been resolved or remain pending).
+    @State private var rsvpSelections: [String: RsvpResponse] = [:]
 
     // Vertical zoom — controls hour-row height. Default 52pt is the desktop
     // spec value (UPDATE-2026-04-26-desktop-mac.md week-grid table). Dragged
@@ -156,10 +160,17 @@ struct WeeklyRhythmView: View {
         }
         .sheet(isPresented: errandEditSheetBinding) {
             if let id = editingErrandID, let errand = errands.first(where: { $0.id == id }) {
-                // Phase 5a: value-copy + local @State inside the sheet. Edits
-                // are not yet persisted back to the engine — write-back is 5b.
-                ErrandDetailSheet(initialErrand: errand)
-                    .frame(minWidth: 480, idealWidth: 560, minHeight: 420, idealHeight: 520)
+                ErrandDetailSheet(
+                    initialErrand: errand,
+                    onSave: { patch in
+                        Task { await store.apply(.errandEdit(errandID: errand.id, patch: patch)) }
+                    },
+                    onMarkDone: {
+                        Task { await store.apply(.errandDoneToggle(errandID: errand.id, isDone: true)) }
+                    },
+                    onDismiss: { editingErrandID = nil }
+                )
+                .frame(minWidth: 480, idealWidth: 560, minHeight: 420, idealHeight: 560)
             }
         }
         .task(id: weekOffset) {
@@ -807,13 +818,14 @@ struct WeeklyRhythmView: View {
 
 
     private func triageRow(_ entry: TriageEntry) -> some View {
-        Button {
-            detailTriage = entry
-        } label: {
-            HStack(alignment: .top, spacing: Space.s3) {
-                StatusDot(entry.status.styleKind)
-                    .padding(.top, 7)
+        HStack(alignment: .top, spacing: Space.s3) {
+            StatusDot(entry.status.styleKind)
+                .padding(.top, 7)
 
+            // Title + meta — keep clickable to open the detail sheet.
+            Button {
+                detailTriage = entry
+            } label: {
                 VStack(alignment: .leading, spacing: Space.s1) {
                     Text(entry.title)
                         .font(.bodyMD.weight(.medium))
@@ -822,18 +834,38 @@ struct WeeklyRhythmView: View {
                         .font(.bodySM)
                         .foregroundStyle(Color.onSurfaceVariant)
                 }
-
-                Spacer(minLength: Space.s2)
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(Color.onSurfaceVariant)
-                    .padding(.top, 7)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            .padding(.vertical, Space.s3)
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+
+            // RSVP buttons render only on pending-invite triage items.
+            // Inline next to the row, padded to not bump row height.
+            if entry.kind == .pendingInvite {
+                TriageRsvpControl(
+                    selected: rsvpSelections[entry.id],
+                    onSelect: { response in
+                        if response == .cleared {
+                            rsvpSelections[entry.id] = nil
+                        } else {
+                            rsvpSelections[entry.id] = response
+                        }
+                        Task {
+                            await store.apply(.triageRsvp(triageID: entry.id, response: response))
+                        }
+                    }
+                )
+                .padding(.top, 4)
+            }
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(Color.onSurfaceVariant)
+                .padding(.top, 7)
         }
-        .buttonStyle(.plain)
+        .padding(.vertical, Space.s3)
+        .contentShape(Rectangle())
+        .onTapGesture { detailTriage = entry }
     }
 
     private var proposalsCard: some View {
@@ -1522,87 +1554,192 @@ private struct RunHealthPill: View {
 
 // MARK: - Errand Detail sheet (edit fields)
 
+// Errand edit sheet — re-skinned on AlignedSheet (v4.x parity pass).
+// Spec: .claude/design/v4-parity-pass/README.md §4
 private struct ErrandDetailSheet: View {
     let initialErrand: Errand
-    @State private var errand: Errand
-    @Environment(\.dismiss) private var dismiss
+    let onSave: (ErrandPatch) -> Void
+    let onMarkDone: () -> Void
+    let onDismiss: () -> Void
 
-    init(initialErrand: Errand) {
+    @State private var title: String
+    @State private var location: String
+    @State private var routedTo: String
+    @State private var notes: String
+
+    init(
+        initialErrand: Errand,
+        onSave: @escaping (ErrandPatch) -> Void,
+        onMarkDone: @escaping () -> Void,
+        onDismiss: @escaping () -> Void
+    ) {
         self.initialErrand = initialErrand
-        self._errand = State(initialValue: initialErrand)
+        self.onSave = onSave
+        self.onMarkDone = onMarkDone
+        self.onDismiss = onDismiss
+        _title = State(initialValue: initialErrand.title)
+        _location = State(initialValue: initialErrand.location ?? "")
+        _routedTo = State(initialValue: initialErrand.routedTo ?? "")
+        _notes = State(initialValue: "")
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Space.s5) {
-                EditorialHeader(eyebrow: "Errand", title: "Edit")
+        AlignedSheet(
+            eyebrow: "Errand",
+            title: title.isEmpty ? "Edit errand" : title,
+            badge: AnyView(daysPendingBadge),
+            idealWidth: 560,
+            onDismiss: onDismiss,
+            content: { editBody },
+            footer: { footerActions }
+        )
+    }
 
-                VStack(alignment: .leading, spacing: Space.s5) {
-                    GhostBorderField(label: "Title", text: $errand.title)
+    // MARK: - Header badge
 
-                    GhostBorderField(
-                        label: "Location",
-                        text: locationBinding,
-                        placeholder: "e.g. Downtown · 12 min"
-                    )
+    private var daysPendingBadge: some View {
+        let isOverdue = initialErrand.daysPending >= 14
+        return Text("\(initialErrand.daysPending)d pending")
+            .font(.labelSM)
+            .tracking(0.4)
+            .foregroundStyle(isOverdue ? Color.onSurface : Color.onSurfaceVariant)
+            .padding(.horizontal, Space.s2_5)
+            .frame(height: 22)
+            .background(
+                Capsule().fill(
+                    isOverdue ? Color.brandRust.opacity(0.85) : Color.surfaceContainerHigh
+                )
+            )
+    }
 
-                    GhostBorderField(
-                        label: "Routed to",
-                        text: routedBinding,
-                        placeholder: "e.g. Mon · post office (leave blank for Unrouted)"
-                    )
+    // MARK: - Body
 
-                    HStack(spacing: Space.s4) {
-                        VStack(alignment: .leading, spacing: Space.s2) {
-                            Text("Days Pending".uppercased())
-                                .font(.labelSM)
-                                .tracking(1.0)
-                                .foregroundStyle(Color.onSurfaceVariant)
-                            Text("\(errand.daysPending)d")
-                                .font(.bodyLG)
-                                .foregroundStyle(Color.onSurface)
-                        }
+    private var editBody: some View {
+        VStack(alignment: .leading, spacing: Space.s4) {
+            GhostBorderField(label: "Title", text: $title)
 
-                        Spacer(minLength: Space.s4)
+            HStack(alignment: .top, spacing: Space.s3) {
+                GhostBorderField(
+                    label: "Location",
+                    text: $location,
+                    placeholder: "e.g. Downtown · 12 min"
+                )
+                GhostBorderField(
+                    label: "Route to",
+                    text: $routedTo,
+                    placeholder: "e.g. Monday (leave blank for Unrouted)"
+                )
+            }
 
-                        VStack(alignment: .leading, spacing: Space.s2) {
-                            Text("Status".uppercased())
-                                .font(.labelSM)
-                                .tracking(1.0)
-                                .foregroundStyle(Color.onSurfaceVariant)
-                            Toggle(errand.isDone ? "Done" : "Pending", isOn: $errand.isDone)
-                                .toggleStyle(.switch)
-                        }
-                    }
+            GhostBorderField(
+                label: "Notes",
+                text: $notes,
+                axis: .vertical,
+                placeholder: "Optional context for this errand",
+                lineLimit: 3...6
+            )
+
+            if initialErrand.daysPending >= 9 {
+                nudgeCard
+            }
+        }
+    }
+
+    private var nudgeCard: some View {
+        HStack(alignment: .top, spacing: Space.s3) {
+            Circle()
+                .fill(Color.brandRust)
+                .frame(width: 8, height: 8)
+                .padding(.top, 6)
+
+            VStack(alignment: .leading, spacing: Space.s1) {
+                Text("Pending \(initialErrand.daysPending)d")
+                    .font(.headlineSM)
+                    .foregroundStyle(Color.onSurface)
+
+                Text(initialErrand.daysPending >= 14
+                     ? "This errand has aged past two weeks. Route it to a day this week or mark it done."
+                     : "Approaching the two-week threshold. Consider routing it now.")
+                    .font(.bodySM)
+                    .foregroundStyle(Color.onSurfaceVariant)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(Space.s3)
+        .padding(.horizontal, Space.s1)
+        .background(
+            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                .fill(Color.brandRust.opacity(0.10))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                        .stroke(Color.brandRust.opacity(0.28), lineWidth: 1)
+                )
+        )
+    }
+
+    // MARK: - Footer
+
+    private var footerActions: some View {
+        Group {
+            // Leading slot — Mark done with a status-scheduled tile + label.
+            Button(action: {
+                onMarkDone()
+                onDismiss()
+            }) {
+                HStack(spacing: Space.s2) {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color.statusScheduled)
+                        .frame(width: 22, height: 22)
+                        .background(
+                            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                                .fill(Color.statusScheduled.opacity(0.18))
+                        )
+                    Text("Mark done")
+                        .font(.labelLG.weight(.medium))
+                        .foregroundStyle(Color.statusScheduled)
                 }
-                .padding(.horizontal, Space.s10)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
 
-                Spacer(minLength: Space.s4)
+            Spacer()
+
+            Button("Cancel", action: onDismiss)
+                .buttonStyle(.alignedSecondary)
+
+            Button("Save changes") {
+                onSave(buildPatch())
+                onDismiss()
             }
-            .padding(.vertical, Space.s8)
-            .frame(maxWidth: 720, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .background(Color.surface)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Done") { dismiss() }
-            }
+            .buttonStyle(.alignedPrimary)
+            .keyboardShortcut(.defaultAction)
         }
     }
 
-    private var locationBinding: Binding<String> {
-        Binding(
-            get: { errand.location ?? "" },
-            set: { errand.location = $0.isEmpty ? nil : $0 }
+    // MARK: - Patch
+
+    private func buildPatch() -> ErrandPatch {
+        ErrandPatch(
+            title: title != initialErrand.title ? title : nil,
+            location: normalizedLocation(),
+            routedTo: normalizedRoutedTo(),
+            notes: notes.isEmpty ? nil : notes,
+            isDone: nil  // Mark done flows through onMarkDone, not the patch
         )
     }
 
-    private var routedBinding: Binding<String> {
-        Binding(
-            get: { errand.routedTo ?? "" },
-            set: { errand.routedTo = $0.isEmpty ? nil : $0 }
-        )
+    private func normalizedLocation() -> String? {
+        let trimmed = location.trimmingCharacters(in: .whitespacesAndNewlines)
+        let original = initialErrand.location ?? ""
+        return trimmed != original ? (trimmed.isEmpty ? "" : trimmed) : nil
+    }
+
+    private func normalizedRoutedTo() -> String? {
+        let trimmed = routedTo.trimmingCharacters(in: .whitespacesAndNewlines)
+        let original = initialErrand.routedTo ?? ""
+        return trimmed != original ? (trimmed.isEmpty ? "" : trimmed) : nil
     }
 }
 

@@ -77,6 +77,8 @@ struct WeeklyRhythmView: View {
     /// no edit is in flight. The sheet looks up the event by ID rather than
     /// holding a value copy so optimistic snapshot updates flow through.
     @State private var editingEventID: String?
+    @State private var runHealthDetailOpen: Bool = false
+    @State private var whyContext: WhyContext?
 
     // Vertical zoom — controls hour-row height. Default 52pt is the desktop
     // spec value (UPDATE-2026-04-26-desktop-mac.md week-grid table). Dragged
@@ -124,9 +126,14 @@ struct WeeklyRhythmView: View {
             VStack(alignment: .leading, spacing: 0) {
                 EditorialHeader(eyebrow: weekMetadata.eyebrow, title: weekMetadata.title)
                     .overlay(alignment: .topTrailing) {
-                        RunHealthPill(state: runHealthDisplayState)
-                            .padding(.top, Space.s10)
-                            .padding(.trailing, Space.s10)
+                        Button { runHealthDetailOpen = true } label: {
+                            RunHealthPill(state: runHealthDisplayState)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .help("Run Health detail")
+                        .padding(.top, Space.s10)
+                        .padding(.trailing, Space.s10)
                     }
 
                 VStack(alignment: .leading, spacing: Space.s8) {
@@ -208,6 +215,26 @@ struct WeeklyRhythmView: View {
                 )
                 .frame(minWidth: 720, idealWidth: 760, minHeight: 460, idealHeight: 580)
             }
+        }
+        .sheet(isPresented: $runHealthDetailOpen) {
+            RunHealthDetailSheet(
+                report: snapshot?.runReport ?? MockWeeklyRhythmDataSource.runReport,
+                runHealth: runHealth,
+                onDismiss: { runHealthDetailOpen = false }
+            )
+            .frame(minWidth: 580, idealWidth: 620, minHeight: 480, idealHeight: 560)
+        }
+        .sheet(item: $whyContext) { ctx in
+            WhyModal(
+                context: ctx,
+                onEditInstead: {
+                    // Why? deep-links to the matching Edit modal. Only proposals
+                    // surface Why? today; future iterations may add it on events.
+                    if ctx.kind == .event { editingEventID = ctx.id }
+                },
+                onDismiss: { whyContext = nil }
+            )
+            .frame(minWidth: 480, idealWidth: 520, minHeight: 360, idealHeight: 460)
         }
         .sheet(item: $detailProposal) { proposal in
             ProposalDetailSheet(
@@ -1005,6 +1032,29 @@ struct WeeklyRhythmView: View {
             .buttonStyle(.plain)
 
             HStack(spacing: Space.s1) {
+                Button {
+                    whyContext = WhyContext(
+                        id: proposal.id,
+                        kind: .proposal,
+                        title: proposal.title,
+                        paragraphs: [proposal.reasoning],
+                        confidence: "—",
+                        source: "engine proposal"
+                    )
+                } label: {
+                    Text("Why?")
+                        .font(.labelSM.weight(.medium))
+                        .foregroundStyle(Color.onSurfaceVariant)
+                        .padding(.horizontal, Space.s2_5)
+                        .frame(height: 28)
+                        .background(
+                            Capsule().fill(Color.surfaceContainerHigh)
+                        )
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("See the engine's reasoning")
+
                 Button {
                     Task { await store.apply(.proposalDecline(proposalID: proposal.id)) }
                 } label: {

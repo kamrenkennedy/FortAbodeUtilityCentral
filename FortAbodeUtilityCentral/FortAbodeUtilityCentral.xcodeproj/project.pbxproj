@@ -38,9 +38,11 @@
 		4BC30361A3F18D7A991A72EE /* MockWeeklyRhythmDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EF56794AE0F9F09B953BC13 /* MockWeeklyRhythmDataSource.swift */; };
 		4C29C765E197C8C5C27D8BC2 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1341A36E69A185933A6187F4 /* RootView.swift */; };
 		4CB55B39A51109E2D3DAE9F1 /* ChatPanelHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C3580CD173E87DCBCC770F4 /* ChatPanelHeader.swift */; };
+		4FB42B328F8B03A28BCC1962 /* WhyModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8776F4FEAAFE5DD29E8C1730 /* WhyModal.swift */; };
 		527E21E6BC0AA688C00FA4E9 /* GitHubServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ED7ECBE41703B1FC4EB0791 /* GitHubServiceTests.swift */; };
 		52D654FD0BE7A805B4F3F1A3 /* FamilyHealthDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2743470CF6F7A2E42396FAC /* FamilyHealthDashboard.swift */; };
 		53AEA16097825500F8268329 /* FileBackedWeeklyRhythmDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F2F5EA39EAE9558037F9670 /* FileBackedWeeklyRhythmDataSource.swift */; };
+		5A4C032BD13E7B95BFCABB96 /* RunHealthDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD5F1C96EFA4D647FFDA57BB /* RunHealthDetailSheet.swift */; };
 		5AB3F1610DB5361CAC618ECC /* SecureInputStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88614DCA2B0E6155C755D3C /* SecureInputStorage.swift */; };
 		61D6E60947EC0AEB30BF7D97 /* WhatsNewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16FB3766D3708E744FA90472 /* WhatsNewView.swift */; };
 		639646812B867787DB59AD83 /* FullDiskAccessService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D874D5A2A3528B406492C6B /* FullDiskAccessService.swift */; };
@@ -155,6 +157,7 @@
 		80DD857A1CB762AC7991C68C /* WeeklyRhythmUIStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmUIStateStore.swift; sourceTree = "<group>"; };
 		83171E1A838C0577BABFF23F /* EditEventSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditEventSheet.swift; sourceTree = "<group>"; };
 		8599C33B343D91784A3618B0 /* FamilyMemoryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyMemoryModels.swift; sourceTree = "<group>"; };
+		8776F4FEAAFE5DD29E8C1730 /* WhyModal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhyModal.swift; sourceTree = "<group>"; };
 		8BECADF7B96CB7D3842E642F /* ActivationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivationView.swift; sourceTree = "<group>"; };
 		8ED7ECBE41703B1FC4EB0791 /* GitHubServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubServiceTests.swift; sourceTree = "<group>"; };
 		8F5E929A9A401F87718B0983 /* PendingMutationsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingMutationsStore.swift; sourceTree = "<group>"; };
@@ -172,6 +175,7 @@
 		B34078A97122C23C4D2D35E0 /* gws-client-secret.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "gws-client-secret.json"; sourceTree = "<group>"; };
 		BA1C59FBAA6BF53EE5F93CE0 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		BC40AFA45E29AF2DBF63CC15 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
+		BD5F1C96EFA4D647FFDA57BB /* RunHealthDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunHealthDetailSheet.swift; sourceTree = "<group>"; };
 		C2743470CF6F7A2E42396FAC /* FamilyHealthDashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyHealthDashboard.swift; sourceTree = "<group>"; };
 		C32B9115221657AAE3B2B132 /* BadgeTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgeTracker.swift; sourceTree = "<group>"; };
 		C8F9DE0077075CA77D29FF77 /* FortAbodeUtilityCentralApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FortAbodeUtilityCentralApp.swift; sourceTree = "<group>"; };
@@ -339,7 +343,9 @@
 				564A22B818E62E0E1921A86F /* EditTriageSheet.swift */,
 				0A7111D9656E3FA9D7F6F054 /* GhostBorderFieldDropdown.swift */,
 				AC9BDBAE1BA8CDCF7640CE6B /* PageScaffold.swift */,
+				BD5F1C96EFA4D647FFDA57BB /* RunHealthDetailSheet.swift */,
 				47821DD2E2C90209AADE1131 /* TriageRsvpControl.swift */,
+				8776F4FEAAFE5DD29E8C1730 /* WhyModal.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -626,6 +632,7 @@
 				3DAC043E1F1CE49D3F91AA79 /* PageScaffold.swift in Sources */,
 				2C7ED0531E56C8235AFCE6BC /* PendingMutationsStore.swift in Sources */,
 				4C29C765E197C8C5C27D8BC2 /* RootView.swift in Sources */,
+				5A4C032BD13E7B95BFCABB96 /* RunHealthDetailSheet.swift in Sources */,
 				5AB3F1610DB5361CAC618ECC /* SecureInputStorage.swift in Sources */,
 				ADE9797A2E5EE7EB3C461ED6 /* SettingsView.swift in Sources */,
 				B4F10EEE4625314A880D027D /* SettingsViewModel.swift in Sources */,
@@ -647,6 +654,7 @@
 				355F6705C0380EC8CCED0279 /* WeeklyRhythmUIStateStore.swift in Sources */,
 				3B1B8E9B129468193257A0A2 /* WeeklyRhythmView.swift in Sources */,
 				61D6E60947EC0AEB30BF7D97 /* WhatsNewView.swift in Sources */,
+				4FB42B328F8B03A28BCC1962 /* WhyModal.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

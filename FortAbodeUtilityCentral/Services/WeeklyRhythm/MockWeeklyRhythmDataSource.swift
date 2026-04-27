@@ -45,7 +45,8 @@ public struct MockWeeklyRhythmDataSource: WeeklyRhythmDataSourceImpl {
                 proposals: [],
                 errands: [],
                 dayBreakdown: [],
-                runHealth: .allGood
+                runHealth: .allGood,
+                runReport: runReport
             )
         }
 
@@ -65,7 +66,8 @@ public struct MockWeeklyRhythmDataSource: WeeklyRhythmDataSourceImpl {
             proposals: proposals,
             errands: errands,
             dayBreakdown: dayBreakdown,
-            runHealth: .allGood
+            runHealth: .allGood,
+            runReport: runReport
         )
     }
 
@@ -275,4 +277,21 @@ public struct MockWeeklyRhythmDataSource: WeeklyRhythmDataSourceImpl {
             isToday: false, isPast: false
         )
     ]
+
+    // MARK: - Run report (mock)
+
+    static let runReport: RunReport = RunReport(
+        mcpStatuses: [
+            MCPStatus(id: "mcp-gmail",     name: "Gmail",            status: .scheduled, version: "1.4.2", lastSuccess: "2h ago"),
+            MCPStatus(id: "mcp-gcal",      name: "Google Calendar",  status: .scheduled, version: "2.0.1", lastSuccess: "2h ago"),
+            MCPStatus(id: "mcp-reminders", name: "Apple Reminders",  status: .scheduled, version: "1.1.0", lastSuccess: "2h ago"),
+            MCPStatus(id: "mcp-notion",    name: "Notion",           status: .scheduled, version: "3.0.0", lastSuccess: "2h ago"),
+            MCPStatus(id: "mcp-memory",    name: "Memory MCP",       status: .scheduled, version: "1.5.0", lastSuccess: "2h ago")
+        ],
+        triggered: "Today, 8:02 AM",
+        duration: "1m 47s",
+        outcome: "All checks passed",
+        engineVersion: "weekly-rhythm-engine v2.0.1",
+        recentErrors: []
+    )
 }

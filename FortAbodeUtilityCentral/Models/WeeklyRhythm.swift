@@ -21,6 +21,10 @@ public struct WeeklyRhythmSnapshot: Codable, Equatable, Sendable {
     public var errands: [Errand]
     public var dayBreakdown: [DayBreakdown]
     public var runHealth: RunHealth
+    /// Optional structured run report (v4.x parity pass — Run Health detail
+    /// modal). Engine emits when available; nil falls back to the mock
+    /// fallback report rendered by the modal.
+    public var runReport: RunReport?
     public var generatedAt: Date
 
     public init(
@@ -34,6 +38,7 @@ public struct WeeklyRhythmSnapshot: Codable, Equatable, Sendable {
         errands: [Errand] = [],
         dayBreakdown: [DayBreakdown] = [],
         runHealth: RunHealth = .allGood,
+        runReport: RunReport? = nil,
         generatedAt: Date = Date()
     ) {
         self.weekMetadata = weekMetadata
@@ -46,7 +51,30 @@ public struct WeeklyRhythmSnapshot: Codable, Equatable, Sendable {
         self.errands = errands
         self.dayBreakdown = dayBreakdown
         self.runHealth = runHealth
+        self.runReport = runReport
         self.generatedAt = generatedAt
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case weekMetadata, todaysBrief, pulseProjects, alerts, weekDays
+        case triage, proposals, errands, dayBreakdown, runHealth
+        case runReport, generatedAt
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        weekMetadata  = try c.decode(WeekMetadata.self, forKey: .weekMetadata)
+        todaysBrief   = try c.decodeIfPresent(TodaysBrief.self, forKey: .todaysBrief)
+        pulseProjects = try c.decodeIfPresent([PulseProject].self, forKey: .pulseProjects) ?? []
+        alerts        = try c.decodeIfPresent([WeeklyRhythmAlert].self, forKey: .alerts) ?? []
+        weekDays      = try c.decodeIfPresent([WeekDay].self, forKey: .weekDays) ?? []
+        triage        = try c.decodeIfPresent([TriageEntry].self, forKey: .triage) ?? []
+        proposals     = try c.decodeIfPresent([Proposal].self, forKey: .proposals) ?? []
+        errands       = try c.decodeIfPresent([Errand].self, forKey: .errands) ?? []
+        dayBreakdown  = try c.decodeIfPresent([DayBreakdown].self, forKey: .dayBreakdown) ?? []
+        runHealth     = try c.decodeIfPresent(RunHealth.self, forKey: .runHealth) ?? .allGood
+        runReport     = try c.decodeIfPresent(RunReport.self, forKey: .runReport)
+        generatedAt   = try c.decode(Date.self, forKey: .generatedAt)
     }
 }
 
@@ -455,6 +483,66 @@ public enum RunHealth: Codable, Equatable, Sendable {
     case allGood
     case warning(String)
     case error(String)
+}
+
+// MARK: - Run report (v4.x parity pass — Run Health detail modal)
+//
+// Detailed engine run report. Surfaces in the Run Health detail modal when
+// the user taps the RunHealthPill. Engine emits this as part of the
+// dashboard JSON in a future iteration; until then the app populates a
+// mock report from the existing `runHealth` enum.
+
+public struct RunReport: Codable, Equatable, Sendable {
+    public var mcpStatuses: [MCPStatus]
+    public var triggered: String          // "Today, 8:02 AM"
+    public var duration: String           // "1m 47s" — mono display
+    public var outcome: String            // "All checks passed"
+    public var engineVersion: String      // "weekly-rhythm-engine v2.0.1"
+    public var recentErrors: [RunReportError]
+
+    public init(
+        mcpStatuses: [MCPStatus] = [],
+        triggered: String = "—",
+        duration: String = "—",
+        outcome: String = "—",
+        engineVersion: String = "—",
+        recentErrors: [RunReportError] = []
+    ) {
+        self.mcpStatuses = mcpStatuses
+        self.triggered = triggered
+        self.duration = duration
+        self.outcome = outcome
+        self.engineVersion = engineVersion
+        self.recentErrors = recentErrors
+    }
+}
+
+public struct MCPStatus: Codable, Equatable, Identifiable, Sendable {
+    public var id: String
+    public var name: String                // "Gmail" / "Google Calendar" / etc.
+    public var status: WRStatusKind        // .scheduled / .draft / .error
+    public var version: String             // "1.4.2" — mono
+    public var lastSuccess: String         // "2h ago" / "—"
+
+    public init(id: String, name: String, status: WRStatusKind, version: String, lastSuccess: String) {
+        self.id = id
+        self.name = name
+        self.status = status
+        self.version = version
+        self.lastSuccess = lastSuccess
+    }
+}
+
+public struct RunReportError: Codable, Equatable, Identifiable, Sendable {
+    public var id: String
+    public var timestamp: String           // ISO or display
+    public var message: String
+
+    public init(id: String, timestamp: String, message: String) {
+        self.id = id
+        self.timestamp = timestamp
+        self.message = message
+    }
 }
 
 // MARK: - Load status (for the data source)

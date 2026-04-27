@@ -21,6 +21,8 @@ public final class WeeklyRhythmEngineStore {
         case idle
         case detecting
         case running(progress: String)
+        case installingSkill(progress: String)
+        case needsSkill
         case succeeded(result: RunResult)
         case failed(error: String)
     }
@@ -31,13 +33,16 @@ public final class WeeklyRhythmEngineStore {
 
     private let detector: ClaudeCLIDetector
     private let runner: WeeklyRhythmEngineRunner
+    private let installer: WeeklyRhythmSkillInstaller
 
     public init(
         detector: ClaudeCLIDetector = ClaudeCLIDetector(),
-        runner: WeeklyRhythmEngineRunner = WeeklyRhythmEngineRunner()
+        runner: WeeklyRhythmEngineRunner = WeeklyRhythmEngineRunner(),
+        installer: WeeklyRhythmSkillInstaller = WeeklyRhythmSkillInstaller()
     ) {
         self.detector = detector
         self.runner = runner
+        self.installer = installer
         self.lastRunResult = Self.loadPersistedLastRun()
     }
 
@@ -62,7 +67,10 @@ public final class WeeklyRhythmEngineStore {
 
     /// Spawn the engine via the embedded CLI. Updates `runState` through the
     /// lifecycle and posts a system notification on completion (unless the user
-    /// has muted via Settings).
+    /// has muted via Settings). Phase 6.1: probe for the skill first and
+    /// surface `.needsSkill` if it's not installed — the UI presents an
+    /// install sheet rather than running blind and getting an opaque CLI
+    /// error.
     public func runNow() async {
         // Always re-detect right before a run so a freshly-installed CLI gets
         // picked up without forcing a Settings round-trip.
@@ -75,9 +83,49 @@ public final class WeeklyRhythmEngineStore {
             return
         }
 
+        // Skill probe — if missing, hand back to the UI so the user can
+        // choose to install. The view layer calls `installSkillThenRun()`
+        // when they accept.
+        let skillInstalled = await installer.detectInstalled(cliPath: path)
+        guard skillInstalled else {
+            runState = .needsSkill
+            return
+        }
+
+        await runEngine(cliPath: path)
+    }
+
+    /// Drop the `.needsSkill` state back to idle when the user dismisses the
+    /// install sheet without proceeding. Used as the sheet's onDismiss.
+    public func cancelNeedsSkill() async {
+        if runState == .needsSkill {
+            runState = .idle
+        }
+    }
+
+    /// Run the three-step skill install, then immediately run the engine on
+    /// success. Called from the install sheet's "Install & Run" action.
+    public func installSkillThenRun() async {
+        guard case .found(let path, _) = cliDetection else {
+            runState = .failed(error: "Claude CLI not found.")
+            return
+        }
+        runState = .installingSkill(progress: "Installing Weekly Rhythm Engine skill…")
+        let outcome = await installer.install(cliPath: path)
+        switch outcome {
+        case .alreadyInstalled, .installed:
+            await runEngine(cliPath: path)
+        case .failed(let step, let output):
+            runState = .failed(error: "\(step) failed.\n\n\(output)")
+        }
+    }
+
+    /// Drive the engine itself. Extracted so the manual run path and the
+    /// install-then-run path share the same end-to-end body.
+    private func runEngine(cliPath: String) async {
         runState = .running(progress: "Starting engine…")
 
-        let result = await runner.run(cliPath: path) { [weak self] progress in
+        let result = await runner.run(cliPath: cliPath) { [weak self] progress in
             // `onProgress` runs off-main; hop back to update observed state.
             guard let self else { return }
             Task { @MainActor in

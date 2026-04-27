@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		00E5BEF9B71230C4677B387F /* WeeklyRhythmSkillInstallSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72018BAC4B42C0C76B18B09 /* WeeklyRhythmSkillInstallSheet.swift */; };
 		047B461FE0B2A7A81E4BC469 /* ActivationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BECADF7B96CB7D3842E642F /* ActivationView.swift */; };
 		05D38A44306FF10EEE0001D9 /* FamilyMemoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF650F1C05A9FE3D738BAA42 /* FamilyMemoryService.swift */; };
 		05E6CAD0B79916E67AD9C87D /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02B29456AE09E75239846438 /* KeychainService.swift */; };
@@ -54,6 +55,7 @@
 		63DF7D1C11E3A188E94C469F /* ComponentRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 782EFED7B8F2AD1265BCF690 /* ComponentRegistry.swift */; };
 		64CA5B5EAAFCDA5C06236011 /* FortAbodeUtilityCentralApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F9DE0077075CA77D29FF77 /* FortAbodeUtilityCentralApp.swift */; };
 		6CD4E6A5F0EC7CA6EA53E11B /* FamilyChatPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = D71386BF1C667590FCF48FB8 /* FamilyChatPane.swift */; };
+		7186FEEAC3161F93D78ECA50 /* WeeklyRhythmSkillInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C01EEE9A69F8B9DE4572C90 /* WeeklyRhythmSkillInstaller.swift */; };
 		78A108105A88096647C68196 /* ComponentHealthCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EB2DD0D3E1CBC8A343C150 /* ComponentHealthCard.swift */; };
 		7CFA90087FA5CC19AFC67353 /* WeeklyRhythmPathResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 418F1A3FCCAA74A9749BDE1E /* WeeklyRhythmPathResolver.swift */; };
 		7F7577B11C2D1F70D5E6F9B7 /* ChatComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B245C0720A4C0BC3EBC09BF2 /* ChatComposer.swift */; };
@@ -150,6 +152,7 @@
 		564A22B818E62E0E1921A86F /* EditTriageSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditTriageSheet.swift; sourceTree = "<group>"; };
 		57C7879CB390CE3D57122B8F /* WeeklyRhythmRunControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmRunControl.swift; sourceTree = "<group>"; };
 		5914439D10E470294A91A039 /* FortAbodeUtilityCentral.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FortAbodeUtilityCentral.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5C01EEE9A69F8B9DE4572C90 /* WeeklyRhythmSkillInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmSkillInstaller.swift; sourceTree = "<group>"; };
 		5EF56794AE0F9F09B953BC13 /* MockWeeklyRhythmDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockWeeklyRhythmDataSource.swift; sourceTree = "<group>"; };
 		66C0B457A755E70A4E21D034 /* WeeklyRhythmService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmService.swift; sourceTree = "<group>"; };
 		67CBAA3E68AE042FD8F6FFDF /* ClaudeCodeConfigService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeCodeConfigService.swift; sourceTree = "<group>"; };
@@ -177,6 +180,7 @@
 		9F2F5EA39EAE9558037F9670 /* FileBackedWeeklyRhythmDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBackedWeeklyRhythmDataSource.swift; sourceTree = "<group>"; };
 		A100840E6248DECFE28C4DBF /* FortAbodeUtilityCentralTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FortAbodeUtilityCentralTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A49ABEA06B33CB1666AD17A0 /* ClaudeDesktopConfigService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeDesktopConfigService.swift; sourceTree = "<group>"; };
+		A72018BAC4B42C0C76B18B09 /* WeeklyRhythmSkillInstallSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmSkillInstallSheet.swift; sourceTree = "<group>"; };
 		A84C5B5B9F422E0FEA151CF0 /* WeeklyRhythm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythm.swift; sourceTree = "<group>"; };
 		A88614DCA2B0E6155C755D3C /* SecureInputStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureInputStorage.swift; sourceTree = "<group>"; };
 		AC9BDBAE1BA8CDCF7640CE6B /* PageScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageScaffold.swift; sourceTree = "<group>"; };
@@ -234,6 +238,7 @@
 				DBFD216C2A59D0C5332408B4 /* ClaudeCLIDetector.swift */,
 				DCC66F9F30443EC4D0D153F9 /* WeeklyRhythmEngineRunner.swift */,
 				CD284AB922259409852EBE73 /* WeeklyRhythmEngineStore.swift */,
+				5C01EEE9A69F8B9DE4572C90 /* WeeklyRhythmSkillInstaller.swift */,
 			);
 			path = WeeklyRhythmEngine;
 			sourceTree = "<group>";
@@ -371,6 +376,7 @@
 				9462C3630F3A00A990888CA2 /* RunHealthPill.swift */,
 				47821DD2E2C90209AADE1131 /* TriageRsvpControl.swift */,
 				57C7879CB390CE3D57122B8F /* WeeklyRhythmRunControl.swift */,
+				A72018BAC4B42C0C76B18B09 /* WeeklyRhythmSkillInstallSheet.swift */,
 				8776F4FEAAFE5DD29E8C1730 /* WhyModal.swift */,
 			);
 			path = Components;
@@ -691,6 +697,8 @@
 				7CFA90087FA5CC19AFC67353 /* WeeklyRhythmPathResolver.swift in Sources */,
 				8C81AC2276A4B5BA5E86A219 /* WeeklyRhythmRunControl.swift in Sources */,
 				A1F5C83EBA3836D3FFACAC5D /* WeeklyRhythmService.swift in Sources */,
+				00E5BEF9B71230C4677B387F /* WeeklyRhythmSkillInstallSheet.swift in Sources */,
+				7186FEEAC3161F93D78ECA50 /* WeeklyRhythmSkillInstaller.swift in Sources */,
 				355F6705C0380EC8CCED0279 /* WeeklyRhythmUIStateStore.swift in Sources */,
 				3B1B8E9B129468193257A0A2 /* WeeklyRhythmView.swift in Sources */,
 				61D6E60947EC0AEB30BF7D97 /* WhatsNewView.swift in Sources */,

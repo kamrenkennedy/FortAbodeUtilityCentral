@@ -42,7 +42,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Headless engine run for the `--run-engine` LaunchAgent entry point.
     /// Mirrors `WeeklyRhythmEngineStore.runNow()` but skips the @Observable
     /// state plumbing — there's no UI to update, just a notification to post
-    /// (if `surfaceOnCompletion` is true) before `exit(0)`.
+    /// (if `surfaceOnCompletion` is true) before `exit(0)`. Phase 6.1: also
+    /// auto-installs the skill if missing (the user already opted in by
+    /// installing the LaunchAgent), so a fresh-machine first scheduled run
+    /// doesn't fail with "skill not found."
     static func runEngineHeadless() async {
         let detector = ClaudeCLIDetector()
         let detection = await detector.detect()
@@ -59,6 +62,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 )
             }
             return
+        }
+
+        let installer = WeeklyRhythmSkillInstaller()
+        if await installer.detectInstalled(cliPath: path) == false {
+            await ErrorLogger.shared.log(
+                area: "WeeklyRhythmEngine.HeadlessRun.skillMissing",
+                message: "Scheduled run — skill not installed, attempting auto-install"
+            )
+            let outcome = await installer.install(cliPath: path)
+            if case .failed(let step, let output) = outcome {
+                let surface = UserDefaults.standard.object(forKey: AppSettingsKey.weeklyRhythmEngineSurfaceOnCompletion) as? Bool ?? true
+                if surface {
+                    await NotificationService.shared.postEngineRunNotification(
+                        succeeded: false,
+                        summary: "Skill install failed at step \(step). Open Fort Abode for details."
+                    )
+                }
+                await ErrorLogger.shared.log(
+                    area: "WeeklyRhythmEngine.HeadlessRun.skillInstallFailed",
+                    message: "Skill install failed",
+                    context: ["step": step, "output": String(output.suffix(800))]
+                )
+                return
+            }
         }
 
         let runner = WeeklyRhythmEngineRunner()

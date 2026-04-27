@@ -47,6 +47,17 @@ struct WeeklyRhythmRunControl: View {
             ClaudeCLIInstallSheet(onDismiss: { installSheetOpen = false })
                 .frame(minWidth: 480, idealWidth: 540, minHeight: 320, idealHeight: 380)
         }
+        .sheet(isPresented: skillSheetBinding) {
+            WeeklyRhythmSkillInstallSheet(
+                onInstallAndRun: {
+                    Task { await engineStore.installSkillThenRun() }
+                },
+                onDismiss: {
+                    Task { await engineStore.cancelNeedsSkill() }
+                }
+            )
+            .frame(minWidth: 480, idealWidth: 540, minHeight: 360, idealHeight: 420)
+        }
     }
 
     // MARK: - Run button
@@ -58,6 +69,20 @@ struct WeeklyRhythmRunControl: View {
                 installSheetOpen = true
             }
             .buttonStyle(.alignedSecondaryMini)
+        } else if isInstallingSkill {
+            HStack(spacing: Space.s1_5) {
+                ProgressView()
+                    .scaleEffect(0.55)
+                    .frame(width: 14, height: 14)
+                Text("Installing skill…")
+                    .font(.labelMD.weight(.medium))
+                    .foregroundStyle(Color.onSurfaceVariant)
+            }
+            .padding(.horizontal, Space.s3)
+            .padding(.vertical, Space.s1_5)
+            .background(
+                Capsule().fill(Color.surfaceContainerHigh)
+            )
         } else if isRunning {
             HStack(spacing: Space.s1_5) {
                 ProgressView()
@@ -88,6 +113,25 @@ struct WeeklyRhythmRunControl: View {
     private var isRunning: Bool {
         if case .running = engineStore.runState { return true }
         return false
+    }
+
+    private var isInstallingSkill: Bool {
+        if case .installingSkill = engineStore.runState { return true }
+        return false
+    }
+
+    /// Two-way binding for the needsSkill sheet: presented when runState is
+    /// `.needsSkill`, dismissed by routing through `cancelNeedsSkill()` so the
+    /// store can transition back to `.idle`.
+    private var skillSheetBinding: Binding<Bool> {
+        Binding(
+            get: { engineStore.runState == .needsSkill },
+            set: { presented in
+                if !presented, engineStore.runState == .needsSkill {
+                    Task { await engineStore.cancelNeedsSkill() }
+                }
+            }
+        )
     }
 
     // MARK: - Schedule menu

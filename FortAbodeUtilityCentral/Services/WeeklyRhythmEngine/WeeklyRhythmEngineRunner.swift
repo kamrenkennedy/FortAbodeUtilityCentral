@@ -33,23 +33,22 @@ public struct RunResult: Sendable, Equatable {
 // MARK: - Progress Stream
 
 /// Line-buffered progress token. The store consumes these as `runState`
-/// transitions ("Starting…" → "Running step 4 of 12: Gmail pull" → done).
+/// transitions ("Starting…" → "Using Gmail" → "Using Memory" → done).
 public enum RunProgress: Sendable {
     case stdoutLine(String)
     case stderrLine(String)
 }
 
 // MARK: - Engine Runner
+//
+// Spawns the `claude` CLI and runs the Weekly Rhythm Engine skill. Phase 6.1:
+// uses `--output-format stream-json --include-partial-messages` so each line
+// of stdout is a discrete JSON event with a `type` discriminator. We extract
+// tool-use breadcrumbs ("Using Gmail…") for the run pill and capture the
+// final `result` event verbatim for the post-run summary. Without stream-json
+// the CLI buffers the entire response until exit, which makes the pill go
+// silent for 60-90 seconds.
 
-/// Spawns the `claude` CLI and runs the Weekly Rhythm Engine skill. Modeled
-/// after the `Process` pattern in `BackgroundTaskService.loadLaunchAgent` —
-/// no shell, explicit executable URL, captured stdout/stderr.
-///
-/// Open question (intentional): the exact CLI invocation. v4.3.0 ships with
-/// `claude --print "Run my Weekly Rhythm Engine"` which relies on the skill's
-/// own description-match triggering inside the CLI. If a future CLI build
-/// requires explicit `--skill weekly-rhythm-engine` or similar, swap the
-/// `arguments` literal below; the rest of the runner stays the same.
 public actor WeeklyRhythmEngineRunner {
 
     /// Default timeout — engine runs typically complete in 30-90 seconds; 5
@@ -64,8 +63,8 @@ public actor WeeklyRhythmEngineRunner {
     }
 
     /// Run the engine and return a `RunResult`. The optional `onProgress`
-    /// callback is invoked for each captured stdout/stderr line so the store
-    /// can surface live progress on the run pill.
+    /// callback is invoked for each parsed event so the store can surface live
+    /// progress on the run pill.
     public func run(
         cliPath: String,
         onProgress: (@Sendable (RunProgress) -> Void)? = nil
@@ -76,6 +75,11 @@ public actor WeeklyRhythmEngineRunner {
         process.executableURL = URL(fileURLWithPath: cliPath)
         process.arguments = [
             "--print",
+            "--output-format", "stream-json",
+            "--include-partial-messages",
+            // `claude --print` requires --verbose with stream-json (per the
+            // CLI's own validation; without it the CLI errors out).
+            "--verbose",
             "Run my Weekly Rhythm Engine"
         ]
 
@@ -95,27 +99,31 @@ public actor WeeklyRhythmEngineRunner {
         process.standardOutput = stdoutPipe
         process.standardError = stderrPipe
 
-        // Live readers stream lines into our tail buffers and (optionally) the
-        // progress callback. `readabilityHandler` runs on a background queue —
-        // we serialize buffer mutations through a dedicated dispatch queue to
-        // avoid Sendable warnings on shared state.
+        // Live readers stream lines into our tail buffer + JSON parser. The
+        // splitter handles partial chunks (data may arrive mid-line); the
+        // parser turns each complete line into RunProgress tokens and tracks
+        // the final `result` event for post-run summary.
         let buffer = LineBuffer()
+        let stdoutSplitter = LineSplitter()
+        let stderrSplitter = LineSplitter()
+        let parser = StreamEventParser()
+
         stdoutPipe.fileHandleForReading.readabilityHandler = { handle in
             let data = handle.availableData
             guard !data.isEmpty, let chunk = String(data: data, encoding: .utf8) else { return }
-            for line in chunk.split(separator: "\n", omittingEmptySubsequences: false) {
-                let str = String(line)
-                buffer.appendStdout(str)
-                onProgress?(.stdoutLine(str))
+            for line in stdoutSplitter.append(chunk) {
+                buffer.appendStdout(line)
+                for token in parser.parse(line: line) {
+                    onProgress?(token)
+                }
             }
         }
         stderrPipe.fileHandleForReading.readabilityHandler = { handle in
             let data = handle.availableData
             guard !data.isEmpty, let chunk = String(data: data, encoding: .utf8) else { return }
-            for line in chunk.split(separator: "\n", omittingEmptySubsequences: false) {
-                let str = String(line)
-                buffer.appendStderr(str)
-                onProgress?(.stderrLine(str))
+            for line in stderrSplitter.append(chunk) {
+                buffer.appendStderr(line)
+                onProgress?(.stderrLine(line))
             }
         }
 
@@ -154,8 +162,6 @@ public actor WeeklyRhythmEngineRunner {
                 try? await Task.sleep(nanoseconds: UInt64(timeoutSeconds * 1_000_000_000))
                 return true
             }
-            // First child to return tells us whether the process exited or the
-            // timeout fired. Cancel siblings either way.
             let firstResult = await group.next() ?? false
             group.cancelAll()
             return firstResult
@@ -170,22 +176,42 @@ public actor WeeklyRhythmEngineRunner {
         stdoutPipe.fileHandleForReading.readabilityHandler = nil
         stderrPipe.fileHandleForReading.readabilityHandler = nil
 
+        // Flush trailing partial lines (no newline at EOF).
+        for line in stdoutSplitter.flush() {
+            buffer.appendStdout(line)
+            for token in parser.parse(line: line) {
+                onProgress?(token)
+            }
+        }
+        for line in stderrSplitter.flush() {
+            buffer.appendStderr(line)
+        }
+
         let exitCode = process.terminationStatus
         let duration = Date().timeIntervalSince(startedAt)
         let stdoutTail = buffer.stdoutTail()
         let stderrTail = buffer.stderrTail()
-        let succeeded = !timedOut && exitCode == 0
+
+        // Success: process exited cleanly AND the engine itself reported
+        // is_error=false in its final result event. A 0 exit with is_error=true
+        // means the CLI ran but the engine encountered an error mid-run.
+        let resultEvent = parser.lastResultEvent()
+        let engineReportedError = resultEvent?.isError == true
+        let succeeded = !timedOut && exitCode == 0 && !engineReportedError
 
         let summary: String
         if timedOut {
             summary = "Engine run timed out after \(Int(timeoutSeconds))s. The CLI was terminated."
+        } else if let resultText = resultEvent?.result, !resultText.trimmingCharacters(in: .whitespaces).isEmpty {
+            // The engine's own final-result string. This is the canonical
+            // human-readable summary — preserved verbatim regardless of
+            // success/failure.
+            summary = resultText
         } else if succeeded {
-            // Last non-empty stdout line is usually the engine's own success
-            // message ("Dashboard rendered. 5 mutations applied."). Fall back
-            // to a generic note if stdout is empty.
-            summary = stdoutTail.split(separator: "\n").last(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }).map(String.init)
-                ?? "Engine run completed."
+            summary = "Engine run completed."
         } else {
+            // No structured result event — fall back to the first stderr line
+            // (often where the CLI itself prints its complaint).
             let firstError = stderrTail.split(separator: "\n").first(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }).map(String.init)
             summary = firstError ?? "Engine run failed (exit code \(exitCode))."
         }
@@ -197,6 +223,7 @@ public actor WeeklyRhythmEngineRunner {
                 "succeeded": "\(succeeded)",
                 "exitCode": "\(exitCode)",
                 "timedOut": "\(timedOut)",
+                "engineReportedError": "\(engineReportedError)",
                 "durationSeconds": String(format: "%.1f", duration)
             ]
         )
@@ -218,6 +245,178 @@ public actor WeeklyRhythmEngineRunner {
             DispatchQueue.global(qos: .userInitiated).async {
                 process.waitUntilExit()
                 continuation.resume()
+            }
+        }
+    }
+}
+
+// MARK: - Line Splitter
+//
+// Buffers partial chunks across `readabilityHandler` invocations and emits
+// only complete lines. Critical for stream-json parsing — JSON events are
+// newline-delimited, and a chunk boundary mid-event would break decoding.
+
+private final class LineSplitter: @unchecked Sendable {
+    private let queue = DispatchQueue(label: "FortAbode.WeeklyRhythmEngine.LineSplitter")
+    private var pending: String = ""
+
+    /// Append a chunk and return any complete lines (without the trailing
+    /// newline). Any trailing partial line stays buffered until the next call.
+    func append(_ chunk: String) -> [String] {
+        queue.sync {
+            pending += chunk
+            var lines: [String] = []
+            while let range = pending.range(of: "\n") {
+                let line = String(pending[..<range.lowerBound])
+                lines.append(line)
+                pending = String(pending[range.upperBound...])
+            }
+            return lines
+        }
+    }
+
+    /// Drain any remaining pending content. Call once after the process exits
+    /// to capture a trailing line that wasn't newline-terminated.
+    func flush() -> [String] {
+        queue.sync {
+            guard !pending.isEmpty else { return [] }
+            let result = [pending]
+            pending = ""
+            return result
+        }
+    }
+}
+
+// MARK: - Stream Event Parser
+//
+// Decodes one JSON event per line. For each `assistant` event with tool_use
+// content blocks, emits a "Using <tool>" progress token. The final `result`
+// event is captured verbatim for the post-run summary; everything else
+// (system, user, mid-stream text deltas) is silently dropped.
+
+private final class StreamEventParser: @unchecked Sendable {
+    private let queue = DispatchQueue(label: "FortAbode.WeeklyRhythmEngine.StreamEventParser")
+    private var lastResult: ResultEvent?
+    private var lastToolName: String?
+
+    struct ResultEvent: Sendable {
+        let isError: Bool
+        let result: String
+    }
+
+    /// Parse a single line and return any RunProgress tokens it produced.
+    /// Returns an empty array for unparseable / uninteresting events.
+    func parse(line: String) -> [RunProgress] {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty,
+              let data = trimmed.data(using: .utf8),
+              let event = try? JSONDecoder().decode(StreamEvent.self, from: data) else {
+            return []
+        }
+
+        switch event.type {
+        case "assistant":
+            return toolUseProgress(from: event)
+        case "result":
+            queue.sync {
+                lastResult = ResultEvent(
+                    isError: event.isError ?? false,
+                    result: event.result ?? ""
+                )
+            }
+            return []
+        default:
+            return []
+        }
+    }
+
+    /// Return the most recent `result` event, if any. Called once at the end
+    /// of the run to extract the engine's final summary string.
+    func lastResultEvent() -> ResultEvent? {
+        queue.sync { lastResult }
+    }
+
+    private func toolUseProgress(from event: StreamEvent) -> [RunProgress] {
+        guard let blocks = event.message?.content else { return [] }
+        var tokens: [RunProgress] = []
+        for block in blocks {
+            guard case .toolUse(let name) = block else { continue }
+            // Dedupe consecutive identical tool names — partial-message events
+            // can re-emit the same tool_use as it streams in.
+            let shouldEmit = queue.sync { () -> Bool in
+                guard lastToolName != name else { return false }
+                lastToolName = name
+                return true
+            }
+            if shouldEmit {
+                tokens.append(.stdoutLine("Using \(humanize(toolName: name))"))
+            }
+        }
+        return tokens
+    }
+
+    /// Map raw tool names to human-readable labels for the run pill. Falls
+    /// back to the raw name (with underscores → spaces) for unknown tools so
+    /// the user still sees something meaningful.
+    private func humanize(toolName: String) -> String {
+        switch toolName {
+        case "mcp__gmail":                          return "Gmail"
+        case "mcp__google-calendar":                return "Google Calendar"
+        case "mcp__apple-reminders":                return "Apple Reminders"
+        case "mcp__memory", "mcp__kam-memory":      return "Memory"
+        case "mcp__notion", "mcp__notion-tiera":    return "Notion"
+        case "Read":                                return "Reading file"
+        case "Write":                               return "Writing file"
+        case "Edit":                                return "Editing file"
+        case "Bash":                                return "Running command"
+        default:
+            return toolName.replacingOccurrences(of: "_", with: " ")
+        }
+    }
+}
+
+// MARK: - Stream Event JSON shapes
+//
+// Mirrors the `claude --print --output-format stream-json` event grammar.
+// Decoder is permissive — every field is optional except `type` so a future
+// CLI version that adds new event kinds doesn't break parsing.
+
+private struct StreamEvent: Decodable {
+    let type: String
+    let isError: Bool?
+    let result: String?
+    let message: Message?
+
+    private enum CodingKeys: String, CodingKey {
+        case type, message, result
+        case isError = "is_error"
+    }
+
+    struct Message: Decodable {
+        let content: [ContentBlock]?
+    }
+
+    enum ContentBlock: Decodable {
+        case text(String)
+        case toolUse(name: String)
+        case other
+
+        private enum CodingKeys: String, CodingKey {
+            case type, text, name
+        }
+
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            let blockType = (try? c.decode(String.self, forKey: .type)) ?? ""
+            switch blockType {
+            case "text":
+                let text = (try? c.decode(String.self, forKey: .text)) ?? ""
+                self = .text(text)
+            case "tool_use":
+                let name = (try? c.decode(String.self, forKey: .name)) ?? "tool"
+                self = .toolUse(name: name)
+            default:
+                self = .other
             }
         }
     }

@@ -28,6 +28,7 @@ struct SettingsView: View {
                     appearanceSection
                     componentChecksSection
                     appUpdatesSection
+                    WeeklyRhythmEngineSection()
                     accountSection
                     apiKeysSection
                     advancedSection

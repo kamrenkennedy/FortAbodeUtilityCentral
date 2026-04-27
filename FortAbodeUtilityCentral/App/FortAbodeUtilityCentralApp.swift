@@ -65,7 +65,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let result = await runner.run(cliPath: path)
 
         let defaults = UserDefaults.standard
-        defaults.set(result.finishedAt, forKey: AppSettingsKey.weeklyRhythmEngineLastRunAt)
+        defaults.set(result.finishedAt.timeIntervalSince1970, forKey: AppSettingsKey.weeklyRhythmEngineLastRunAt)
         defaults.set(result.succeeded, forKey: AppSettingsKey.weeklyRhythmEngineLastRunSucceeded)
         defaults.set(result.summary, forKey: AppSettingsKey.weeklyRhythmEngineLastRunSummary)
 

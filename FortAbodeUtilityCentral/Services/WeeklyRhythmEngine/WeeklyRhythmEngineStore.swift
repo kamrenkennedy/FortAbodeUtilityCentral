@@ -118,8 +118,9 @@ public final class WeeklyRhythmEngineStore {
 
     private static func loadPersistedLastRun() -> RunResult? {
         let defaults = UserDefaults.standard
-        guard let finishedAt = defaults.object(forKey: persistedRunFinishedAtKey) as? Date,
-              let summary    = defaults.string(forKey: persistedRunSummaryKey) else {
+        let timestamp = defaults.double(forKey: persistedRunFinishedAtKey)
+        guard timestamp > 0,
+              let summary = defaults.string(forKey: persistedRunSummaryKey) else {
             return nil
         }
         let succeeded = defaults.bool(forKey: persistedRunSucceededKey)
@@ -129,13 +130,16 @@ public final class WeeklyRhythmEngineStore {
             summary: summary,
             stdoutTail: "",
             stderrTail: "",
-            finishedAt: finishedAt
+            finishedAt: Date(timeIntervalSince1970: timestamp)
         )
     }
 
     private static func persistLastRun(_ result: RunResult) {
         let defaults = UserDefaults.standard
-        defaults.set(result.finishedAt, forKey: persistedRunFinishedAtKey)
+        // Persist as TimeInterval so @AppStorage(... Double) can read it back
+        // in `WeeklyRhythmEngineSection`. Date doesn't round-trip through
+        // @AppStorage cleanly without a custom RawRepresentable.
+        defaults.set(result.finishedAt.timeIntervalSince1970, forKey: persistedRunFinishedAtKey)
         defaults.set(result.succeeded, forKey: persistedRunSucceededKey)
         defaults.set(result.summary, forKey: persistedRunSummaryKey)
     }

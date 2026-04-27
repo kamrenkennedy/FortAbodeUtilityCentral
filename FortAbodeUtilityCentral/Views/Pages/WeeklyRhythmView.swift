@@ -126,12 +126,10 @@ struct WeeklyRhythmView: View {
             VStack(alignment: .leading, spacing: 0) {
                 EditorialHeader(eyebrow: weekMetadata.eyebrow, title: weekMetadata.title)
                     .overlay(alignment: .topTrailing) {
-                        Button { runHealthDetailOpen = true } label: {
-                            RunHealthPill(state: runHealthDisplayState)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .help("Run Health detail")
+                        WeeklyRhythmRunControl(
+                            pillState: runHealthDisplayState,
+                            onPillTap: { runHealthDetailOpen = true }
+                        )
                         .padding(.top, Space.s10)
                         .padding(.trailing, Space.s10)
                     }
@@ -1614,59 +1612,6 @@ private struct AlertActionButton: View {
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }
         .animation(.easeOut(duration: 0.18), value: isHovering)
-    }
-}
-
-// MARK: - Run Health pill (engine-spec.md run health diagnostic)
-
-private struct RunHealthPill: View {
-    enum State {
-        case allGood
-        case warning(String)
-        case error(String)
-    }
-
-    let state: State
-
-    var body: some View {
-        HStack(spacing: Space.s1_5) {
-            Image(systemName: glyph)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(tint)
-            Text(label)
-                .font(.labelMD.weight(.medium))
-                .foregroundStyle(Color.onSurface)
-        }
-        .padding(.horizontal, Space.s3)
-        .padding(.vertical, Space.s1_5)
-        .background(
-            Capsule()
-                .fill(Color.surfaceContainerHigh)
-        )
-    }
-
-    private var glyph: String {
-        switch state {
-        case .allGood: return "checkmark.circle.fill"
-        case .warning: return "exclamationmark.triangle.fill"
-        case .error:   return "xmark.octagon.fill"
-        }
-    }
-
-    private var tint: Color {
-        switch state {
-        case .allGood:        return Color.statusScheduled
-        case .warning:        return Color.statusDraft
-        case .error:          return Color.statusError
-        }
-    }
-
-    private var label: String {
-        switch state {
-        case .allGood:                 return "All good"
-        case .warning(let message):    return message
-        case .error(let message):      return message
-        }
     }
 }
 

@@ -441,6 +441,111 @@ public enum WeeklyRhythmLoadStatus: Equatable, Sendable {
     case error(String)
 }
 
+// MARK: - Edit patches (v4.x parity pass)
+//
+// Each patch describes a partial edit to one item kind. All fields are
+// optional — a patch only includes what changed. The engine drains these
+// from the pending mutations file on next run and applies them to the
+// real source-of-truth (Apple Reminders, Google Calendar, Notion, etc.).
+//
+// Display-format strings (`startTime: "10:00 AM"`, `duration: "3 hours"`)
+// match what the design package's edit modal binds to. The engine parses
+// these on drain — keeping them as strings here avoids forcing the app to
+// own a time-format parser.
+
+public struct EventPatch: Codable, Equatable, Sendable {
+    public var title: String?
+    public var dayOfWeek: String?      // "Monday", "Tuesday", ...
+    public var typeTag: String?        // "Make" / "Move" / "Recover" / "Admin"
+    public var startTime: String?      // display format, e.g. "10:00 AM"
+    public var duration: String?       // display format, e.g. "3 hours"
+    public var notes: String?
+
+    public init(
+        title: String? = nil,
+        dayOfWeek: String? = nil,
+        typeTag: String? = nil,
+        startTime: String? = nil,
+        duration: String? = nil,
+        notes: String? = nil
+    ) {
+        self.title = title
+        self.dayOfWeek = dayOfWeek
+        self.typeTag = typeTag
+        self.startTime = startTime
+        self.duration = duration
+        self.notes = notes
+    }
+}
+
+public struct ReminderPatch: Codable, Equatable, Sendable {
+    public var title: String?
+    public var dueDay: String?         // "Tuesday" / "Today" / "This week"
+    public var list: String?           // Apple Reminders list name
+    public var tag: String?            // "Make" / "Move" / "Recover" / "Admin"
+    public var notes: String?
+
+    public init(
+        title: String? = nil,
+        dueDay: String? = nil,
+        list: String? = nil,
+        tag: String? = nil,
+        notes: String? = nil
+    ) {
+        self.title = title
+        self.dueDay = dueDay
+        self.list = list
+        self.tag = tag
+        self.notes = notes
+    }
+}
+
+public struct TriagePatch: Codable, Equatable, Sendable {
+    public var followUp: String?       // "Tomorrow" / "Next week" / specific date
+    public var dismissReason: String?
+    public var disposition: String?    // "reply" / "snooze" / "dismiss"
+
+    public init(
+        followUp: String? = nil,
+        dismissReason: String? = nil,
+        disposition: String? = nil
+    ) {
+        self.followUp = followUp
+        self.dismissReason = dismissReason
+        self.disposition = disposition
+    }
+}
+
+public struct ErrandPatch: Codable, Equatable, Sendable {
+    public var title: String?
+    public var location: String?
+    public var routedTo: String?       // weekday name or nil to clear routing
+    public var notes: String?
+    public var isDone: Bool?
+
+    public init(
+        title: String? = nil,
+        location: String? = nil,
+        routedTo: String? = nil,
+        notes: String? = nil,
+        isDone: Bool? = nil
+    ) {
+        self.title = title
+        self.location = location
+        self.routedTo = routedTo
+        self.notes = notes
+        self.isDone = isDone
+    }
+}
+
+public enum RsvpResponse: String, Codable, Equatable, Sendable {
+    case accept
+    case tentative
+    case decline
+    /// User toggled the same active button — clears the prior selection.
+    case cleared
+}
+
 // MARK: - Mutations (Phase 5b — write-back)
 //
 // `WeeklyRhythmMutation` describes a user action that needs to persist
@@ -460,6 +565,13 @@ public enum WeeklyRhythmMutation: Equatable, Sendable {
     case proposalDecline(proposalID: String)
     case dayTypeChange(weekdayName: String, newType: WRDayType)  // "Sunday" … "Saturday"
     case errandReorder(orderedIDs: [String])
+
+    // v4.x parity pass — edit + RSVP mutations
+    case eventEdit(eventID: String, patch: EventPatch)
+    case reminderEdit(reminderID: String, patch: ReminderPatch)
+    case triageEdit(triageID: String, patch: TriagePatch)
+    case triageRsvp(triageID: String, response: RsvpResponse)
+    case errandEdit(errandID: String, patch: ErrandPatch)
 }
 
 extension WeeklyRhythmMutation: Codable {
@@ -470,6 +582,8 @@ extension WeeklyRhythmMutation: Codable {
         case proposalID
         case weekdayName, newType
         case orderedIDs
+        case reminderID, triageID
+        case patch, response
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -498,6 +612,26 @@ extension WeeklyRhythmMutation: Codable {
         case .errandReorder(let orderedIDs):
             try c.encode("errandReorder", forKey: .kind)
             try c.encode(orderedIDs, forKey: .orderedIDs)
+        case .eventEdit(let eventID, let patch):
+            try c.encode("eventEdit", forKey: .kind)
+            try c.encode(eventID, forKey: .eventID)
+            try c.encode(patch, forKey: .patch)
+        case .reminderEdit(let reminderID, let patch):
+            try c.encode("reminderEdit", forKey: .kind)
+            try c.encode(reminderID, forKey: .reminderID)
+            try c.encode(patch, forKey: .patch)
+        case .triageEdit(let triageID, let patch):
+            try c.encode("triageEdit", forKey: .kind)
+            try c.encode(triageID, forKey: .triageID)
+            try c.encode(patch, forKey: .patch)
+        case .triageRsvp(let triageID, let response):
+            try c.encode("triageRsvp", forKey: .kind)
+            try c.encode(triageID, forKey: .triageID)
+            try c.encode(response, forKey: .response)
+        case .errandEdit(let errandID, let patch):
+            try c.encode("errandEdit", forKey: .kind)
+            try c.encode(errandID, forKey: .errandID)
+            try c.encode(patch, forKey: .patch)
         }
     }
 
@@ -528,6 +662,31 @@ extension WeeklyRhythmMutation: Codable {
             )
         case "errandReorder":
             self = .errandReorder(orderedIDs: try c.decode([String].self, forKey: .orderedIDs))
+        case "eventEdit":
+            self = .eventEdit(
+                eventID: try c.decode(String.self, forKey: .eventID),
+                patch: try c.decode(EventPatch.self, forKey: .patch)
+            )
+        case "reminderEdit":
+            self = .reminderEdit(
+                reminderID: try c.decode(String.self, forKey: .reminderID),
+                patch: try c.decode(ReminderPatch.self, forKey: .patch)
+            )
+        case "triageEdit":
+            self = .triageEdit(
+                triageID: try c.decode(String.self, forKey: .triageID),
+                patch: try c.decode(TriagePatch.self, forKey: .patch)
+            )
+        case "triageRsvp":
+            self = .triageRsvp(
+                triageID: try c.decode(String.self, forKey: .triageID),
+                response: try c.decode(RsvpResponse.self, forKey: .response)
+            )
+        case "errandEdit":
+            self = .errandEdit(
+                errandID: try c.decode(String.self, forKey: .errandID),
+                patch: try c.decode(ErrandPatch.self, forKey: .patch)
+            )
         default:
             throw DecodingError.dataCorruptedError(
                 forKey: .kind,
@@ -646,6 +805,55 @@ public enum MutationApplier {
                 reordered.append(e)
             }
             snap.errands = reordered
+
+        // MARK: - v4.x parity edits
+        //
+        // The local applier handles fields that map cleanly onto the snapshot
+        // model. Fields that require translation (e.g. event startTime
+        // "10:00 AM" → Double 10.0, dayOfWeek string → weekDay index) are
+        // queued in the pending file; the engine applies them to the real
+        // source-of-truth on next run and the snapshot picks up the result.
+
+        case .eventEdit(let eventID, let patch):
+            for d in 0..<snap.weekDays.count {
+                if let e = snap.weekDays[d].events.firstIndex(where: { $0.id == eventID }) {
+                    if let title = patch.title {
+                        snap.weekDays[d].events[e].title = title
+                    }
+                    return
+                }
+            }
+
+        case .reminderEdit:
+            // Reminders aren't represented in the snapshot today (engine
+            // emits them inline as WREvent entries in some cases). Engine
+            // drains the patch on next run.
+            return
+
+        case .triageEdit(let triageID, let patch):
+            // Local apply: dismissal removes from the triage list. Other
+            // fields (followUp, dismissReason) are engine-side only.
+            if patch.disposition == "dismiss" {
+                snap.triage.removeAll { $0.id == triageID }
+            }
+
+        case .triageRsvp(let triageID, let response):
+            // Decline removes the triage entry locally — the calendar invite
+            // is resolved. Accept / Tentative / Cleared leave the entry in
+            // place and let the engine apply via `gcal_respond_to_event` on
+            // its next run.
+            if response == .decline {
+                snap.triage.removeAll { $0.id == triageID }
+            }
+
+        case .errandEdit(let errandID, let patch):
+            if let i = snap.errands.firstIndex(where: { $0.id == errandID }) {
+                if let title = patch.title       { snap.errands[i].title = title }
+                if let location = patch.location { snap.errands[i].location = location }
+                if let routedTo = patch.routedTo { snap.errands[i].routedTo = routedTo }
+                if let isDone = patch.isDone     { snap.errands[i].isDone = isDone }
+                // notes is not a field on Errand model — engine handles
+            }
         }
     }
 

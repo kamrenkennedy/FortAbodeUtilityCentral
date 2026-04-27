@@ -23,6 +23,7 @@
 		18317CE6CA9311E67496A0AA /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FB784FE53060D8FF7EEE72 /* AppState.swift */; };
 		1BE2080AB4AF9C0D5DDF3A05 /* SetupWizardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00E7940EB3A6AD0DB6A38C2F /* SetupWizardViewModel.swift */; };
 		2B92C1E7ECA9DC4D7DC50F0E /* FeedbackService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DACD2838A1C216461103AE6 /* FeedbackService.swift */; };
+		2C512BA73630DE2CCC93F99F /* AlignedSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F6F08569570B37845FC1387 /* AlignedSheet.swift */; };
 		2C7ED0531E56C8235AFCE6BC /* PendingMutationsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F5E929A9A401F87718B0983 /* PendingMutationsStore.swift */; };
 		355F6705C0380EC8CCED0279 /* WeeklyRhythmUIStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80DD857A1CB762AC7991C68C /* WeeklyRhythmUIStateStore.swift */; };
 		377AE9482D6974941E963E1B /* FamilyMemoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14788FA8AC138E58AD03BFC7 /* FamilyMemoryView.swift */; };
@@ -125,6 +126,7 @@
 		3AB3D27CB30E231A6EF2EF26 /* ChatPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPanel.swift; sourceTree = "<group>"; };
 		3C3580CD173E87DCBCC770F4 /* ChatPanelHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPanelHeader.swift; sourceTree = "<group>"; };
 		3DACD2838A1C216461103AE6 /* FeedbackService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackService.swift; sourceTree = "<group>"; };
+		3F6F08569570B37845FC1387 /* AlignedSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignedSheet.swift; sourceTree = "<group>"; };
 		418F1A3FCCAA74A9749BDE1E /* WeeklyRhythmPathResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmPathResolver.swift; sourceTree = "<group>"; };
 		48EB2A999B000B9AC11BB0DD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		4DB01C9B5FC7912CFB5BBD2A /* ConfigMdEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigMdEditor.swift; sourceTree = "<group>"; };
@@ -324,6 +326,7 @@
 		73EEB8A86B0CDC66AD4DCD75 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				3F6F08569570B37845FC1387 /* AlignedSheet.swift */,
 				AC9BDBAE1BA8CDCF7640CE6B /* PageScaffold.swift */,
 			);
 			path = Components;
@@ -560,6 +563,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				047B461FE0B2A7A81E4BC469 /* ActivationView.swift in Sources */,
+				2C512BA73630DE2CCC93F99F /* AlignedSheet.swift in Sources */,
 				BE31F2E9C53C3C01AF59B9E0 /* AppNavigation.swift in Sources */,
 				156C48CEA34E68406BE574C7 /* AppSettings.swift in Sources */,
 				18317CE6CA9311E67496A0AA /* AppState.swift in Sources */,

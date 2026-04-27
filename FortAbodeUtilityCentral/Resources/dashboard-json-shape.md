@@ -406,6 +406,104 @@ Engine action:
 - For `proposalAccept`: execute the side-effect described in the proposal's `proposedBlock` (Notion task update via `notion-update-page`, GCal event creation via `gcal_create_event`, etc. — whatever the engine spec §10c calls for).
 - For `proposalDecline`: just record the decision, no side-effect.
 
+#### `eventEdit` (v4.x parity pass)
+
+```json
+{
+  "kind": "eventEdit",
+  "eventID": "ev-thu-braxton3",
+  "patch": {
+    "title": "Braxton edit · pass 3 (revised)",
+    "dayOfWeek": "Friday",
+    "typeTag": "Make",
+    "startTime": "10:00 AM",
+    "duration": "3 hours",
+    "notes": "Move to Friday — Tuesday is over-booked."
+  }
+}
+```
+
+All `patch` fields are optional — only the fields the user changed are present.
+
+Engine action:
+- Locate the matching Google Calendar event (by `eventID` or by title-prefix fallback if the engine's internal IDs differ from emitted IDs).
+- For `dayOfWeek` + `startTime` + `duration`: compute new ISO start/end and `gcal_update_event`.
+- For `title` and `notes`: update via `gcal_update_event` (notes goes into the event description).
+- For `typeTag`: this is a *day-type tag*, not stored on the event itself. Engine reflects it on next dashboard generation by re-categorizing. No GCal action needed.
+
+#### `reminderEdit` (v4.x parity pass)
+
+```json
+{
+  "kind": "reminderEdit",
+  "reminderID": "rem-amazon-return",
+  "patch": {
+    "title": "Return Amazon package — moved to Tuesday",
+    "dueDay": "Tuesday",
+    "list": "Errands",
+    "tag": "Move",
+    "notes": "Drop off after the gallery delivery."
+  }
+}
+```
+
+Engine action:
+- Apple Reminders MCP — `update_reminder` with the matching ID, applying the title / due-date / list-move per patch fields.
+- `tag` is reflected in the next dashboard generation; no Reminders state change.
+
+#### `triageEdit` (v4.x parity pass)
+
+```json
+{
+  "kind": "triageEdit",
+  "triageID": "tri-marisol",
+  "patch": {
+    "followUp": "Tomorrow morning",
+    "dismissReason": "Resolved via Slack thread",
+    "disposition": "dismiss"
+  }
+}
+```
+
+Engine action:
+- For `disposition: "dismiss"`: mark the triage item as dismissed (engine state, persists across runs so it doesn't re-surface). Optionally write a Memory MCP note with the `dismissReason`.
+- For `disposition: "snooze"`: push the item out of next run's triage; re-surface at `followUp` time.
+- For `disposition: "reply"`: leave in triage but tag with the user's intent for next run's display.
+
+#### `triageRsvp` (v4.x parity pass)
+
+```json
+{ "kind": "triageRsvp", "triageID": "tri-team-sync", "response": "accept" }
+```
+
+`response` is one of `"accept" | "tentative" | "decline" | "cleared"`. `cleared` means the user toggled an active button to undo their prior selection.
+
+Engine action:
+- Locate the underlying Google Calendar invite via the triage item's `pending_invite` linkage.
+- Call `gcal_respond_to_event` with the user's decision (`accepted` / `tentative` / `declined`).
+- For `cleared`: revert any prior RSVP if possible; otherwise leave the invite in `needs_action` state.
+
+#### `errandEdit` (v4.x parity pass)
+
+```json
+{
+  "kind": "errandEdit",
+  "errandID": "err-amazon",
+  "patch": {
+    "title": "Return Amazon package",
+    "location": "Downtown · 12 min",
+    "routedTo": "Monday",
+    "notes": "After morning run.",
+    "isDone": false
+  }
+}
+```
+
+Engine action:
+- Apple Reminders MCP — `update_reminder` for title / list / due-date / completion state.
+- `routedTo` reflects in the next dashboard generation's errand routing.
+- `location` / `notes` go into the Reminders entry's notes field.
+
 ### Engine drain protocol
 
 At the start of each run, the engine should:

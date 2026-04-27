@@ -111,7 +111,8 @@ public actor FileBackedWeeklyRhythmDataSource: WeeklyRhythmDataSourceImpl {
             let state = WeeklyRhythmUIStateStore.WeekUIState(errandOrder: orderedIDs)
             return await uiStateStore.write(state, weekISODate: context.mondayISO)
 
-        case .errandDoneToggle, .eventMove, .proposalAccept, .proposalDecline:
+        case .errandDoneToggle, .eventMove, .proposalAccept, .proposalDecline,
+             .eventEdit, .reminderEdit, .triageEdit, .triageRsvp, .errandEdit:
             let entry = PendingMutationEntry(mutation: mutation)
             return await pendingStore.append(
                 entry,

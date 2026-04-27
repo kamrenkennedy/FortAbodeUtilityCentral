@@ -27,6 +27,55 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if BackgroundTaskService.isBackgroundCheck {
             NSApp.setActivationPolicy(.accessory)
         }
+        // Phase 6: scheduled Weekly Rhythm Engine run. Same headless pattern —
+        // .accessory policy so no Dock flash, run the engine, post a notification
+        // (if surfacing is enabled), and exit cleanly.
+        if BackgroundTaskService.isRunEngine {
+            NSApp.setActivationPolicy(.accessory)
+            Task { @MainActor in
+                await Self.runEngineHeadless()
+                exit(0)
+            }
+        }
+    }
+
+    /// Headless engine run for the `--run-engine` LaunchAgent entry point.
+    /// Mirrors `WeeklyRhythmEngineStore.runNow()` but skips the @Observable
+    /// state plumbing — there's no UI to update, just a notification to post
+    /// (if `surfaceOnCompletion` is true) before `exit(0)`.
+    static func runEngineHeadless() async {
+        let detector = ClaudeCLIDetector()
+        let detection = await detector.detect()
+        guard case .found(let path, _) = detection else {
+            await ErrorLogger.shared.log(
+                area: "WeeklyRhythmEngine.HeadlessRun.cliMissing",
+                message: "Scheduled run aborted — Claude CLI not detected"
+            )
+            let surface = UserDefaults.standard.object(forKey: AppSettingsKey.weeklyRhythmEngineSurfaceOnCompletion) as? Bool ?? true
+            if surface {
+                await NotificationService.shared.postEngineRunNotification(
+                    succeeded: false,
+                    summary: "Claude CLI not found — open Fort Abode to install."
+                )
+            }
+            return
+        }
+
+        let runner = WeeklyRhythmEngineRunner()
+        let result = await runner.run(cliPath: path)
+
+        let defaults = UserDefaults.standard
+        defaults.set(result.finishedAt, forKey: AppSettingsKey.weeklyRhythmEngineLastRunAt)
+        defaults.set(result.succeeded, forKey: AppSettingsKey.weeklyRhythmEngineLastRunSucceeded)
+        defaults.set(result.summary, forKey: AppSettingsKey.weeklyRhythmEngineLastRunSummary)
+
+        let surface = defaults.object(forKey: AppSettingsKey.weeklyRhythmEngineSurfaceOnCompletion) as? Bool ?? true
+        if surface {
+            await NotificationService.shared.postEngineRunNotification(
+                succeeded: result.succeeded,
+                summary: result.summary
+            )
+        }
     }
 
     /// Drop the Dock icon and menu bar. Called when the main window closes so the
@@ -133,6 +182,12 @@ struct FortAbodeUtilityCentralApp: App {
     // it up automatically. Until then, mock data keeps the UI populated.
     @State private var weeklyRhythmStore = WeeklyRhythmStore(impl: FileBackedWeeklyRhythmDataSource())
 
+    // Phase 6: embedded Weekly Rhythm Engine runner. Spawns the user's `claude`
+    // CLI to run the engine without leaving the app. UI surfaces — the run
+    // pill on the Weekly Rhythm tab and the engine section in Settings —
+    // observe this store directly via `@Environment`.
+    @State private var weeklyRhythmEngineStore = WeeklyRhythmEngineStore()
+
     // Sparkle updater controller — starts checking for updates automatically
     private let updaterController: SPUStandardUpdaterController
 
@@ -171,6 +226,7 @@ struct FortAbodeUtilityCentralApp: App {
                         .environment(updaterService)
                         .environment(appState)
                         .environment(weeklyRhythmStore)
+                        .environment(weeklyRhythmEngineStore)
                 } else {
                     ProgressView("Loading...")
                         .frame(minWidth: 900, minHeight: 600)
@@ -189,6 +245,13 @@ struct FortAbodeUtilityCentralApp: App {
                 }
             }
             .onAppear {
+                // Phase 6: when launched with --run-engine, the AppDelegate
+                // owns the lifecycle (run engine, post notification, exit). The
+                // window is rendered .accessory so it never appears, but
+                // .onAppear still fires — short-circuit before any user-facing
+                // work runs.
+                if BackgroundTaskService.isRunEngine { return }
+
                 guard isActivated else { return }
                 if viewModel == nil {
                     viewModel = ComponentListViewModel(registry: registry)
@@ -197,6 +260,11 @@ struct FortAbodeUtilityCentralApp: App {
                 checkWhatsNew()
                 logLauncherHeartbeat()
                 pinICloudFoldersInBackground()
+                detectEngineCLI()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .engineRunNotificationTapped)) { _ in
+                // System notification tap — bring user to the Weekly Rhythm tab.
+                appState.selectedDestination = .weeklyRhythm
             }
             .onChange(of: isActivated) { _, activated in
                 guard activated else { return }
@@ -205,6 +273,7 @@ struct FortAbodeUtilityCentralApp: App {
                 }
                 handleLaunchMode()
                 pinICloudFoldersInBackground()
+                detectEngineCLI()
             }
         }
         .defaultSize(width: 1440, height: 900)
@@ -292,6 +361,16 @@ struct FortAbodeUtilityCentralApp: App {
                 // Prompt for launch at login on first launch
                 promptLaunchAtLoginIfNeeded()
             }
+        }
+    }
+
+    /// Phase 6: detect the Claude CLI on launch so the Weekly Rhythm Engine
+    /// section in Settings + the run pill on the Weekly Rhythm tab can label
+    /// themselves correctly without waiting for the user to open Settings.
+    /// Cached on the store; views can force-refresh from Settings.
+    private func detectEngineCLI() {
+        Task { @MainActor in
+            await weeklyRhythmEngineStore.detectCLI()
         }
     }
 

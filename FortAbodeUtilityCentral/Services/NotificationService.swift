@@ -87,6 +87,31 @@ final class NotificationService: NSObject, @unchecked Sendable, UNUserNotificati
         }
     }
 
+    /// Post a notification when a Weekly Rhythm Engine run finishes. Tapping
+    /// deep-links to the Weekly Rhythm tab via `Notification.Name.engineRunNotificationTapped`,
+    /// which the App layer observes to set `appState.selectedDestination`.
+    /// Identifier is timestamped so multiple runs in the same launch don't
+    /// dedupe each other.
+    func postEngineRunNotification(succeeded: Bool, summary: String) async {
+        let content = UNMutableNotificationContent()
+        content.title = succeeded ? "Weekly Rhythm Engine ran" : "Weekly Rhythm Engine failed"
+        content.body = summary
+        content.sound = .default
+
+        let stamp = ISO8601DateFormatter().string(from: Date())
+        let request = UNNotificationRequest(
+            identifier: "weekly-rhythm-run-\(stamp)",
+            content: content,
+            trigger: nil
+        )
+
+        do {
+            try await UNUserNotificationCenter.current().add(request)
+        } catch {
+            print("[NotificationService] Failed to post engine-run notification: \(error)")
+        }
+    }
+
     /// Post a summary notification when multiple updates are available
     func postSummaryNotification(count: Int) async {
         let content = UNMutableNotificationContent()
@@ -117,13 +142,19 @@ final class NotificationService: NSObject, @unchecked Sendable, UNUserNotificati
         return [.banner, .sound]
     }
 
-    /// Handle notification tap — bring the app to front
+    /// Handle notification tap — bring the app to front and (for engine-run
+    /// notifications) post `Notification.Name.engineRunNotificationTapped` so
+    /// the App layer can deep-link to the Weekly Rhythm tab.
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse
     ) async {
+        let identifier = response.notification.request.identifier
         await MainActor.run {
             NSApp.activate(ignoringOtherApps: true)
+            if identifier.hasPrefix("weekly-rhythm-run-") {
+                NotificationCenter.default.post(name: .engineRunNotificationTapped, object: nil)
+            }
         }
     }
 }

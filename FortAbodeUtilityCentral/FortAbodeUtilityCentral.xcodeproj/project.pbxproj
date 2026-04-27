@@ -17,11 +17,13 @@
 		112863CDD6F3C554DAF8C3A9 /* UpdateExecutionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E343B9250E53EF5FE8057DAE /* UpdateExecutionService.swift */; };
 		11E72DFAD7010B08CCFA2023 /* dashboard-template.html in Resources */ = {isa = PBXBuildFile; fileRef = 750E9292C50A1D0B0C4EE603 /* dashboard-template.html */; };
 		13B98C724D6580546B4A9F6C /* weekly-rhythm-skill-wrapper.md in Resources */ = {isa = PBXBuildFile; fileRef = CFEBF1AD73F4AD47132E5387 /* weekly-rhythm-skill-wrapper.md */; };
+		149284AD1AF7CC868055E9C7 /* ClaudeCLIDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBFD216C2A59D0C5332408B4 /* ClaudeCLIDetector.swift */; };
 		156C48CEA34E68406BE574C7 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A1B1F334020349AF1BB567F /* AppSettings.swift */; };
 		15ACB224032293DD17F523FA /* SetupValidationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9646955BDB7A4F405EB1FDF0 /* SetupValidationService.swift */; };
 		15DC17F5631A4CF72E02C261 /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = D59852CE50DAEC545C6B0C0E /* ChatMessage.swift */; };
 		18317CE6CA9311E67496A0AA /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FB784FE53060D8FF7EEE72 /* AppState.swift */; };
 		1BE2080AB4AF9C0D5DDF3A05 /* SetupWizardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00E7940EB3A6AD0DB6A38C2F /* SetupWizardViewModel.swift */; };
+		2914B8F6E862FE0B1914BFAE /* WeeklyRhythmEngineStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD284AB922259409852EBE73 /* WeeklyRhythmEngineStore.swift */; };
 		2B92C1E7ECA9DC4D7DC50F0E /* FeedbackService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DACD2838A1C216461103AE6 /* FeedbackService.swift */; };
 		2C512BA73630DE2CCC93F99F /* AlignedSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F6F08569570B37845FC1387 /* AlignedSheet.swift */; };
 		2C7ED0531E56C8235AFCE6BC /* PendingMutationsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F5E929A9A401F87718B0983 /* PendingMutationsStore.swift */; };
@@ -54,6 +56,7 @@
 		7CFA90087FA5CC19AFC67353 /* WeeklyRhythmPathResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 418F1A3FCCAA74A9749BDE1E /* WeeklyRhythmPathResolver.swift */; };
 		7F7577B11C2D1F70D5E6F9B7 /* ChatComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B245C0720A4C0BC3EBC09BF2 /* ChatComposer.swift */; };
 		84EF3894AB836BBA01A7FB6A /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA1C59FBAA6BF53EE5F93CE0 /* NotificationService.swift */; };
+		8AA1D4FFDC54D9B78DA73942 /* WeeklyRhythmEngineRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCC66F9F30443EC4D0D153F9 /* WeeklyRhythmEngineRunner.swift */; };
 		8C46F547DCED96736E019D49 /* ComponentRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB0B45EFBB7DD5A133107515 /* ComponentRegistryTests.swift */; };
 		8FEB14627351680D4959D1BF /* MarketplaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FB63D56853D1FFB0742D448 /* MarketplaceView.swift */; };
 		916EBC0C31B8473B1C50C325 /* FamilyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01FF0FA5D6DBEBF7A139D6FD /* FamilyView.swift */; };
@@ -184,6 +187,7 @@
 		CB4031837BBE075B7CEF1484 /* whats-new.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "whats-new.json"; sourceTree = "<group>"; };
 		CB45A8A63D1E4873C3D739AA /* component-registry.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "component-registry.json"; sourceTree = "<group>"; };
 		CCA25CF29B9D7F5FB60EF529 /* AlignedDesignSystem */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AlignedDesignSystem; path = "../../../../../../App Projects/AlignedDesignSystem"; sourceTree = SOURCE_ROOT; };
+		CD284AB922259409852EBE73 /* WeeklyRhythmEngineStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmEngineStore.swift; sourceTree = "<group>"; };
 		CF650F1C05A9FE3D738BAA42 /* FamilyMemoryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyMemoryService.swift; sourceTree = "<group>"; };
 		CFEBF1AD73F4AD47132E5387 /* weekly-rhythm-skill-wrapper.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "weekly-rhythm-skill-wrapper.md"; sourceTree = "<group>"; };
 		D107F8C5D300A4F18DF49A3F /* Sidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sidebar.swift; sourceTree = "<group>"; };
@@ -191,6 +195,8 @@
 		D31AA9A8E09678D0693ACE38 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		D59852CE50DAEC545C6B0C0E /* ChatMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessage.swift; sourceTree = "<group>"; };
 		D71386BF1C667590FCF48FB8 /* FamilyChatPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyChatPane.swift; sourceTree = "<group>"; };
+		DBFD216C2A59D0C5332408B4 /* ClaudeCLIDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeCLIDetector.swift; sourceTree = "<group>"; };
+		DCC66F9F30443EC4D0D153F9 /* WeeklyRhythmEngineRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmEngineRunner.swift; sourceTree = "<group>"; };
 		DE0AC8F02FED91F42FC4EB00 /* VersionComparisonTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionComparisonTests.swift; sourceTree = "<group>"; };
 		E343B9250E53EF5FE8057DAE /* UpdateExecutionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateExecutionService.swift; sourceTree = "<group>"; };
 		E6B493D672539E78B60DC3E8 /* FeedbackViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackViewModel.swift; sourceTree = "<group>"; };
@@ -216,6 +222,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0195949D7590925F8B1AF29E /* WeeklyRhythmEngine */ = {
+			isa = PBXGroup;
+			children = (
+				DBFD216C2A59D0C5332408B4 /* ClaudeCLIDetector.swift */,
+				DCC66F9F30443EC4D0D153F9 /* WeeklyRhythmEngineRunner.swift */,
+				CD284AB922259409852EBE73 /* WeeklyRhythmEngineStore.swift */,
+			);
+			path = WeeklyRhythmEngine;
+			sourceTree = "<group>";
+		};
 		148BC00650073D74C05D25B9 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
@@ -246,6 +262,7 @@
 				52A1E55BD560971A940F171A /* VersionDetectionService.swift */,
 				66C0B457A755E70A4E21D034 /* WeeklyRhythmService.swift */,
 				82E51D3240B7F28EAF8D7089 /* WeeklyRhythm */,
+				0195949D7590925F8B1AF29E /* WeeklyRhythmEngine */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -594,6 +611,7 @@
 				107872FAAEF37D55D156492E /* ChatPanel.swift in Sources */,
 				4CB55B39A51109E2D3DAE9F1 /* ChatPanelHeader.swift in Sources */,
 				ED44975C50A6C6A64F4954DE /* CheckForUpdatesView.swift in Sources */,
+				149284AD1AF7CC868055E9C7 /* ClaudeCLIDetector.swift in Sources */,
 				DFEE2E123FFC73F011AA13EB /* ClaudeChatPane.swift in Sources */,
 				0D7F85E45BFAFB9CBA75F829 /* ClaudeCodeConfigService.swift in Sources */,
 				91D50E1EB920B8C40D6B33FB /* ClaudeDesktopConfigService.swift in Sources */,
@@ -649,6 +667,8 @@
 				3B8CF00712BD137247649E22 /* VersionDetectionService.swift in Sources */,
 				A1F93FFFAC5814DE06CC88AF /* WeeklyRhythm.swift in Sources */,
 				9C5B1ABB80EFFEF201C62AAB /* WeeklyRhythmDataSource.swift in Sources */,
+				8AA1D4FFDC54D9B78DA73942 /* WeeklyRhythmEngineRunner.swift in Sources */,
+				2914B8F6E862FE0B1914BFAE /* WeeklyRhythmEngineStore.swift in Sources */,
 				7CFA90087FA5CC19AFC67353 /* WeeklyRhythmPathResolver.swift in Sources */,
 				A1F5C83EBA3836D3FFACAC5D /* WeeklyRhythmService.swift in Sources */,
 				355F6705C0380EC8CCED0279 /* WeeklyRhythmUIStateStore.swift in Sources */,

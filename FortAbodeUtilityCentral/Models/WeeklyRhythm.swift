@@ -180,14 +180,29 @@ public struct WeeklyRhythmAlert: Codable, Equatable, Identifiable, Sendable {
     public var title: String         // "Gallery drop-off — 12 PM downtown"
     public var detail: String        // "18 min drive each way…"
     public var actionLabel: String?  // "View itinerary" / nil if none
+    /// `WREvent.id` of the event being warned about. Used by Fort Abode's
+    /// `Reschedule` action to open the EditEventSheet for that exact event.
+    /// Optional — engine emits when known (most relevant for `commuteConflict`
+    /// alerts); older snapshots without the field decode as nil and the view
+    /// falls back to a best-effort first-of-day lookup.
+    public var eventID: String?
 
-    public init(id: String, kind: WRAlertKind, day: String, title: String, detail: String, actionLabel: String? = nil) {
+    public init(
+        id: String,
+        kind: WRAlertKind,
+        day: String,
+        title: String,
+        detail: String,
+        actionLabel: String? = nil,
+        eventID: String? = nil
+    ) {
         self.id = id
         self.kind = kind
         self.day = day
         self.title = title
         self.detail = detail
         self.actionLabel = actionLabel
+        self.eventID = eventID
     }
 }
 
@@ -273,14 +288,29 @@ public struct WREvent: Codable, Equatable, Identifiable, Sendable {
     public var time: String?                   // "9 — 10:30 AM" — display hint, optional
     public var title: String
     public var kind: WREventKind
+    /// Linkage to `PulseProject.id` when the engine knows which project this
+    /// event belongs to. Drives the cross-component highlight: tap a Project
+    /// Pulse card → all events with the matching projectId get an accent
+    /// border. Optional — events not associated with a Pulse project leave it
+    /// nil; older snapshots without the field decode as nil.
+    public var projectId: String?
 
-    public init(id: String, startHour: Double, endHour: Double, time: String? = nil, title: String, kind: WREventKind) {
+    public init(
+        id: String,
+        startHour: Double,
+        endHour: Double,
+        time: String? = nil,
+        title: String,
+        kind: WREventKind,
+        projectId: String? = nil
+    ) {
         self.id = id
         self.startHour = startHour
         self.endHour = endHour
         self.time = time
         self.title = title
         self.kind = kind
+        self.projectId = projectId
     }
 }
 

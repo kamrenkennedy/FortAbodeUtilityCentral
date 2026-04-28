@@ -20,6 +20,7 @@ struct WeeklyRhythmEngineSection: View {
     @AppStorage(AppSettingsKey.weeklyRhythmEngineLastRunSucceeded)  private var lastRunSucceeded: Bool = false
     @AppStorage(AppSettingsKey.weeklyRhythmEngineLastRunSummary)    private var lastRunSummary: String = ""
     @AppStorage(AppSettingsKey.weeklyRhythmEngineCLIPathOverride)   private var cliPathOverride: String = ""
+    @AppStorage(AppSettingsKey.weeklyRhythmEngineTimeoutMinutes)    private var timeoutMinutes: Int = 20
 
     @State private var installSheetOpen: Bool = false
     @State private var authSheetOpen: Bool = false
@@ -44,6 +45,8 @@ struct WeeklyRhythmEngineSection: View {
                     runNowRow
                     RowSeparator()
                     scheduleRow
+                    RowSeparator()
+                    runTimeoutRow
                     RowSeparator()
                     surfaceOnCompletionRow
                     RowSeparator()
@@ -261,6 +264,33 @@ struct WeeklyRhythmEngineSection: View {
             .labelsHidden()
             .frame(width: 160)
             .disabled(!isCLIInstalled)
+        }
+        .padding(.vertical, Space.s4)
+    }
+
+    private var runTimeoutRow: some View {
+        HStack(alignment: .top, spacing: Space.s4) {
+            VStack(alignment: .leading, spacing: Space.s1) {
+                Text("Run timeout")
+                    .font(.bodyMD.weight(.medium))
+                    .foregroundStyle(Color.onSurface)
+                Text("Maximum time to wait before terminating a stuck engine run. Real runs typically complete in 10–14 minutes.")
+                    .font(.bodySM)
+                    .foregroundStyle(Color.onSurfaceVariant)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: Space.s2)
+
+            Picker("", selection: $timeoutMinutes) {
+                Text("10 min").tag(10)
+                Text("15 min").tag(15)
+                Text("20 min").tag(20)
+                Text("30 min").tag(30)
+                Text("60 min").tag(60)
+            }
+            .labelsHidden()
+            .frame(width: 120)
         }
         .padding(.vertical, Space.s4)
     }

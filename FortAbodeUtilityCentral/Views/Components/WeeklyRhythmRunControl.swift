@@ -107,9 +107,11 @@ struct WeeklyRhythmRunControl: View {
                 ProgressView()
                     .scaleEffect(0.55)
                     .frame(width: 14, height: 14)
-                Text("Running…")
+                Text(currentProgressText)
                     .font(.labelMD.weight(.medium))
                     .foregroundStyle(Color.onSurfaceVariant)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
             }
             .padding(.horizontal, Space.s3)
             .padding(.vertical, Space.s1_5)
@@ -132,6 +134,19 @@ struct WeeklyRhythmRunControl: View {
     private var isRunning: Bool {
         if case .running = engineStore.runState { return true }
         return false
+    }
+
+    /// Live breadcrumb for the run pill — the runner emits "Using Gmail",
+    /// "Using Notion", etc. via stream-json tool-use events; the store stores
+    /// the latest in `runState.running(progress:)`. Falls back to the static
+    /// "Running…" when no progress text has streamed yet (very first second of
+    /// a run, or when the engine produces output we don't classify).
+    private var currentProgressText: String {
+        if case .running(let progress) = engineStore.runState,
+           !progress.trimmingCharacters(in: .whitespaces).isEmpty {
+            return progress
+        }
+        return "Running…"
     }
 
     private var isInstallingSkill: Bool {

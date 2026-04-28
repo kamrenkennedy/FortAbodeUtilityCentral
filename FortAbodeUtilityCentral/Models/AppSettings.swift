@@ -35,6 +35,7 @@ enum AppSettingsKey {
     static let weeklyRhythmEngineLastRunAt          = "WeeklyRhythmEngine.lastRunAt"
     static let weeklyRhythmEngineLastRunSucceeded   = "WeeklyRhythmEngine.lastRunSucceeded"
     static let weeklyRhythmEngineLastRunSummary     = "WeeklyRhythmEngine.lastRunSummary"
+    static let weeklyRhythmEngineTimeoutMinutes     = "WeeklyRhythmEngine.timeoutMinutes"
 }
 
 // MARK: - Notification Names

@@ -79,6 +79,7 @@ struct WeeklyRhythmView: View {
     @State private var editingEventID: String?
     @State private var runHealthDetailOpen: Bool = false
     @State private var whyContext: WhyContext?
+    @State private var travelAlert: WeeklyRhythmAlert?
 
     // Vertical zoom — controls hour-row height. Default 52pt is the desktop
     // spec value (UPDATE-2026-04-26-desktop-mac.md week-grid table). Dragged
@@ -153,7 +154,7 @@ struct WeeklyRhythmView: View {
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .sheet(item: $detailProject) { project in
-            ProjectDetailSheet(project: project)
+            ProjectDetailSheet(project: project, weekDays: weekDays)
                 .frame(minWidth: 520, idealWidth: 640, minHeight: 480, idealHeight: 600)
         }
         .sheet(isPresented: $dayTypeSettingsOpen) {
@@ -247,6 +248,43 @@ struct WeeklyRhythmView: View {
                 }
             )
             .frame(minWidth: 480, idealWidth: 560, minHeight: 360, idealHeight: 480)
+        }
+        .sheet(item: $travelAlert) { alert in
+            TravelAlertDetailSheet(alert: alert, onDismiss: { travelAlert = nil })
+                .frame(minWidth: 480, idealWidth: 540, minHeight: 320, idealHeight: 380)
+        }
+    }
+
+    /// Dispatch the attention-banner action button to whatever sheet/edit
+    /// surface fits the alert kind. Engine emits `actionLabel` per alert; the
+    /// kind drives which sheet opens.
+    private func handleAlertAction(_ alert: WeeklyRhythmAlert) {
+        switch alert.kind {
+        case .travel:
+            travelAlert = alert
+
+        case .commuteConflict:
+            // Prefer engine-emitted `alert.eventID`. When the engine doesn't
+            // know which event is in conflict (older snapshots, ambiguous
+            // sources), fall back to the first event on the alert's day.
+            if let id = alert.eventID, findEvent(byID: id) != nil {
+                editingEventID = id
+            } else if let day = weekDays.first(where: { $0.name.localizedCaseInsensitiveContains(alert.day) }),
+                      let event = day.events.first {
+                editingEventID = event.id
+            }
+
+        case .errandBatch, .lunch:
+            // No dedicated detail surface yet — defer until engine emits more
+            // structure (errand cluster IDs, lunch venue suggestions). Logging
+            // makes the no-op visible during development.
+            Task {
+                await ErrorLogger.shared.log(
+                    area: "WeeklyRhythm.AlertAction",
+                    message: "No handler wired for alert kind",
+                    context: ["kind": alert.kind.rawValue, "title": alert.title]
+                )
+            }
         }
     }
 
@@ -342,7 +380,9 @@ struct WeeklyRhythmView: View {
             if alertsExpanded {
                 VStack(alignment: .leading, spacing: 10) {
                     ForEach(alerts) { alert in
-                        AlertCard(alert: alert)
+                        AlertCard(alert: alert) {
+                            handleAlertAction(alert)
+                        }
                     }
                 }
             }
@@ -414,7 +454,10 @@ struct WeeklyRhythmView: View {
                 HStack(alignment: .top, spacing: Space.s4) {
                     ForEach(pulseProjects) { project in
                         Button {
-                            selectedProjectId = project.id
+                            // Toggle highlight: tap same card again to clear.
+                            // Sheet always opens — the highlight state is
+                            // independent of the detail surface.
+                            selectedProjectId = (selectedProjectId == project.id) ? nil : project.id
                             detailProject = project
                         } label: {
                             ProjectPulseCard(project: project, isSelected: selectedProjectId == project.id)
@@ -697,6 +740,7 @@ struct WeeklyRhythmView: View {
                         day: day,
                         totalHeight: dayColumnHeight,
                         hourScale: hourScale,
+                        selectedProjectId: selectedProjectId,
                         onEditEvent: { event in editingEventID = event.id }
                     )
                     .frame(maxWidth: .infinity)
@@ -1462,6 +1506,7 @@ private struct WeekGridZoomSlider: View {
 
 private struct AlertCard: View {
     let alert: WeeklyRhythmAlert
+    let onAction: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var animate = false
@@ -1517,7 +1562,7 @@ private struct AlertCard: View {
             Spacer(minLength: 8)
 
             if let actionLabel = alert.actionLabel {
-                AlertActionButton(label: actionLabel) {}
+                AlertActionButton(label: actionLabel, action: onAction)
                     .padding(.top, 2)
             }
         }
@@ -2343,6 +2388,7 @@ private struct DayColumn: View {
     let day: WeekDay
     let totalHeight: CGFloat
     let hourScale: CGFloat
+    let selectedProjectId: String?
     let onEditEvent: (WREvent) -> Void
 
     var body: some View {
@@ -2355,8 +2401,10 @@ private struct DayColumn: View {
                 // Hour-relative positioning per the engine JSON spec — 8 AM is
                 // the visible top of the grid (offset 0). 64pt baseline × hourScale
                 // = current hourHeight, so the math collapses to (h × hourHeight).
+                let highlighted = event.projectId != nil
+                    && event.projectId == selectedProjectId
                 Button { onEditEvent(event) } label: {
-                    EventBlock(event: event)
+                    EventBlock(event: event, isHighlighted: highlighted)
                         .frame(height: (event.endHour - event.startHour) * 64 * hourScale)
                         .padding(.horizontal, 2)
                         .contentShape(Rectangle())
@@ -2381,6 +2429,7 @@ private struct DayColumn: View {
 
 private struct EventBlock: View {
     let event: Event
+    var isHighlighted: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -2401,6 +2450,10 @@ private struct EventBlock: View {
         .background(
             RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
                 .fill(fill)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
+                .strokeBorder(Color.tertiary, lineWidth: isHighlighted ? 1.5 : 0)
         )
     }
 
@@ -2528,8 +2581,30 @@ private struct DaysPendingPill: View {
 
 private struct ProjectDetailSheet: View {
     let project: PulseProject
+    let weekDays: [WeekDay]
 
     @Environment(\.dismiss) private var dismiss
+
+    /// Events on the week grid associated with this project. Preferred linkage
+    /// is `event.projectId == project.id` (engine emits this in the dashboard
+    /// JSON). When the engine hasn't emitted projectId yet, fall back to a
+    /// title-contains heuristic so users see something resembling related
+    /// events. This dual path lets the sheet ship before the engine bumps.
+    private var relatedEvents: [(weekDay: WeekDay, event: WREvent)] {
+        var out: [(WeekDay, WREvent)] = []
+        for day in weekDays {
+            for event in day.events {
+                if let pid = event.projectId, pid == project.id {
+                    out.append((day, event))
+                } else if event.projectId == nil
+                    && !project.title.isEmpty
+                    && event.title.localizedCaseInsensitiveContains(project.title) {
+                    out.append((day, event))
+                }
+            }
+        }
+        return out
+    }
 
     var body: some View {
         ScrollView {
@@ -2537,44 +2612,32 @@ private struct ProjectDetailSheet: View {
                 header
 
                 section(title: "This Week") {
-                    VStack(alignment: .leading, spacing: 0) {
-                        relatedEvent(time: "Today · 10:00 AM", title: "Braxton edit · pass 3", meta: "Make block · 2h")
-                        RowSeparator()
-                        relatedEvent(time: "Today · 3:00 PM", title: "Braxton sync", meta: "Recurring · video call")
-                        RowSeparator()
-                        relatedEvent(time: "Friday · 3:00 PM", title: "Braxton sync (moved)", meta: "Per accepted proposal")
+                    if relatedEvents.isEmpty {
+                        emptyStateCard(
+                            "No scheduled events for this project this week.",
+                            "Run the engine to refresh the week grid."
+                        )
+                    } else {
+                        VStack(alignment: .leading, spacing: 0) {
+                            ForEach(Array(relatedEvents.enumerated()), id: \.offset) { index, pair in
+                                if index > 0 { RowSeparator() }
+                                relatedEventRow(weekDay: pair.weekDay, event: pair.event)
+                            }
+                        }
+                        .padding(.vertical, Space.s2)
+                        .padding(.horizontal, Space.s4)
+                        .background(
+                            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                                .fill(Color.surfaceContainerLow)
+                        )
                     }
-                    .padding(.vertical, Space.s2)
-                    .padding(.horizontal, Space.s4)
-                    .background(
-                        RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                            .fill(Color.surfaceContainerLow)
-                    )
                 }
 
                 section(title: "Recent Activity") {
-                    VStack(alignment: .leading, spacing: 0) {
-                        activityRow(when: "4h ago", text: "Pushed pass 2 to client folder")
-                        RowSeparator()
-                        activityRow(when: "Yesterday", text: "Added scene-04 cut + lower-thirds revision")
-                        RowSeparator()
-                        activityRow(when: "Tue", text: "Notion: status moved In Progress → In Review")
-                    }
-                    .padding(.vertical, Space.s2)
-                    .padding(.horizontal, Space.s4)
-                    .background(
-                        RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                            .fill(Color.surfaceContainerLow)
+                    emptyStateCard(
+                        "Recent activity tracking ships in a future engine version.",
+                        nil
                     )
-                }
-
-                section(title: "Quick Actions") {
-                    HStack(spacing: Space.s2) {
-                        actionButton(label: "Mark Complete", symbol: "checkmark.circle")
-                        actionButton(label: "Block", symbol: "exclamationmark.octagon")
-                        actionButton(label: "Snooze", symbol: "clock")
-                        actionButton(label: "Open in Notion", symbol: "arrow.up.right.square")
-                    }
                 }
 
                 Spacer(minLength: Space.s4)
@@ -2625,18 +2688,20 @@ private struct ProjectDetailSheet: View {
         }
     }
 
-    private func relatedEvent(time: String, title: String, meta: String) -> some View {
-        HStack(alignment: .top, spacing: Space.s3) {
-            Text(time)
+    private func relatedEventRow(weekDay: WeekDay, event: WREvent) -> some View {
+        let timeText = event.time ?? formatHour(event.startHour)
+        let metaText = event.kind.rawValue.capitalized
+        return HStack(alignment: .top, spacing: Space.s3) {
+            Text("\(weekDay.name) · \(timeText)")
                 .font(.custom("Inter-Regular", size: 12))
                 .foregroundStyle(Color.secondaryText)
-                .frame(width: 140, alignment: .leading)
+                .frame(width: 180, alignment: .leading)
 
             VStack(alignment: .leading, spacing: Space.s1) {
-                Text(title)
+                Text(event.title)
                     .font(.bodyMD.weight(.medium))
                     .foregroundStyle(Color.onSurface)
-                Text(meta)
+                Text(metaText)
                     .font(.bodySM)
                     .foregroundStyle(Color.onSurfaceVariant)
             }
@@ -2644,35 +2709,81 @@ private struct ProjectDetailSheet: View {
         .padding(.vertical, Space.s3)
     }
 
-    private func activityRow(when label: String, text: String) -> some View {
-        HStack(alignment: .top, spacing: Space.s3) {
-            Text(label)
-                .font(.custom("Inter-Regular", size: 12))
-                .foregroundStyle(Color.secondaryText)
-                .frame(width: 80, alignment: .leading)
-            Text(text)
+    private func emptyStateCard(_ title: String, _ subtitle: String?) -> some View {
+        VStack(alignment: .leading, spacing: Space.s2) {
+            Text(title)
                 .font(.bodyMD)
                 .foregroundStyle(Color.onSurface)
+            if let subtitle {
+                Text(subtitle)
+                    .font(.bodySM)
+                    .foregroundStyle(Color.onSurfaceVariant)
+            }
         }
-        .padding(.vertical, Space.s3)
+        .padding(Space.s4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                .fill(Color.surfaceContainerLow)
+        )
     }
 
-    private func actionButton(label: String, symbol: String) -> some View {
-        Button {} label: {
-            HStack(spacing: Space.s1_5) {
-                Image(systemName: symbol)
-                    .font(.system(size: 12, weight: .regular))
-                Text(label)
-                    .font(.labelMD.weight(.medium))
-            }
-            .foregroundStyle(Color.onSurface)
-            .padding(.horizontal, Space.s3)
-            .padding(.vertical, Space.s2)
-            .background(
-                Capsule()
-                    .fill(Color.surfaceContainerHigh)
-            )
+    private func formatHour(_ hour: Double) -> String {
+        let hr = Int(hour)
+        let min = Int((hour - Double(hr)) * 60 + 0.5)
+        let displayHr = hr > 12 ? hr - 12 : (hr == 0 ? 12 : hr)
+        let suffix = hr >= 12 ? "PM" : "AM"
+        return min == 0 ? "\(displayHr) \(suffix)" : String(format: "%d:%02d %@", displayHr, min, suffix)
+    }
+}
+
+// MARK: - TravelAlertDetailSheet
+//
+// Lightweight sheet for the "View itinerary" attention-banner action. Shows
+// the alert's day, title, detail, plus an empty-state hint pointing the user
+// to run the engine on a Travel day for a full Travel Itinerary skill output.
+// Standalone — does not bundle the full Travel Itinerary UI.
+
+private struct TravelAlertDetailSheet: View {
+    let alert: WeeklyRhythmAlert
+    let onDismiss: () -> Void
+
+    var body: some View {
+        AlignedSheet(
+            eyebrow: alert.day.uppercased(),
+            title: alert.title,
+            badge: nil,
+            idealWidth: 540,
+            onDismiss: onDismiss,
+            content: { contentBody },
+            footer: { footerActions }
+        )
+    }
+
+    private var contentBody: some View {
+        VStack(alignment: .leading, spacing: Space.s4) {
+            Text(alert.detail)
+                .font(.bodyMD)
+                .foregroundStyle(Color.onSurface)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text("Run the engine on a Travel day to generate a full itinerary with boarding-time math, drive routes, and reverse stops.")
+                .font(.bodySM)
+                .foregroundStyle(Color.onSurfaceVariant)
+                .padding(Space.s4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                        .fill(Color.surfaceContainerLow)
+                )
         }
-        .buttonStyle(.plain)
+    }
+
+    private var footerActions: some View {
+        HStack {
+            Spacer()
+            Button("Close", action: onDismiss)
+                .buttonStyle(.alignedPrimary)
+        }
     }
 }

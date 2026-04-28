@@ -110,12 +110,14 @@ Array of project cards in the horizontal Project Pulse strip.
   "day": "Saturday",
   "title": "Gallery drop-off — 12 PM downtown",
   "detail": "18 min drive each way. Plan a 30 min buffer for parking + load-in.",
-  "actionLabel": "View itinerary"
+  "actionLabel": "View itinerary",
+  "eventID": "ev-sat-gallery"
 }
 ```
 
 - `kind` — one of `"travel" | "commuteConflict" | "errandBatch" | "lunch"`. Drives the icon and the urgent-vs-warm underglow color (commuteConflict → urgent rust glow; others → warm amber).
 - `actionLabel` — optional. When present, renders an outlined button on the alert card.
+- `eventID` — optional. The `WREvent.id` of the event being warned about. Drives the "Reschedule" action — tapping it opens `EditEventSheet` for that exact event. Most relevant on `commuteConflict` alerts; when omitted, the app falls back to a best-effort first-of-day lookup.
 
 ### `weekDays`
 
@@ -146,13 +148,15 @@ Seven entries, Mon→Sun. Each:
   "endHour": 12.0,
   "time": "10 AM — 12 PM",
   "title": "Braxton edit · pass 3",
-  "kind": "regular"
+  "kind": "regular",
+  "projectId": "proj-braxton"
 }
 ```
 
 - `startHour` / `endHour` — decimal hours, **not pixels**. The app multiplies by `hourScale` (configurable via the zoom slider) to compute pixel positions.
 - `time` — optional display label inside the event block. App falls back to its own formatter if absent.
 - `kind` — one of `"regular" | "accent" | "errand"`. Drives fill color and styling.
+- `projectId` — optional. Same identifier as `pulseProjects[].id`. When the engine knows an event belongs to a specific project (title-match against an active project, GCal calendar tag, or Notion linkage), include this. Drives the cross-component highlight: tap a Project Pulse card → all events on the week grid with the matching `projectId` get an accent border. Omitted/null events are not highlighted.
 
 ### `triage`
 

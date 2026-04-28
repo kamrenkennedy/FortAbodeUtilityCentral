@@ -260,6 +260,12 @@ When a new Weekly Rhythm version is ready to ship, ALWAYS do all of these steps.
 
 Update this list any time a new bug surfaces. The goal: never repeat the same mistake.
 
+**[2026-04-28] Fort Abode resolver preferred legacy `Weekly Flow/` over canonical `Weekly Rhythm/`**
+- **Symptom**: After a successful engine run, Fort Abode kept showing mock data with `WeeklyRhythm.FileBacked` logging "falling back to mock". Tiera's most recent engine output landed at `Weekly Rhythm/Tiera/dashboards/weekly-brief-2026-04-13.html` but the data source was scanning `Weekly Flow/Tiera/dashboards/`.
+- **Root cause**: Weekly Rhythm engine v2.1.0 (2026-04-23) renamed the canonical iCloud folder from `Weekly Flow/` → `Weekly Rhythm/`, but the v2.1.0 cleanup that was supposed to delete the legacy folder never ran on Kam's Mac, so both folders still existed. `WeeklyRhythmPathResolver.ResolvedRoot.allCases` listed `weeklyFlow` first, so the resolver always picked the legacy folder when both existed.
+- **Fix**: Reversed the enum case order in `WeeklyRhythmPathResolver.swift` — `weeklyRhythm` first, `weeklyFlow` as a legacy fallback. Updated the header comment.
+- **Prevention**: When the upstream Weekly Rhythm engine renames a path, the corresponding Fort Abode resolver MUST be updated in the same coordinated release. This CLAUDE.md previously hardcoded "Weekly Flow is canonical" — that statement was already stale at v2.1.0 ship time but no one noticed because Fort Abode's resolver agreed with the (now wrong) doc. Source of truth for canonical name is the Weekly Rhythm engine's CHANGELOG, not the Fort Abode CLAUDE.md.
+
 **[2026-04-13] Cowork used a stale bundled dashboard template**
 - **Symptom**: Cowork-generated dashboard was missing Project Pulse, Weekly Triage, carousel — all Phase 3/5/6 features that were already in the iCloud template.
 - **Root cause**: The skill in Cowork reads from `local-agent-mode-sessions/.../skills/weekly-rhythm-engine/` which had an old bundled copy of `dashboard-template.html`. The iCloud canonical had been updated but Cowork never saw the new version.

@@ -51,10 +51,12 @@ public enum RunProgress: Sendable {
 
 public actor WeeklyRhythmEngineRunner {
 
-    /// Default timeout — engine runs typically complete in 30-90 seconds; 5
-    /// minutes leaves headroom for slow GCal/Gmail pulls without hanging the
-    /// app forever on a stuck process.
-    public static let defaultTimeoutSeconds: Double = 300
+    /// Default timeout. Real engine runs land in the 10–14 min range with a
+    /// healthy MCP set; the legacy 300s default false-flagged every normal run
+    /// as a timeout. 20 min is the middle of the Settings Picker range and
+    /// covers all observed runs with headroom. Caller (engine store) reads
+    /// `AppSettingsKey.weeklyRhythmEngineTimeoutMinutes` and overrides per-run.
+    public static let defaultTimeoutSeconds: Double = 1200
 
     private let timeoutSeconds: Double
 
@@ -64,12 +66,16 @@ public actor WeeklyRhythmEngineRunner {
 
     /// Run the engine and return a `RunResult`. The optional `onProgress`
     /// callback is invoked for each parsed event so the store can surface live
-    /// progress on the run pill.
+    /// progress on the run pill. `timeoutSecondsOverride` lets the caller
+    /// (engine store, reading the user's Settings preference) override the
+    /// init-time default per-run without reconstructing the actor.
     public func run(
         cliPath: String,
+        timeoutSecondsOverride: Double? = nil,
         onProgress: (@Sendable (RunProgress) -> Void)? = nil
     ) async -> RunResult {
         let startedAt = Date()
+        let effectiveTimeout = timeoutSecondsOverride ?? timeoutSeconds
 
         let process = Process()
         process.executableURL = URL(fileURLWithPath: cliPath)
@@ -143,7 +149,7 @@ public actor WeeklyRhythmEngineRunner {
         await ErrorLogger.shared.log(
             area: "WeeklyRhythmEngine.Runner.start",
             message: "Spawning Claude CLI",
-            context: ["cliPath": cliPath, "timeoutSeconds": "\(timeoutSeconds)"]
+            context: ["cliPath": cliPath, "timeoutSeconds": "\(effectiveTimeout)"]
         )
 
         do {
@@ -171,8 +177,8 @@ public actor WeeklyRhythmEngineRunner {
                 await Self.waitForExit(process: process)
                 return false
             }
-            group.addTask { [timeoutSeconds] in
-                try? await Task.sleep(nanoseconds: UInt64(timeoutSeconds * 1_000_000_000))
+            group.addTask { [effectiveTimeout] in
+                try? await Task.sleep(nanoseconds: UInt64(effectiveTimeout * 1_000_000_000))
                 return true
             }
             let firstResult = await group.next() ?? false
@@ -214,7 +220,7 @@ public actor WeeklyRhythmEngineRunner {
 
         let summary: String
         if timedOut {
-            summary = "Engine run timed out after \(Int(timeoutSeconds))s. The CLI was terminated."
+            summary = "Engine run timed out after \(Int(effectiveTimeout))s. The CLI was terminated."
         } else if let resultText = resultEvent?.result, !resultText.trimmingCharacters(in: .whitespaces).isEmpty {
             // The engine's own final-result string. This is the canonical
             // human-readable summary — preserved verbatim regardless of

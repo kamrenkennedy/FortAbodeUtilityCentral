@@ -161,7 +161,13 @@ public final class WeeklyRhythmEngineStore {
     private func runEngine(cliPath: String) async {
         runState = .running(progress: "Starting engine…")
 
-        let result = await runner.run(cliPath: cliPath) { [weak self] progress in
+        // Per-run timeout: read the user's Settings preference at run time so
+        // changes take effect without an app relaunch. 0 (the default for
+        // never-set) → use the runner's static default.
+        let configuredMinutes = UserDefaults.standard.integer(forKey: AppSettingsKey.weeklyRhythmEngineTimeoutMinutes)
+        let timeoutOverride: Double? = configuredMinutes > 0 ? Double(configuredMinutes) * 60 : nil
+
+        let result = await runner.run(cliPath: cliPath, timeoutSecondsOverride: timeoutOverride) { [weak self] progress in
             // `onProgress` runs off-main; hop back to update observed state.
             guard let self else { return }
             Task { @MainActor in

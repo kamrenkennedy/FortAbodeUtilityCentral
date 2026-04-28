@@ -2,18 +2,19 @@ import Foundation
 
 // Tiera-safe iCloud path resolution for the Weekly Rhythm engine folder.
 //
-// Two historical names exist in the wild: `Weekly Flow` (canonical per
-// CLAUDE.md and what the engine writes to) and `Weekly Rhythm` (older name
-// hardcoded in `WeeklyRhythmService` until this revision). Some machines have
-// one, some have the other, neither is guaranteed.
+// Two historical names exist in the wild: `Weekly Rhythm` (current canonical
+// per Weekly Rhythm engine v2.1.0 release — what the engine writes to and
+// what users' config.md `icloud_path` points to) and `Weekly Flow` (legacy
+// name from before the v2.1.0 rename, may still exist as leftover state).
+// Some machines have one, some have the other, neither is guaranteed.
 //
 // On Tiera's machine it's also possible that NEITHER folder exists yet — she
 // may not have run the setup wizard. In that case the resolver returns nil
 // and the data source falls back to mocks; nothing user-facing breaks.
 //
-// Resolution sequence:
-//   1. `~/.../Kennedy Family Docs/Weekly Flow`
-//   2. `~/.../Kennedy Family Docs/Weekly Rhythm`
+// Resolution sequence (current canonical first, legacy second):
+//   1. `~/.../Kennedy Family Docs/Weekly Rhythm` — engine writes here
+//   2. `~/.../Kennedy Family Docs/Weekly Flow` — legacy fallback
 //   3. nil (not configured on this machine)
 //
 // Active-user resolution (within the resolved root):
@@ -39,8 +40,8 @@ public struct WeeklyRhythmPathResolver: Sendable {
     // MARK: - Resolved root
 
     public enum ResolvedRoot: String, CaseIterable, Sendable {
-        case weeklyFlow = "Weekly Flow"
         case weeklyRhythm = "Weekly Rhythm"
+        case weeklyFlow = "Weekly Flow"
 
         public var path: String {
             let home = NSHomeDirectory()

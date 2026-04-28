@@ -11,12 +11,12 @@ packages:
     url: https://github.com/sparkle-project/Sparkle.git
     from: "2.0.0"
   # AlignedDesignSystem — shared tokens/typography for the Aligned suite.
-  # Local path during the v4.0.0 redesign branch. Switch to GitHub URL before
-  # merging to main:
-  #   url: https://github.com/kamrenkennedy/AlignedDesignSystem.git
-  #   from: "1.0.0"
+  # Always use the GitHub URL (NOT a local path). The relative-path form breaks
+  # in worktrees because they sit deeper in the tree, and is fragile across
+  # machines. Bump the version here when AlignedDesignSystem ships a new tag.
   AlignedDesignSystem:
-    path: ../../../../../../App Projects/AlignedDesignSystem
+    url: https://github.com/kamrenkennedy/AlignedDesignSystem.git
+    from: "1.1.0"
 
 targets:
   FortAbodeUtilityCentral:

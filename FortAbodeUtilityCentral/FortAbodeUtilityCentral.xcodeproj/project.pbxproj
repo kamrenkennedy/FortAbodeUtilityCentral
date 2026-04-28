@@ -59,8 +59,10 @@
 		6CD4E6A5F0EC7CA6EA53E11B /* FamilyChatPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = D71386BF1C667590FCF48FB8 /* FamilyChatPane.swift */; };
 		7186FEEAC3161F93D78ECA50 /* WeeklyRhythmSkillInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C01EEE9A69F8B9DE4572C90 /* WeeklyRhythmSkillInstaller.swift */; };
 		78A108105A88096647C68196 /* ComponentHealthCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EB2DD0D3E1CBC8A343C150 /* ComponentHealthCard.swift */; };
+		7C8FF70F6E7111308CEAA754 /* ClaudeAuthKeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 249CE7BC7FB6CB8C7FA08D10 /* ClaudeAuthKeychainService.swift */; };
 		7CFA90087FA5CC19AFC67353 /* WeeklyRhythmPathResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 418F1A3FCCAA74A9749BDE1E /* WeeklyRhythmPathResolver.swift */; };
 		7F7577B11C2D1F70D5E6F9B7 /* ChatComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B245C0720A4C0BC3EBC09BF2 /* ChatComposer.swift */; };
+		7FCF70E4B640FED1EAD72A90 /* ClaudeAuthSetupSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 801F8855770E536D9FD34420 /* ClaudeAuthSetupSheet.swift */; };
 		84EF3894AB836BBA01A7FB6A /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA1C59FBAA6BF53EE5F93CE0 /* NotificationService.swift */; };
 		8AA1D4FFDC54D9B78DA73942 /* WeeklyRhythmEngineRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCC66F9F30443EC4D0D153F9 /* WeeklyRhythmEngineRunner.swift */; };
 		8C46F547DCED96736E019D49 /* ComponentRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB0B45EFBB7DD5A133107515 /* ComponentRegistryTests.swift */; };
@@ -137,6 +139,7 @@
 		1C5D0EF96B4D7D82238B66ED /* WeeklyRhythmEngineSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmEngineSection.swift; sourceTree = "<group>"; };
 		1EB57DA95F7124E0519B2C86 /* ErrorLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorLogger.swift; sourceTree = "<group>"; };
 		21A8F7C1C7370A480AA42749 /* weekly-rhythm-plugin-bundle */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "weekly-rhythm-plugin-bundle"; path = "Resources/weekly-rhythm-plugin-bundle"; sourceTree = SOURCE_ROOT; };
+		249CE7BC7FB6CB8C7FA08D10 /* ClaudeAuthKeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeAuthKeychainService.swift; sourceTree = "<group>"; };
 		2E417AC3384F05962FA62588 /* WeeklyRhythmDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmDataSource.swift; sourceTree = "<group>"; };
 		354B5DB8AEAB5C2C6F4D2DCE /* CoworkSkillService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoworkSkillService.swift; sourceTree = "<group>"; };
 		3757BEFBB847475D0690FF32 /* FeedbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackView.swift; sourceTree = "<group>"; };
@@ -169,6 +172,7 @@
 		7D874D5A2A3528B406492C6B /* FullDiskAccessService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullDiskAccessService.swift; sourceTree = "<group>"; };
 		7DF8C7B7AABE2431944A25E9 /* MCPProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPProbe.swift; sourceTree = "<group>"; };
 		7FB63D56853D1FFB0742D448 /* MarketplaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketplaceView.swift; sourceTree = "<group>"; };
+		801F8855770E536D9FD34420 /* ClaudeAuthSetupSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeAuthSetupSheet.swift; sourceTree = "<group>"; };
 		80DD857A1CB762AC7991C68C /* WeeklyRhythmUIStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmUIStateStore.swift; sourceTree = "<group>"; };
 		83171E1A838C0577BABFF23F /* EditEventSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditEventSheet.swift; sourceTree = "<group>"; };
 		8599C33B343D91784A3618B0 /* FamilyMemoryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyMemoryModels.swift; sourceTree = "<group>"; };
@@ -200,7 +204,6 @@
 		CB0B45EFBB7DD5A133107515 /* ComponentRegistryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentRegistryTests.swift; sourceTree = "<group>"; };
 		CB4031837BBE075B7CEF1484 /* whats-new.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "whats-new.json"; sourceTree = "<group>"; };
 		CB45A8A63D1E4873C3D739AA /* component-registry.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "component-registry.json"; sourceTree = "<group>"; };
-		CCA25CF29B9D7F5FB60EF529 /* AlignedDesignSystem */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AlignedDesignSystem; path = "../../../../../../App Projects/AlignedDesignSystem"; sourceTree = SOURCE_ROOT; };
 		CD284AB922259409852EBE73 /* WeeklyRhythmEngineStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmEngineStore.swift; sourceTree = "<group>"; };
 		CF650F1C05A9FE3D738BAA42 /* FamilyMemoryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyMemoryService.swift; sourceTree = "<group>"; };
 		CFEBF1AD73F4AD47132E5387 /* weekly-rhythm-skill-wrapper.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "weekly-rhythm-skill-wrapper.md"; sourceTree = "<group>"; };
@@ -248,19 +251,12 @@
 			path = WeeklyRhythmEngine;
 			sourceTree = "<group>";
 		};
-		148BC00650073D74C05D25B9 /* Packages */ = {
-			isa = PBXGroup;
-			children = (
-				CCA25CF29B9D7F5FB60EF529 /* AlignedDesignSystem */,
-			);
-			name = Packages;
-			sourceTree = "<group>";
-		};
 		15E77D64ABA66073AF28090E /* Services */ = {
 			isa = PBXGroup;
 			children = (
 				032C293DBDA62F6DEA4FCB24 /* AppUpdaterService.swift */,
 				EE892C2183E7CF82B548E18D /* BackgroundTaskService.swift */,
+				249CE7BC7FB6CB8C7FA08D10 /* ClaudeAuthKeychainService.swift */,
 				67CBAA3E68AE042FD8F6FFDF /* ClaudeCodeConfigService.swift */,
 				A49ABEA06B33CB1666AD17A0 /* ClaudeDesktopConfigService.swift */,
 				354B5DB8AEAB5C2C6F4D2DCE /* CoworkSkillService.swift */,
@@ -358,7 +354,6 @@
 			children = (
 				2B7E777056D86D2A12C04C6D /* App */,
 				A1581729D85D6A0D2DD33C27 /* Models */,
-				148BC00650073D74C05D25B9 /* Packages */,
 				4949B0D91CB6B21D4272EC08 /* Resources */,
 				15E77D64ABA66073AF28090E /* Services */,
 				9D7AAC079B3E5A312C8D72E2 /* State */,
@@ -373,6 +368,7 @@
 			isa = PBXGroup;
 			children = (
 				3F6F08569570B37845FC1387 /* AlignedSheet.swift */,
+				801F8855770E536D9FD34420 /* ClaudeAuthSetupSheet.swift */,
 				83171E1A838C0577BABFF23F /* EditEventSheet.swift */,
 				564A22B818E62E0E1921A86F /* EditTriageSheet.swift */,
 				0A7111D9656E3FA9D7F6F054 /* GhostBorderFieldDropdown.swift */,
@@ -555,8 +551,8 @@
 			mainGroup = 5D479E04ACFEEEA687B5462E;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				3037796EF51F52235F6E655F /* XCRemoteSwiftPackageReference "AlignedDesignSystem" */,
 				C8572B4E1F6FCAC099FE243E /* XCRemoteSwiftPackageReference "Sparkle" */,
-				1F610BC340697B91A5143CEE /* XCLocalSwiftPackageReference "../../../../../../App Projects/AlignedDesignSystem" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E9A2CE9F8D9A16777B2182EF /* Products */;
@@ -640,6 +636,8 @@
 				107872FAAEF37D55D156492E /* ChatPanel.swift in Sources */,
 				4CB55B39A51109E2D3DAE9F1 /* ChatPanelHeader.swift in Sources */,
 				ED44975C50A6C6A64F4954DE /* CheckForUpdatesView.swift in Sources */,
+				7C8FF70F6E7111308CEAA754 /* ClaudeAuthKeychainService.swift in Sources */,
+				7FCF70E4B640FED1EAD72A90 /* ClaudeAuthSetupSheet.swift in Sources */,
 				149284AD1AF7CC868055E9C7 /* ClaudeCLIDetector.swift in Sources */,
 				DFEE2E123FFC73F011AA13EB /* ClaudeChatPane.swift in Sources */,
 				0D7F85E45BFAFB9CBA75F829 /* ClaudeCodeConfigService.swift in Sources */,
@@ -972,14 +970,15 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		1F610BC340697B91A5143CEE /* XCLocalSwiftPackageReference "../../../../../../App Projects/AlignedDesignSystem" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = "../../../../../../App Projects/AlignedDesignSystem";
-		};
-/* End XCLocalSwiftPackageReference section */
-
 /* Begin XCRemoteSwiftPackageReference section */
+		3037796EF51F52235F6E655F /* XCRemoteSwiftPackageReference "AlignedDesignSystem" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kamrenkennedy/AlignedDesignSystem.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.0;
+			};
+		};
 		C8572B4E1F6FCAC099FE243E /* XCRemoteSwiftPackageReference "Sparkle" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sparkle-project/Sparkle.git";
@@ -993,6 +992,7 @@
 /* Begin XCSwiftPackageProductDependency section */
 		5D70F17E7114E90E5762C0DB /* AlignedDesignSystem */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 3037796EF51F52235F6E655F /* XCRemoteSwiftPackageReference "AlignedDesignSystem" */;
 			productName = AlignedDesignSystem;
 		};
 		8B75BAAFED90C32A32CA2420 /* Sparkle */ = {

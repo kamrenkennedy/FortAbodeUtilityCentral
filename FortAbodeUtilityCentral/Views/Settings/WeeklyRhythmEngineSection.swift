@@ -22,7 +22,12 @@ struct WeeklyRhythmEngineSection: View {
     @AppStorage(AppSettingsKey.weeklyRhythmEngineCLIPathOverride)   private var cliPathOverride: String = ""
 
     @State private var installSheetOpen: Bool = false
+    @State private var authSheetOpen: Bool = false
     @State private var detecting: Bool = false
+
+    // Bumped whenever Connect / Disconnect lands so the row's status text
+    // recomputes against the live Keychain state.
+    @State private var authStateVersion: Int = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s6) {
@@ -30,6 +35,8 @@ struct WeeklyRhythmEngineSection: View {
 
             DashboardCard(verticalPadding: Space.s2, horizontalPadding: Space.s6) {
                 VStack(spacing: 0) {
+                    claudeAccountRow
+                    RowSeparator()
                     cliStatusRow
                     RowSeparator()
                     customCLIPathRow
@@ -48,6 +55,62 @@ struct WeeklyRhythmEngineSection: View {
             ClaudeCLIInstallInstructionsSheet(onDismiss: { installSheetOpen = false })
                 .frame(minWidth: 480, idealWidth: 540, minHeight: 320, idealHeight: 380)
         }
+        .sheet(isPresented: $authSheetOpen) {
+            ClaudeAuthSetupSheet(
+                onConnected: {
+                    authStateVersion &+= 1
+                    authSheetOpen = false
+                },
+                onDismiss: { authSheetOpen = false }
+            )
+            .frame(minWidth: 520, idealWidth: 580, minHeight: 420, idealHeight: 480)
+        }
+    }
+
+    // MARK: - Claude Account row
+
+    private var claudeAccountRow: some View {
+        // Read the keychain state freshly on each render. authStateVersion is
+        // referenced just to invalidate the row when Connect/Disconnect runs.
+        let _ = authStateVersion
+        let connected = ClaudeAuthKeychainService.hasToken
+
+        return HStack(alignment: .top, spacing: Space.s4) {
+            VStack(alignment: .leading, spacing: Space.s1) {
+                Text("Claude account")
+                    .font(.bodyMD.weight(.medium))
+                    .foregroundStyle(Color.onSurface)
+                Text(connected
+                     ? "✓ Connected · token stored in macOS Keychain (survives reboot)."
+                     : "Connect your Claude subscription so the engine can authenticate.")
+                    .font(.bodySM)
+                    .foregroundStyle(Color.onSurfaceVariant)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: Space.s2)
+
+            HStack(spacing: Space.s2) {
+                if connected {
+                    Button("Disconnect") {
+                        ClaudeAuthKeychainService.deleteToken()
+                        authStateVersion &+= 1
+                    }
+                    .buttonStyle(.alignedSecondaryMini)
+
+                    Button("Reconnect") {
+                        authSheetOpen = true
+                    }
+                    .buttonStyle(.alignedSecondaryMini)
+                } else {
+                    Button("Connect Claude") {
+                        authSheetOpen = true
+                    }
+                    .buttonStyle(.alignedSecondaryMini)
+                }
+            }
+        }
+        .padding(.vertical, Space.s4)
     }
 
     // MARK: - Rows

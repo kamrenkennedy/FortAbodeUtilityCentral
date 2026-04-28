@@ -72,6 +72,15 @@ After changing these, always run `xcodegen generate` before building.
 ### Info.plist
 Uses an **explicit** `Resources/Info.plist` — not `GENERATE_INFOPLIST_FILE`. This is because Sparkle's custom keys (`SUFeedURL`, `SUPublicEDKey`, `SUEnableAutomaticChecks`) are not Apple-recognized keys and would be silently dropped by the generated plist mechanism.
 
+### AlignedDesignSystem package source
+**Always pin via the GitHub URL, never a local `path:`.** `project.yml` must declare:
+```yaml
+AlignedDesignSystem:
+  url: https://github.com/kamrenkennedy/AlignedDesignSystem.git
+  from: "1.1.0"
+```
+Repo: `https://github.com/kamrenkennedy/AlignedDesignSystem` (private). Local Dropbox copy at `~/Library/CloudStorage/Dropbox-KamStudios,LLC/Aligned/App Projects/AlignedDesignSystem/` is for editing the design system itself — never as a SwiftPM source for Fort Abode. The relative-path form (`path: ../../../../...`) breaks in `.claude/worktrees/` because they sit one extra level deep, and it's fragile across machines because resolution is anchored to `project.yml`'s location. When AlignedDesignSystem ships a new tag, bump the `from:` version here in the same commit. The fort-abode-preflight skill (always-check 2b) verifies this on every commit.
+
 ## Release Process
 
 1. Edit `project.yml` — bump `MARKETING_VERSION` + `CURRENT_PROJECT_VERSION`

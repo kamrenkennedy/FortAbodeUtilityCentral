@@ -80,6 +80,10 @@ public actor WeeklyRhythmEngineRunner {
             // `claude --print` requires --verbose with stream-json (per the
             // CLI's own validation; without it the CLI errors out).
             "--verbose",
+            // Headless run: stdin is a pipe, so any permission prompt would
+            // deadlock (CLI blocks on input that never arrives). Bypass all
+            // prompts — the user implicitly approved by clicking Run.
+            "--permission-mode", "bypassPermissions",
             "Run my Weekly Rhythm Engine"
         ]
 
@@ -92,6 +96,15 @@ public actor WeeklyRhythmEngineRunner {
         } else {
             environment["PATH"] = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
         }
+
+        // Inject the user's Claude OAuth token from Keychain. GUI apps don't
+        // inherit shell env vars, and Claude Desktop's `CLAUDE_CODE_OAUTH_TOKEN`
+        // is only injected into terminal sessions it spawns — Fort Abode
+        // doesn't see it. Without this, every engine run 401s.
+        if let token = ClaudeAuthKeychainService.readToken() {
+            environment["CLAUDE_CODE_OAUTH_TOKEN"] = token
+        }
+
         process.environment = environment
 
         let stdoutPipe = Pipe()
@@ -238,15 +251,47 @@ public actor WeeklyRhythmEngineRunner {
         )
     }
 
-    /// Park a continuation until the process exits. `Process.waitUntilExit()`
-    /// is blocking, so we hop to a detached thread.
+    /// Park a continuation until the process exits. Uses `terminationHandler`
+    /// instead of `waitUntilExit()` because the latter blocks while internally
+    /// draining the pipes — when our `readabilityHandler` is concurrently
+    /// reading the same pipes, that races and waitUntilExit can deadlock past
+    /// the child's actual exit. terminationHandler fires from a background
+    /// queue when the kernel reaps the child and doesn't touch pipes at all.
     private static func waitForExit(process: Process) async {
+        let resumer = SingleResumer()
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            DispatchQueue.global(qos: .userInitiated).async {
-                process.waitUntilExit()
-                continuation.resume()
+            resumer.set(continuation)
+            process.terminationHandler = { _ in
+                resumer.resumeOnce()
+            }
+            // If the process already exited before we attached the handler
+            // (rare but possible on extremely fast exits), drive the
+            // continuation manually. resumeOnce() is idempotent.
+            if !process.isRunning {
+                resumer.resumeOnce()
             }
         }
+    }
+}
+
+/// One-shot continuation guard. `CheckedContinuation` traps on double-resume,
+/// and our terminationHandler-vs-already-exited race could fire twice. This
+/// wrapper makes the second call a no-op.
+private final class SingleResumer: @unchecked Sendable {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<Void, Never>?
+
+    func set(_ c: CheckedContinuation<Void, Never>) {
+        lock.lock(); defer { lock.unlock() }
+        continuation = c
+    }
+
+    func resumeOnce() {
+        lock.lock()
+        let c = continuation
+        continuation = nil
+        lock.unlock()
+        c?.resume()
     }
 }
 

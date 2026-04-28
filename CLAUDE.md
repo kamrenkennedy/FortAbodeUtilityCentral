@@ -81,17 +81,26 @@ AlignedDesignSystem:
 ```
 Repo: `https://github.com/kamrenkennedy/AlignedDesignSystem` (private). Local Dropbox copy at `~/Library/CloudStorage/Dropbox-KamStudios,LLC/Aligned/App Projects/AlignedDesignSystem/` is for editing the design system itself — never as a SwiftPM source for Fort Abode. The relative-path form (`path: ../../../../...`) breaks in `.claude/worktrees/` because they sit one extra level deep, and it's fragile across machines because resolution is anchored to `project.yml`'s location. When AlignedDesignSystem ships a new tag, bump the `from:` version here in the same commit. The fort-abode-preflight skill (always-check 2b) verifies this on every commit.
 
+### WHAT'S NEW changelog is mandatory for every release
+
+**Every Fort Abode release MUST add an entry to `FortAbodeUtilityCentral/Resources/whats-new.json` before bumping `project.yml`.** That JSON drives the in-app "WHAT'S NEW" panel users see after auto-update — without an entry, Sparkle still ships the new version but users see no description of what changed and may assume nothing did.
+
+Format: array entries with `{version: "X.Y.Z", notes: ["..."]}`. Notes are user-facing (not engineering jargon). One sentence per bullet. Lead with the user-visible change, not the implementation.
+
+**Cross-repo discipline — non-negotiable:** When a bundled component bumps version (Weekly Rhythm engine, setup-claude-memory, travel-itinerary, etc.), the corresponding Fort Abode release that ships the new bundled copy MUST include WHAT'S NEW notes describing the user-visible component change. Without this, users see a Fort Abode update card with no idea their Weekly Rhythm now writes a dashboard JSON, their Travel Itinerary added a new feature, etc. Every project CLAUDE.md that ships through Fort Abode mirrors this rule in its own release ceremony.
+
 ## Release Process
 
-1. Edit `project.yml` — bump `MARKETING_VERSION` + `CURRENT_PROJECT_VERSION`
-2. `/opt/homebrew/bin/xcodegen generate`
-3. Xcode → Product → Archive → Distribute App → Direct Distribution → Export
-4. `xcrun stapler staple "Fort Abode Utility Central.app"` (BEFORE zipping)
-5. `cd build && ditto -c -k --keepParent "Fort Abode Utility Central.app" ../FortAbodeUtilityCentral/FortAbodeUtilityCentral-vX.Y.Z.zip`
-6. Sign: `sign_update FortAbodeUtilityCentral-vX.Y.Z.zip` (outputs EdDSA signature + length)
-7. Update **BOTH** `appcast.xml` files with new `<item>` entry (signature + length from step 6)
-8. `git add && git commit && git push`
-9. `gh release create vX.Y.Z FortAbodeUtilityCentral-vX.Y.Z.zip --title "vX.Y.Z" --notes "..."`
+1. **Update `FortAbodeUtilityCentral/Resources/whats-new.json` FIRST** — add a new top-of-array entry for the version about to ship. Cover both Fort Abode app changes AND any bundled-component changes from upstream releases (Weekly Rhythm, setup-claude-memory, travel-itinerary, etc.).
+2. Edit `project.yml` — bump `MARKETING_VERSION` + `CURRENT_PROJECT_VERSION`
+3. `/opt/homebrew/bin/xcodegen generate`
+4. Xcode → Product → Archive → Distribute App → Direct Distribution → Export
+5. `xcrun stapler staple "Fort Abode Utility Central.app"` (BEFORE zipping)
+6. `cd build && ditto -c -k --keepParent "Fort Abode Utility Central.app" ../FortAbodeUtilityCentral/FortAbodeUtilityCentral-vX.Y.Z.zip`
+7. Sign: `sign_update FortAbodeUtilityCentral-vX.Y.Z.zip` (outputs EdDSA signature + length)
+8. Update **BOTH** `appcast.xml` files with new `<item>` entry (signature + length from step 7)
+9. `git add && git commit && git push`
+10. `gh release create vX.Y.Z FortAbodeUtilityCentral-vX.Y.Z.zip --title "vX.Y.Z" --notes "..."`
 
 ### Tool Locations
 - **xcodegen**: `/opt/homebrew/bin/xcodegen`

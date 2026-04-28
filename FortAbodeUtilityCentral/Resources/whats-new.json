@@ -1,5 +1,17 @@
 [
   {
+    "version": "3.12.0",
+    "notes": [
+      "Weekly Rhythm dashboard now shows REAL engine data — fixed a long-standing bug where Fort Abode was reading the legacy 'Weekly Flow' iCloud folder instead of the canonical 'Weekly Rhythm' folder (the v2.1.0 rename never landed in Fort Abode's resolver). Pairs with Weekly Rhythm Engine v2.3.0 which finally emits the dashboard JSON file Fort Abode reads.",
+      "Engine timeout default raised from 5 minutes to 20 minutes — real engine runs land in 10–14 min and the old default false-flagged every healthy run as a timeout failure",
+      "New Settings → Weekly Rhythm Engine → Run timeout Picker (10/15/20/30/60 min) so you can tune per-machine",
+      "Run pill streams live progress — 'Using Gmail', 'Using Notion', 'Using Memory', etc. — instead of the static 'Running…' that gave no signal of what the engine was doing",
+      "Attention banner buttons finally work — 'View itinerary' opens a quick-view sheet, 'Reschedule' opens the event editor pre-populated with the conflicting event",
+      "Project Pulse cards now show real project data + linked events from this week (was rendering hardcoded 'Braxton edit' content for every project regardless of which card was tapped)",
+      "Tap a Project Pulse card → matching events on the Week Grid get an accent border. Tap again to clear the highlight."
+    ]
+  },
+  {
     "version": "3.11.0",
     "notes": [
       "New 'Family' tab in the toolbar — dedicated hub for shared family memory (insurance, contacts, household info, PDFs)",

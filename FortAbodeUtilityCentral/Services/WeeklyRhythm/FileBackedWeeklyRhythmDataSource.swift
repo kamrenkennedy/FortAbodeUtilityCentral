@@ -140,7 +140,7 @@ public actor FileBackedWeeklyRhythmDataSource: WeeklyRhythmDataSourceImpl {
 
     private func resolveContext(weekOffset: Int) async -> ResolvedContext? {
         guard let resolved = resolver.resolve() else { return nil }
-        guard let userName = resolved.detectActiveUser() else { return nil }
+        guard let userName = resolveUserName(in: resolved) else { return nil }
         guard let mondayISO = mondayISODate(forWeekOffset: weekOffset) else { return nil }
         return ResolvedContext(
             userName: userName,
@@ -149,6 +149,31 @@ public actor FileBackedWeeklyRhythmDataSource: WeeklyRhythmDataSourceImpl {
             pendingPath: resolved.pendingMutationsPath(for: userName, isoDate: mondayISO),
             configPath: resolved.configPath(for: userName)
         )
+    }
+
+    /// Active-user resolution with three-tier fallback:
+    ///
+    /// 1. **UserDefault override** (`AppSettingsKey.weeklyRhythmActiveUserName`).
+    ///    Set by the setup wizard at install time, or by a future Settings UI.
+    ///    Wins unconditionally so each Mac stays pinned to its owner.
+    /// 2. **macOS identity match** — first word of `NSFullUserName()` matched
+    ///    against a subfolder. Deterministic for the Kennedy family case where
+    ///    folder names mirror first names. Self-heals: persists the match into
+    ///    UserDefaults so subsequent runs short-circuit to step 1.
+    /// 3. **Legacy `detectActiveUser`** — first subfolder with a `config.md`,
+    ///    filesystem-order dependent. Only used when the first two fail. Does
+    ///    NOT self-heal because the result is non-deterministic; persisting it
+    ///    could pin the wrong user permanently.
+    private func resolveUserName(in resolved: WeeklyRhythmPathResolver.Resolved) -> String? {
+        if let stored = UserDefaults.standard.string(forKey: AppSettingsKey.weeklyRhythmActiveUserName),
+           !stored.isEmpty {
+            return stored
+        }
+        if let smart = resolved.detectUserByMacOSIdentity() {
+            UserDefaults.standard.set(smart, forKey: AppSettingsKey.weeklyRhythmActiveUserName)
+            return smart
+        }
+        return resolved.detectActiveUser()
     }
 
     /// Load the base snapshot from the engine JSON file, or fall back to the

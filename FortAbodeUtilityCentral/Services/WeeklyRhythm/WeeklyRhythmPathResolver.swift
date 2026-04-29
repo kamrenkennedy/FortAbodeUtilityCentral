@@ -18,9 +18,15 @@ import Foundation
 //   3. nil (not configured on this machine)
 //
 // Active-user resolution (within the resolved root):
-//   1. Caller-provided override (from `AppState.activeUserName` once we wire it)
-//   2. The first subfolder containing a `config.md` file
-//   3. nil (no user has run the engine yet)
+//   1. Caller-provided override (e.g. from `UserDefaults.weeklyRhythmActiveUserName`,
+//      set by the setup wizard at install time)
+//   2. macOS user identity match — `NSFullUserName().split(" ")[0]` matched
+//      against subfolder names. Deterministic for the Kennedy family case where
+//      folder names mirror first names ("Kamren", "Tiera").
+//   3. The first subfolder containing a `config.md` file (legacy fallback;
+//      relies on filesystem ordering and was the root cause of Kam's Mac
+//      reading Tiera's dashboards before v3.12.0)
+//   4. nil (no user has run the engine yet)
 
 public struct WeeklyRhythmPathResolver: Sendable {
 
@@ -63,9 +69,28 @@ public struct WeeklyRhythmPathResolver: Sendable {
             "\(rootPath)/\(userName)"
         }
 
-        /// Auto-detect the active user by scanning subfolders for the first one
-        /// containing a `config.md`. Uses a local FileManager.default — safe to
-        /// call from any actor since FileManager methods used here are stateless.
+        /// Match the macOS user's full name first-word against subfolder names.
+        /// e.g. on Kam's Mac `NSFullUserName()` returns "Kamren Kennedy" → first
+        /// word "Kamren" → matches the `Kamren/` subfolder. Same on Tiera's Mac
+        /// for "Tiera". Deterministic and doesn't rely on filesystem ordering
+        /// like `detectActiveUser` does.
+        public func detectUserByMacOSIdentity() -> String? {
+            let fullName = NSFullUserName()
+            guard let firstWord = fullName.split(separator: " ").first.map(String.init),
+                  !firstWord.isEmpty else { return nil }
+            let fm = FileManager.default
+            let candidate = "\(rootPath)/\(firstWord)"
+            var isDirectory: ObjCBool = false
+            guard fm.fileExists(atPath: candidate, isDirectory: &isDirectory),
+                  isDirectory.boolValue,
+                  fm.fileExists(atPath: "\(candidate)/config.md") else { return nil }
+            return firstWord
+        }
+
+        /// Legacy fallback: scan subfolders and return the first one containing a
+        /// `config.md`. Order is filesystem-dependent — on a directory with both
+        /// `Kamren/config.md` and `Tiera/config.md` it can return either. Use
+        /// `detectUserByMacOSIdentity` first; this is the last-resort fallback.
         public func detectActiveUser() -> String? {
             let fm = FileManager.default
             guard let entries = try? fm.contentsOfDirectory(atPath: rootPath) else {

@@ -36,6 +36,12 @@ enum AppSettingsKey {
     static let weeklyRhythmEngineLastRunSucceeded   = "WeeklyRhythmEngine.lastRunSucceeded"
     static let weeklyRhythmEngineLastRunSummary     = "WeeklyRhythmEngine.lastRunSummary"
     static let weeklyRhythmEngineTimeoutMinutes     = "WeeklyRhythmEngine.timeoutMinutes"
+    /// First-name folder under `Weekly Rhythm/` that this Mac belongs to (e.g.
+    /// "Kamren" or "Tiera"). Set by the setup wizard at install time. Read by
+    /// `FileBackedWeeklyRhythmDataSource` to pick the right user folder
+    /// deterministically — without it, the resolver falls back to filesystem
+    /// ordering, which previously caused Kam's Mac to read Tiera's dashboards.
+    static let weeklyRhythmActiveUserName           = "WeeklyRhythmEngine.activeUserName"
 }
 
 // MARK: - Notification Names

@@ -763,10 +763,18 @@ final class ComponentListViewModel {
     /// Post-install tasks for the Weekly Rhythm Engine (deploy files to iCloud).
     /// v3.7.9: Fort Abode only manages iCloud files. Skill registration in Cowork
     /// is handled by the user pasting setup instructions from the clipboard.
+    /// v3.12.0: also persists the chosen `userName` so `FileBackedWeeklyRhythmDataSource`
+    /// reads from the right user folder without falling back to filesystem-order
+    /// detection (which on a Mac with both Kamren/ and Tiera/ folders had been
+    /// non-deterministically picking the wrong user).
     private func performWeeklyRhythmPostInstall(userName: String) async {
         do {
             try await weeklyRhythmService.setupWeeklyFlow(userName: userName)
             await filePinningService.pinAll()
+            let trimmed = userName.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                UserDefaults.standard.set(trimmed, forKey: AppSettingsKey.weeklyRhythmActiveUserName)
+            }
         } catch {
             await ErrorLogger.shared.log(
                 componentId: "weekly-rhythm",

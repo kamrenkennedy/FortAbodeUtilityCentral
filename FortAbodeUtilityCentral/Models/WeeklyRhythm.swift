@@ -327,6 +327,31 @@ public struct WeekDay: Codable, Equatable, Identifiable, Sendable {
         self.nowLineHour = nowLineHour
     }
 
+    /// Custom decoder so `num` accepts either the contract's String form
+    /// (`"24"`) or the engine's drift form (raw integer `24`). Contract spec
+    /// at `Resources/dashboard-json-shape.md` says String; engine v2.3.0
+    /// has been observed emitting Int. Engine fix is separate.
+    private enum CodingKeys: String, CodingKey {
+        case id, name, num, dayTypes, isToday, events, nowLineHour
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        if let s = try? c.decode(String.self, forKey: .num) {
+            num = s
+        } else if let i = try? c.decode(Int.self, forKey: .num) {
+            num = String(i)
+        } else {
+            num = ""
+        }
+        dayTypes = try c.decode(Set<WRDayType>.self, forKey: .dayTypes)
+        isToday = try c.decode(Bool.self, forKey: .isToday)
+        events = try c.decodeIfPresent([WREvent].self, forKey: .events) ?? []
+        nowLineHour = try c.decodeIfPresent(Double.self, forKey: .nowLineHour)
+    }
+
     /// Stable ordering so toggling day-types doesn't reshuffle visually.
     public var sortedDayTypes: [WRDayType] {
         WRDayType.allCases.filter { dayTypes.contains($0) }

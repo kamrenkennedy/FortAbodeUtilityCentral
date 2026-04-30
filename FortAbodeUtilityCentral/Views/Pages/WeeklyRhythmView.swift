@@ -688,13 +688,8 @@ struct WeeklyRhythmView: View {
         HStack(alignment: .top, spacing: 0) {
             Color.clear.frame(width: 44)
             ForEach(weekDays) { day in
-                Button { dayTypeSettingsOpen = true } label: {
-                    DayHeader(day: day)
-                        .frame(maxWidth: .infinity)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help("Tap to change day type")
+                DayHeader(day: day)
+                    .frame(maxWidth: .infinity)
             }
         }
     }

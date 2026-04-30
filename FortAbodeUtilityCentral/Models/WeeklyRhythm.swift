@@ -187,6 +187,35 @@ public enum WRStatusKind: String, Codable, Hashable, Sendable {
     case error
     case neutral
 
+    /// Tolerant decoder. Contract at `Resources/dashboard-json-shape.md` lists
+    /// the 5 closed cases above for both `pulseProjects.status` and
+    /// `triage.status`, but engine v2.3.0 emits triage-specific values like
+    /// `"overdue"` and `"blocked"` that aren't in that set. Map known aliases
+    /// to the closest standard semantic and fall back to `.neutral` for
+    /// unknowns so a single drifted value doesn't crash the whole snapshot.
+    /// The engine should normalize to the 5 contract values before emitting —
+    /// flagged as a separate Weekly Rhythm engine fix.
+    public init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        let normalized = raw.lowercased().trimmingCharacters(in: .whitespaces)
+        if let known = WRStatusKind(rawValue: normalized) {
+            self = known
+            return
+        }
+        switch normalized {
+        case "overdue", "blocked", "stuck", "failed":
+            self = .error
+        case "in progress", "active", "running":
+            self = .scheduled
+        case "pending", "queued", "waiting":
+            self = .draft
+        case "done", "complete", "completed", "shipped":
+            self = .scheduled
+        default:
+            self = .neutral
+        }
+    }
+
     public var styleKind: StatusKind {
         switch self {
         case .scheduled: return .scheduled
@@ -505,6 +534,27 @@ public struct DayBlock: Codable, Equatable, Identifiable, Sendable {
         self.tag = tag
         self.dim = dim
     }
+
+    // Custom Codable so engine output that omits `dim` (it's only meaningful
+    // for soft-rendered note rows; absent on regular blocks) decodes to false
+    // instead of crashing the whole snapshot. The contract documents `dim` as
+    // a flag, not a required-on-every-block field.
+    private enum CodingKeys: String, CodingKey {
+        case id, title, kind, startHour, endHour, durationLabel, timeLabel, tag, dim
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        title = try c.decode(String.self, forKey: .title)
+        kind = try c.decode(DayBlockKind.self, forKey: .kind)
+        startHour = try c.decodeIfPresent(Double.self, forKey: .startHour)
+        endHour = try c.decodeIfPresent(Double.self, forKey: .endHour)
+        durationLabel = try c.decodeIfPresent(String.self, forKey: .durationLabel)
+        timeLabel = try c.decodeIfPresent(String.self, forKey: .timeLabel)
+        tag = try c.decodeIfPresent(DayBlockTag.self, forKey: .tag)
+        dim = try c.decodeIfPresent(Bool.self, forKey: .dim) ?? false
+    }
 }
 
 public enum DayBlockKind: String, Codable, Hashable, Sendable {
@@ -540,6 +590,55 @@ public enum RunHealth: Codable, Equatable, Sendable {
     case allGood
     case warning(String)
     case error(String)
+
+    // Custom Codable so the wire format matches the contract at
+    // `Resources/dashboard-json-shape.md`:
+    //   "allGood"                              ← string literal
+    //   { "warning": "Drift in component …" }  ← object, single string value
+    //   { "error": "iCloud not reachable" }    ← object, single string value
+    //
+    // Swift's synthesized Codable for associated-value enums would expect the
+    // wrapped form (`{"warning": {"_0": "..."}}`), which the engine doesn't
+    // emit and the contract doesn't specify.
+
+    private enum CodingKeys: String, CodingKey {
+        case warning, error
+    }
+
+    public init(from decoder: Decoder) throws {
+        // Try the literal-string form first.
+        if let single = try? decoder.singleValueContainer(),
+           let raw = try? single.decode(String.self),
+           raw == "allGood" {
+            self = .allGood
+            return
+        }
+        // Fall through to the object form.
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        if let warningMessage = try c.decodeIfPresent(String.self, forKey: .warning) {
+            self = .warning(warningMessage)
+        } else if let errorMessage = try c.decodeIfPresent(String.self, forKey: .error) {
+            self = .error(errorMessage)
+        } else {
+            // Unknown shape — default to .allGood rather than crashing the
+            // whole snapshot for a non-load-bearing field.
+            self = .allGood
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        switch self {
+        case .allGood:
+            var single = encoder.singleValueContainer()
+            try single.encode("allGood")
+        case .warning(let msg):
+            var c = encoder.container(keyedBy: CodingKeys.self)
+            try c.encode(msg, forKey: .warning)
+        case .error(let msg):
+            var c = encoder.container(keyedBy: CodingKeys.self)
+            try c.encode(msg, forKey: .error)
+        }
+    }
 }
 
 // MARK: - Run report (v4.x parity pass — Run Health detail modal)

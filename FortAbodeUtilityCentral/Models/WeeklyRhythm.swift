@@ -117,6 +117,33 @@ public enum WRDayType: String, Codable, CaseIterable, Hashable, Sendable {
     case admin
     case open
 
+    /// Tolerant decoder. The contract at `Resources/dashboard-json-shape.md`
+    /// specifies the closed set above, but the Weekly Rhythm engine v2.3.0
+    /// currently emits user-configured day-types from `config.md` (e.g.
+    /// "bizdev", "Creative", "personal") — that's a contract violation on
+    /// the engine side, separately fixed in a future engine release.
+    /// Until then, this decoder maps known aliases to their closest standard
+    /// type and falls back to `.open` for unknown values, so a single
+    /// unfamiliar string doesn't crash the whole snapshot decode.
+    public init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        let normalized = raw.lowercased().trimmingCharacters(in: .whitespaces)
+        if let known = WRDayType(rawValue: normalized) {
+            self = known
+            return
+        }
+        switch normalized {
+        case "creative", "make day", "deep work":
+            self = .make
+        case "bizdev", "business dev", "business-dev":
+            self = .move
+        case "personal":
+            self = .recover
+        default:
+            self = .open
+        }
+    }
+
     public var label: String {
         switch self {
         case .make:    return "Make"

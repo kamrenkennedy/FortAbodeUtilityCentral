@@ -688,8 +688,13 @@ struct WeeklyRhythmView: View {
         HStack(alignment: .top, spacing: 0) {
             Color.clear.frame(width: 44)
             ForEach(weekDays) { day in
-                DayHeader(day: day)
-                    .frame(maxWidth: .infinity)
+                Button { dayTypeSettingsOpen = true } label: {
+                    DayHeader(day: day)
+                        .frame(maxWidth: .infinity)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Tap to change day type")
             }
         }
     }
@@ -1878,19 +1883,6 @@ private struct ProposalDetailSheet: View {
                         }
                     }
 
-                    DashboardCard(verticalPadding: Space.s4, horizontalPadding: Space.s4) {
-                        VStack(alignment: .leading, spacing: Space.s2) {
-                            Text("Proposed Change".uppercased())
-                                .font(.labelSM)
-                                .tracking(1.0)
-                                .foregroundStyle(Color.secondaryText)
-                            Text("Phase 5 wires the real before/after diff from the engine. For now this is the proposal title rendered as the change summary.")
-                                .font(.bodyMD)
-                                .foregroundStyle(Color.onSurfaceVariant)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-
                     HStack(spacing: Space.s2) {
                         Spacer()
                         Button(action: onDecline) {
@@ -2003,6 +1995,8 @@ private struct DayTypeSettingsSheet: View {
                                     .frame(width: 8, height: 8)
                                 Text(type.label)
                                     .font(.labelSM.weight(.medium))
+                                    .lineLimit(1)
+                                    .fixedSize(horizontal: true, vertical: false)
                                     .foregroundStyle(
                                         type == current ? Color.onTertiary : Color.onSurface
                                     )

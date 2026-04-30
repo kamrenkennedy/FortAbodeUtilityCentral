@@ -142,13 +142,71 @@ public actor FileBackedWeeklyRhythmDataSource: WeeklyRhythmDataSourceImpl {
         guard let resolved = resolver.resolve() else { return nil }
         guard let userName = resolveUserName(in: resolved) else { return nil }
         guard let mondayISO = mondayISODate(forWeekOffset: weekOffset) else { return nil }
+
+        // Prefer the contract-correct Monday-of-week filename, but fall back
+        // to the newest `dashboard-{date}.json` within the same Mon–Sun span
+        // if it has a more recent mtime. Engine v2.3.0 sometimes writes the
+        // file with the run-day's date instead of Monday-of-week (e.g.
+        // `dashboard-2026-04-28.json` for the week starting 2026-04-27),
+        // which would leave Fort Abode reading stale data from the
+        // previous run that did write to the Monday filename.
+        let dashboardsDir = resolved.dashboardsDir(for: userName)
+        let preferredPath = resolved.dashboardJSONPath(for: userName, isoDate: mondayISO)
+        let dashboardPath = newestDashboardJSONInWeek(
+            dashboardsDir: dashboardsDir,
+            mondayISO: mondayISO,
+            preferredPath: preferredPath
+        )
+
         return ResolvedContext(
             userName: userName,
             mondayISO: mondayISO,
-            dashboardPath: resolved.dashboardJSONPath(for: userName, isoDate: mondayISO),
+            dashboardPath: dashboardPath,
             pendingPath: resolved.pendingMutationsPath(for: userName, isoDate: mondayISO),
             configPath: resolved.configPath(for: userName)
         )
+    }
+
+    /// Find the dashboard JSON to read for a given week. Prefers the
+    /// contract-correct Monday-of-week filename. If a different
+    /// `dashboard-{date}.json` exists in the same Mon–Sun window with a
+    /// newer mtime, use that instead — engine drift recovery so Fort Abode
+    /// reads the latest data even when the engine writes the file under a
+    /// non-Monday date.
+    private func newestDashboardJSONInWeek(
+        dashboardsDir: String,
+        mondayISO: String,
+        preferredPath: String
+    ) -> String {
+        let fm = FileManager.default
+        guard let entries = try? fm.contentsOfDirectory(atPath: dashboardsDir) else {
+            return preferredPath
+        }
+        // Compute the date range Monday..Sunday for the target week.
+        guard let monday = isoDateFormatter.date(from: mondayISO),
+              let sunday = calendar.date(byAdding: .day, value: 6, to: monday) else {
+            return preferredPath
+        }
+        let prefix = "dashboard-"
+        let suffix = ".json"
+        var bestPath = preferredPath
+        var bestMtime: Date = (try? fm.attributesOfItem(atPath: preferredPath)[.modificationDate] as? Date) ?? .distantPast
+        for entry in entries {
+            guard entry.hasPrefix(prefix), entry.hasSuffix(suffix) else { continue }
+            // Extract the date string between the prefix and suffix; reject
+            // pending-mutation siblings like `dashboard-{date}-pending.json`.
+            let dateString = String(entry.dropFirst(prefix.count).dropLast(suffix.count))
+            guard !dateString.contains("-pending"),
+                  let date = isoDateFormatter.date(from: dateString),
+                  date >= monday, date <= sunday else { continue }
+            let path = "\(dashboardsDir)/\(entry)"
+            let mtime = (try? fm.attributesOfItem(atPath: path)[.modificationDate] as? Date) ?? .distantPast
+            if mtime > bestMtime {
+                bestPath = path
+                bestMtime = mtime
+            }
+        }
+        return bestPath
     }
 
     /// Active-user resolution with three-tier fallback:

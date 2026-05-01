@@ -99,6 +99,7 @@
 		CA4CA8134B5255875DB1AF2A /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 8B75BAAFED90C32A32CA2420 /* Sparkle */; };
 		CB346FEB794E23991188381B /* CoworkSkillService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B5DB8AEAB5C2C6F4D2DCE /* CoworkSkillService.swift */; };
 		D0927D0CC5D148C03FD75CB4 /* GhostBorderFieldDropdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A7111D9656E3FA9D7F6F054 /* GhostBorderFieldDropdown.swift */; };
+		D96D31FEA9E9BAD74A5DCFD6 /* ClaudeChatTurnRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 783E1B9E6312BBB3DB53587B /* ClaudeChatTurnRunner.swift */; };
 		DC42DBCAD25AF1F2F3FDFF8D /* ConfigMdEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DB01C9B5FC7912CFB5BBD2A /* ConfigMdEditor.swift */; };
 		DF4E9A21418662B5D610866B /* ChangelogEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91BE7F2F52EFF582932E8B9D /* ChangelogEntry.swift */; };
 		DFEE2E123FFC73F011AA13EB /* ClaudeChatPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 767920B3A5A38AFD4081D133 /* ClaudeChatPane.swift */; };
@@ -179,6 +180,7 @@
 		754EF798D1DADA467A6A6D84 /* UpdateStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateStatus.swift; sourceTree = "<group>"; };
 		767920B3A5A38AFD4081D133 /* ClaudeChatPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeChatPane.swift; sourceTree = "<group>"; };
 		782EFED7B8F2AD1265BCF690 /* ComponentRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentRegistry.swift; sourceTree = "<group>"; };
+		783E1B9E6312BBB3DB53587B /* ClaudeChatTurnRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeChatTurnRunner.swift; sourceTree = "<group>"; };
 		7D874D5A2A3528B406492C6B /* FullDiskAccessService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullDiskAccessService.swift; sourceTree = "<group>"; };
 		7DF8C7B7AABE2431944A25E9 /* MCPProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPProbe.swift; sourceTree = "<group>"; };
 		7FB63D56853D1FFB0742D448 /* MarketplaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketplaceView.swift; sourceTree = "<group>"; };
@@ -268,6 +270,7 @@
 				032C293DBDA62F6DEA4FCB24 /* AppUpdaterService.swift */,
 				EE892C2183E7CF82B548E18D /* BackgroundTaskService.swift */,
 				249CE7BC7FB6CB8C7FA08D10 /* ClaudeAuthKeychainService.swift */,
+				783E1B9E6312BBB3DB53587B /* ClaudeChatTurnRunner.swift */,
 				67CBAA3E68AE042FD8F6FFDF /* ClaudeCodeConfigService.swift */,
 				A49ABEA06B33CB1666AD17A0 /* ClaudeDesktopConfigService.swift */,
 				354B5DB8AEAB5C2C6F4D2DCE /* CoworkSkillService.swift */,
@@ -655,6 +658,7 @@
 				7FCF70E4B640FED1EAD72A90 /* ClaudeAuthSetupSheet.swift in Sources */,
 				149284AD1AF7CC868055E9C7 /* ClaudeCLIDetector.swift in Sources */,
 				DFEE2E123FFC73F011AA13EB /* ClaudeChatPane.swift in Sources */,
+				D96D31FEA9E9BAD74A5DCFD6 /* ClaudeChatTurnRunner.swift in Sources */,
 				0D7F85E45BFAFB9CBA75F829 /* ClaudeCodeConfigService.swift in Sources */,
 				91D50E1EB920B8C40D6B33FB /* ClaudeDesktopConfigService.swift in Sources */,
 				E39F0B6F301568824A772E71 /* Component.swift in Sources */,

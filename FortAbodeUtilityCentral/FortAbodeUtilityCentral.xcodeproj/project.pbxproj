@@ -91,6 +91,7 @@
 		B7C538A5D2630B86AEF3E048 /* SidebarCollapseButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18F6C3CFC3DE69126D5C70F1 /* SidebarCollapseButton.swift */; };
 		BCC20DC3968DB7047C53917E /* SetupWizardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00E7AF22AE310DA57B354CDA /* SetupWizardView.swift */; };
 		BE31F2E9C53C3C01AF59B9E0 /* AppNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C939E66D6E0DCFD3C6E6B28F /* AppNavigation.swift */; };
+		BE37A5EB2E990AF93D5C09B6 /* ClaudeChatStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05205DF62D5431AA4F2F0EC5 /* ClaudeChatStore.swift */; };
 		BE37FC1AB45639A848242F43 /* EngineAttentionBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A78BB1D7CB738F95B99C24E /* EngineAttentionBanner.swift */; };
 		BFFC39B7F0DEE48815EB2481 /* BackgroundTaskService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE892C2183E7CF82B548E18D /* BackgroundTaskService.swift */; };
 		C0FDF12D701AEAEE4331FF13 /* Destination.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8B7BB0163579ACD834ADBB1 /* Destination.swift */; };
@@ -138,6 +139,7 @@
 		032C293DBDA62F6DEA4FCB24 /* AppUpdaterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdaterService.swift; sourceTree = "<group>"; };
 		03AD9F9995E212DEDA199051 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		04657FBC8960E17F4E585ECA /* StepContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StepContentView.swift; sourceTree = "<group>"; };
+		05205DF62D5431AA4F2F0EC5 /* ClaudeChatStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeChatStore.swift; sourceTree = "<group>"; };
 		0A7111D9656E3FA9D7F6F054 /* GhostBorderFieldDropdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GhostBorderFieldDropdown.swift; sourceTree = "<group>"; };
 		0A78BB1D7CB738F95B99C24E /* EngineAttentionBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineAttentionBanner.swift; sourceTree = "<group>"; };
 		0C827BD5D498E86D1F3BEC2D /* GitHubService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubService.swift; sourceTree = "<group>"; };
@@ -275,6 +277,7 @@
 				EE892C2183E7CF82B548E18D /* BackgroundTaskService.swift */,
 				896394791324A365221B36FB /* ChatHistoryPersistence.swift */,
 				249CE7BC7FB6CB8C7FA08D10 /* ClaudeAuthKeychainService.swift */,
+				05205DF62D5431AA4F2F0EC5 /* ClaudeChatStore.swift */,
 				783E1B9E6312BBB3DB53587B /* ClaudeChatTurnRunner.swift */,
 				67CBAA3E68AE042FD8F6FFDF /* ClaudeCodeConfigService.swift */,
 				A49ABEA06B33CB1666AD17A0 /* ClaudeDesktopConfigService.swift */,
@@ -666,6 +669,7 @@
 				7FCF70E4B640FED1EAD72A90 /* ClaudeAuthSetupSheet.swift in Sources */,
 				149284AD1AF7CC868055E9C7 /* ClaudeCLIDetector.swift in Sources */,
 				DFEE2E123FFC73F011AA13EB /* ClaudeChatPane.swift in Sources */,
+				BE37A5EB2E990AF93D5C09B6 /* ClaudeChatStore.swift in Sources */,
 				D96D31FEA9E9BAD74A5DCFD6 /* ClaudeChatTurnRunner.swift in Sources */,
 				0D7F85E45BFAFB9CBA75F829 /* ClaudeCodeConfigService.swift in Sources */,
 				91D50E1EB920B8C40D6B33FB /* ClaudeDesktopConfigService.swift in Sources */,

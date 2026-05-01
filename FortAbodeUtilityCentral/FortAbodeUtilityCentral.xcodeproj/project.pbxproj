@@ -33,6 +33,7 @@
 		330A710170B2B74902D579D5 /* EditTriageSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 564A22B818E62E0E1921A86F /* EditTriageSheet.swift */; };
 		355F6705C0380EC8CCED0279 /* WeeklyRhythmUIStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80DD857A1CB762AC7991C68C /* WeeklyRhythmUIStateStore.swift */; };
 		377AE9482D6974941E963E1B /* FamilyMemoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14788FA8AC138E58AD03BFC7 /* FamilyMemoryView.swift */; };
+		382CD7A8BD2AB838F0C9BE34 /* FamilyMemoryCompletionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44FD6E3E9BAFAD1F9175B3E1 /* FamilyMemoryCompletionService.swift */; };
 		386B5A369D88921474EC50B4 /* VersionComparisonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0AC8F02FED91F42FC4EB00 /* VersionComparisonTests.swift */; };
 		38D925B340A40492A5DB7FAC /* FeedbackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3757BEFBB847475D0690FF32 /* FeedbackView.swift */; };
 		39ACD4EE2996FF40E684E287 /* FeedbackViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6B493D672539E78B60DC3E8 /* FeedbackViewModel.swift */; };
@@ -152,6 +153,7 @@
 		3F6F08569570B37845FC1387 /* AlignedSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignedSheet.swift; sourceTree = "<group>"; };
 		412B13C7BB1BF39888717812 /* MissingMCPsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissingMCPsSheet.swift; sourceTree = "<group>"; };
 		418F1A3FCCAA74A9749BDE1E /* WeeklyRhythmPathResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmPathResolver.swift; sourceTree = "<group>"; };
+		44FD6E3E9BAFAD1F9175B3E1 /* FamilyMemoryCompletionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyMemoryCompletionService.swift; sourceTree = "<group>"; };
 		47821DD2E2C90209AADE1131 /* TriageRsvpControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TriageRsvpControl.swift; sourceTree = "<group>"; };
 		48EB2A999B000B9AC11BB0DD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		4DB01C9B5FC7912CFB5BBD2A /* ConfigMdEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigMdEditor.swift; sourceTree = "<group>"; };
@@ -263,6 +265,7 @@
 				A49ABEA06B33CB1666AD17A0 /* ClaudeDesktopConfigService.swift */,
 				354B5DB8AEAB5C2C6F4D2DCE /* CoworkSkillService.swift */,
 				1EB57DA95F7124E0519B2C86 /* ErrorLogger.swift */,
+				44FD6E3E9BAFAD1F9175B3E1 /* FamilyMemoryCompletionService.swift */,
 				CF650F1C05A9FE3D738BAA42 /* FamilyMemoryService.swift */,
 				3DACD2838A1C216461103AE6 /* FeedbackService.swift */,
 				72B3F9599ED98BC09073C78C /* FilePinningService.swift */,
@@ -659,6 +662,7 @@
 				07BA11DC7D460A01979E6F21 /* ErrorLogger.swift in Sources */,
 				6CD4E6A5F0EC7CA6EA53E11B /* FamilyChatPane.swift in Sources */,
 				52D654FD0BE7A805B4F3F1A3 /* FamilyHealthDashboard.swift in Sources */,
+				382CD7A8BD2AB838F0C9BE34 /* FamilyMemoryCompletionService.swift in Sources */,
 				E2A034CE471A68B4E0222C3E /* FamilyMemoryModels.swift in Sources */,
 				05D38A44306FF10EEE0001D9 /* FamilyMemoryService.swift in Sources */,
 				377AE9482D6974941E963E1B /* FamilyMemoryView.swift in Sources */,

@@ -106,9 +106,9 @@ struct FamilyView: View {
 
                     ActionItemsGroup(
                         items: [
-                            ActionItem(text: "Schedule Tiera's annual derm follow-up", isDone: true),
-                            ActionItem(text: "Confirm dental cleaning Q3 · both", isDone: false),
-                            ActionItem(text: "Update emergency contacts in Family Memory", isDone: false)
+                            LegacyMockActionItem(text: "Schedule Tiera's annual derm follow-up", isDone: true),
+                            LegacyMockActionItem(text: "Confirm dental cleaning Q3 · both", isDone: false),
+                            LegacyMockActionItem(text: "Update emergency contacts in Family Memory", isDone: false)
                         ]
                     )
                 }
@@ -333,7 +333,7 @@ private struct HealthRow: View {
 }
 
 private struct ActionItemsGroup: View {
-    let items: [ActionItem]
+    let items: [LegacyMockActionItem]
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s4) {
@@ -349,7 +349,7 @@ private struct ActionItemsGroup: View {
         }
     }
 
-    private func actionItemRow(_ item: ActionItem) -> some View {
+    private func actionItemRow(_ item: LegacyMockActionItem) -> some View {
         HStack(alignment: .center, spacing: Space.s3) {
             Image(systemName: item.isDone ? "checkmark.square.fill" : "square")
                 .font(.system(size: 18))
@@ -363,7 +363,12 @@ private struct ActionItemsGroup: View {
     }
 }
 
-private struct ActionItem: Identifiable {
+/// Mock-only — used by the legacy `Health Dashboard` section in `FamilyView`,
+/// which renders hardcoded sample content. Distinct from the real `ActionItem`
+/// in `FamilyMemoryModels.swift` that backs `FamilyHealthDashboard` against
+/// shared iCloud completion state. When this section is migrated to read from
+/// the real source-of-truth, this struct goes away with it.
+private struct LegacyMockActionItem: Identifiable {
     let id = UUID()
     let text: String
     let isDone: Bool

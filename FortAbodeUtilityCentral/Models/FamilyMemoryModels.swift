@@ -277,3 +277,76 @@ struct FamilySection: Sendable, Hashable, Identifiable {
     let body: String
     let isEmpty: Bool
 }
+
+// MARK: - Action items
+//
+// `HealthInsurancePlan.actionItems2026` is `[String]` in facts.json — just
+// label text. Completion state lives in a sibling `facts-completion-state.json`
+// keyed by trimmed label, so the JSON can be edited (re-ordering, adding new
+// items) without losing progress on items whose text is unchanged. Keying
+// by full label rather than a synthetic id keeps the file self-describing
+// when opened in a text editor on either Mac.
+
+/// View-side row model. Combines the static label from facts.json with the
+/// dynamic completion state from facts-completion-state.json. The dashboard
+/// renders one of these per `actionItems2026` entry.
+struct ActionItem: Identifiable, Hashable, Sendable {
+    let id: String           // = trimmed label (also the JSON key)
+    let label: String        // raw label from facts.json (display text)
+    let completed: Bool
+    let completedAt: Date?
+    let completedBy: String?
+
+    init(label: String, completion: ActionItemCompletion? = nil) {
+        let trimmed = label.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.id = trimmed
+        self.label = label
+        self.completed = completion?.completed ?? false
+        self.completedAt = completion?.completedAt
+        self.completedBy = completion?.completedBy
+    }
+}
+
+/// Persisted completion record. One per uncompleted-OR-completed action item;
+/// items not in the file are treated as not-completed by default.
+struct ActionItemCompletion: Codable, Sendable, Hashable {
+    let completed: Bool
+    let completedAt: Date
+    let completedBy: String
+
+    enum CodingKeys: String, CodingKey {
+        case completed
+        case completedAt = "completed_at"
+        case completedBy = "completed_by"
+    }
+}
+
+/// Top-level shape of `facts-completion-state.json`. Sibling to facts.json
+/// in the shared `Kennedy Family Docs/Claude/Family Memory/` iCloud folder so
+/// both Macs see the same state. Schema version exists so future migrations
+/// (e.g. namespacing per-year, adding non-health checklists) can be detected.
+struct ActionItemCompletionState: Codable, Sendable {
+    var schemaVersion: Int
+    var lastModified: String?           // ISO 8601 with timezone
+    var lastModifiedBy: String?
+    var actionItems2026: [String: ActionItemCompletion]
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case lastModified = "last_modified"
+        case lastModifiedBy = "last_modified_by"
+        case actionItems2026 = "action_items_2026"
+    }
+
+    init(
+        schemaVersion: Int = 1,
+        lastModified: String? = nil,
+        lastModifiedBy: String? = nil,
+        actionItems2026: [String: ActionItemCompletion] = [:]
+    ) {
+        self.schemaVersion = schemaVersion
+        self.lastModified = lastModified
+        self.lastModifiedBy = lastModifiedBy
+        self.actionItems2026 = actionItems2026
+    }
+}

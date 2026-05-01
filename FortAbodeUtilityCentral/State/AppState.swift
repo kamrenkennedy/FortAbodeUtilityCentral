@@ -46,19 +46,37 @@ final class AppState {
         }
     }
 
-    var unreadFamilyCount: Int = 2
+    /// Number of unread messages addressed to the active user. Drives the
+    /// brand-rust dot on the Family chat tab. Computed on launch and after
+    /// each chat-pane open via `refreshUnreadFamilyCount()` reading the
+    /// FamilyMessagesService inbox; resets to 0 when the user switches to
+    /// the Family tab (didSet on `chatActiveTab`).
+    var unreadFamilyCount: Int = 0
     var feedbackSheetOpen: Bool = false
 
     // Alert counts per destination — drives the small brandRust dot on sidebar
-    // nav items (cross-page ambient awareness). Mocked for v4.0.0; Phase 5
-    // wires real counts from each destination's data source.
-    var weeklyRhythmAlertCount: Int = 2
+    // nav items (cross-page ambient awareness). Computed lazily as real data
+    // sources land; defaults to 0 so we don't show phantom alerts.
+    var weeklyRhythmAlertCount: Int = 0
 
     func alertCount(for destination: Destination) -> Int {
         switch destination {
         case .weeklyRhythm: return weeklyRhythmAlertCount
         default:            return 0
         }
+    }
+
+    /// Read the active user's inbox via `FamilyMessagesService` and count
+    /// messages still in `.unread` state. Call from app launch and any time
+    /// the chat panel might have stale state. Idempotent.
+    func refreshUnreadFamilyCount() async {
+        let service = FamilyMessagesService()
+        let active = FamilyMessagesService.activeUserName()
+        let conversation = await service.loadConversation()
+        let count = conversation.filter {
+            $0.recipient == active && $0.status == .unread
+        }.count
+        self.unreadFamilyCount = count
     }
 
     init() {

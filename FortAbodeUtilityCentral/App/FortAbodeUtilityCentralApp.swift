@@ -302,6 +302,7 @@ struct FortAbodeUtilityCentralApp: App {
                 pinICloudFoldersInBackground()
                 detectEngineCLI()
                 loadChatHistory()
+                refreshUnreadFamilyCount()
             }
             .onReceive(NotificationCenter.default.publisher(for: .engineRunNotificationTapped)) { _ in
                 // System notification tap — bring user to the Weekly Rhythm tab.
@@ -316,6 +317,7 @@ struct FortAbodeUtilityCentralApp: App {
                 pinICloudFoldersInBackground()
                 detectEngineCLI()
                 loadChatHistory()
+                refreshUnreadFamilyCount()
             }
         }
         .defaultSize(width: 1440, height: 900)
@@ -430,6 +432,16 @@ struct FortAbodeUtilityCentralApp: App {
     private func loadChatHistory() {
         Task { @MainActor in
             await claudeChatStore.loadHistory()
+        }
+    }
+
+    /// Y5/Y5b polish: read the family inbox and count unread messages so
+    /// the Family chat tab shows the correct dot. Without this the badge
+    /// either stays stuck at the v4.0.0 mock value (2) or never appears
+    /// when a real message lands while the app was closed.
+    private func refreshUnreadFamilyCount() {
+        Task { @MainActor in
+            await appState.refreshUnreadFamilyCount()
         }
     }
 

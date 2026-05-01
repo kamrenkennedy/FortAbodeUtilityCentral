@@ -221,6 +221,12 @@ struct FortAbodeUtilityCentralApp: App {
     // observe this store directly via `@Environment`.
     @State private var weeklyRhythmEngineStore = WeeklyRhythmEngineStore()
 
+    // Y6: Claude Chat. Per-turn `claude --print` runner with stream-json
+    // parsing + atomic on-disk thread persistence. Composer's `onSend`
+    // dispatches into this store; the chat pane observes `messages` for live
+    // streaming updates.
+    @State private var claudeChatStore = ClaudeChatStore()
+
     // Sparkle updater controller — starts checking for updates automatically
     private let updaterController: SPUStandardUpdaterController
 
@@ -260,6 +266,7 @@ struct FortAbodeUtilityCentralApp: App {
                         .environment(appState)
                         .environment(weeklyRhythmStore)
                         .environment(weeklyRhythmEngineStore)
+                        .environment(claudeChatStore)
                 } else {
                     ProgressView("Loading...")
                         .frame(minWidth: 900, minHeight: 600)
@@ -294,6 +301,7 @@ struct FortAbodeUtilityCentralApp: App {
                 logLauncherHeartbeat()
                 pinICloudFoldersInBackground()
                 detectEngineCLI()
+                loadChatHistory()
             }
             .onReceive(NotificationCenter.default.publisher(for: .engineRunNotificationTapped)) { _ in
                 // System notification tap — bring user to the Weekly Rhythm tab.
@@ -307,6 +315,7 @@ struct FortAbodeUtilityCentralApp: App {
                 handleLaunchMode()
                 pinICloudFoldersInBackground()
                 detectEngineCLI()
+                loadChatHistory()
             }
         }
         .defaultSize(width: 1440, height: 900)
@@ -411,6 +420,16 @@ struct FortAbodeUtilityCentralApp: App {
         Task { @MainActor in
             await weeklyRhythmEngineStore.detectCLI()
             await weeklyRhythmEngineStore.probeMCPsIfPossible()
+        }
+    }
+
+    /// Y6: hydrate Claude Chat thread from disk on launch. Idempotent —
+    /// reading the same file twice in a row is harmless. The store also
+    /// kicks off CLI detection in the background so the first send doesn't
+    /// have to wait on a `which claude` shell-out.
+    private func loadChatHistory() {
+        Task { @MainActor in
+            await claudeChatStore.loadHistory()
         }
     }
 

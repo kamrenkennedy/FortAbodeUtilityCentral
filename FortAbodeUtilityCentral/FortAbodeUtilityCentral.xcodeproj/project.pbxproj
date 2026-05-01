@@ -58,6 +58,7 @@
 		63B0BCA2036A45DF148B3C37 /* HealthCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = F67306E0D4DE7A228BD944B8 /* HealthCheck.swift */; };
 		63DF7D1C11E3A188E94C469F /* ComponentRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 782EFED7B8F2AD1265BCF690 /* ComponentRegistry.swift */; };
 		64CA5B5EAAFCDA5C06236011 /* FortAbodeUtilityCentralApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F9DE0077075CA77D29FF77 /* FortAbodeUtilityCentralApp.swift */; };
+		6798F4FD18B8A889FD4C03C4 /* FamilyMessagesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36F4C51F9F1F20EE85F5AD95 /* FamilyMessagesService.swift */; };
 		6CD4E6A5F0EC7CA6EA53E11B /* FamilyChatPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = D71386BF1C667590FCF48FB8 /* FamilyChatPane.swift */; };
 		7186FEEAC3161F93D78ECA50 /* WeeklyRhythmSkillInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C01EEE9A69F8B9DE4572C90 /* WeeklyRhythmSkillInstaller.swift */; };
 		78A108105A88096647C68196 /* ComponentHealthCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EB2DD0D3E1CBC8A343C150 /* ComponentHealthCard.swift */; };
@@ -94,6 +95,7 @@
 		BFFC39B7F0DEE48815EB2481 /* BackgroundTaskService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE892C2183E7CF82B548E18D /* BackgroundTaskService.swift */; };
 		C0FDF12D701AEAEE4331FF13 /* Destination.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8B7BB0163579ACD834ADBB1 /* Destination.swift */; };
 		C3404068D33521F15C9DAC34 /* whats-new.json in Resources */ = {isa = PBXBuildFile; fileRef = CB4031837BBE075B7CEF1484 /* whats-new.json */; };
+		C5947E446207D4F44C499534 /* FamilyMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67BF3EEB937984A4CAA2B326 /* FamilyMessage.swift */; };
 		CA4CA8134B5255875DB1AF2A /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 8B75BAAFED90C32A32CA2420 /* Sparkle */; };
 		CB346FEB794E23991188381B /* CoworkSkillService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B5DB8AEAB5C2C6F4D2DCE /* CoworkSkillService.swift */; };
 		D0927D0CC5D148C03FD75CB4 /* GhostBorderFieldDropdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A7111D9656E3FA9D7F6F054 /* GhostBorderFieldDropdown.swift */; };
@@ -146,6 +148,7 @@
 		249CE7BC7FB6CB8C7FA08D10 /* ClaudeAuthKeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeAuthKeychainService.swift; sourceTree = "<group>"; };
 		2E417AC3384F05962FA62588 /* WeeklyRhythmDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmDataSource.swift; sourceTree = "<group>"; };
 		354B5DB8AEAB5C2C6F4D2DCE /* CoworkSkillService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoworkSkillService.swift; sourceTree = "<group>"; };
+		36F4C51F9F1F20EE85F5AD95 /* FamilyMessagesService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyMessagesService.swift; sourceTree = "<group>"; };
 		3757BEFBB847475D0690FF32 /* FeedbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackView.swift; sourceTree = "<group>"; };
 		37EB2DD0D3E1CBC8A343C150 /* ComponentHealthCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentHealthCard.swift; sourceTree = "<group>"; };
 		3AB3D27CB30E231A6EF2EF26 /* ChatPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPanel.swift; sourceTree = "<group>"; };
@@ -167,6 +170,7 @@
 		5EF56794AE0F9F09B953BC13 /* MockWeeklyRhythmDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockWeeklyRhythmDataSource.swift; sourceTree = "<group>"; };
 		656DB4A4A15347472DE4BF02 /* SynthesizedRunReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SynthesizedRunReport.swift; sourceTree = "<group>"; };
 		66C0B457A755E70A4E21D034 /* WeeklyRhythmService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmService.swift; sourceTree = "<group>"; };
+		67BF3EEB937984A4CAA2B326 /* FamilyMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyMessage.swift; sourceTree = "<group>"; };
 		67CBAA3E68AE042FD8F6FFDF /* ClaudeCodeConfigService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeCodeConfigService.swift; sourceTree = "<group>"; };
 		69E67AB0BE82AA7AE5E6F418 /* CheckForUpdatesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckForUpdatesView.swift; sourceTree = "<group>"; };
 		6F7E990CE834E05B52EAF553 /* Component.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Component.swift; sourceTree = "<group>"; };
@@ -270,6 +274,7 @@
 				1EB57DA95F7124E0519B2C86 /* ErrorLogger.swift */,
 				44FD6E3E9BAFAD1F9175B3E1 /* FamilyMemoryCompletionService.swift */,
 				CF650F1C05A9FE3D738BAA42 /* FamilyMemoryService.swift */,
+				36F4C51F9F1F20EE85F5AD95 /* FamilyMessagesService.swift */,
 				3DACD2838A1C216461103AE6 /* FeedbackService.swift */,
 				72B3F9599ED98BC09073C78C /* FilePinningService.swift */,
 				7D874D5A2A3528B406492C6B /* FullDiskAccessService.swift */,
@@ -435,6 +440,7 @@
 				6F7E990CE834E05B52EAF553 /* Component.swift */,
 				782EFED7B8F2AD1265BCF690 /* ComponentRegistry.swift */,
 				8599C33B343D91784A3618B0 /* FamilyMemoryModels.swift */,
+				67BF3EEB937984A4CAA2B326 /* FamilyMessage.swift */,
 				F67306E0D4DE7A228BD944B8 /* HealthCheck.swift */,
 				754EF798D1DADA467A6A6D84 /* UpdateStatus.swift */,
 				A84C5B5B9F422E0FEA151CF0 /* WeeklyRhythm.swift */,
@@ -669,6 +675,8 @@
 				E2A034CE471A68B4E0222C3E /* FamilyMemoryModels.swift in Sources */,
 				05D38A44306FF10EEE0001D9 /* FamilyMemoryService.swift in Sources */,
 				377AE9482D6974941E963E1B /* FamilyMemoryView.swift in Sources */,
+				C5947E446207D4F44C499534 /* FamilyMessage.swift in Sources */,
+				6798F4FD18B8A889FD4C03C4 /* FamilyMessagesService.swift in Sources */,
 				916EBC0C31B8473B1C50C325 /* FamilyView.swift in Sources */,
 				2B92C1E7ECA9DC4D7DC50F0E /* FeedbackService.swift in Sources */,
 				38D925B340A40492A5DB7FAC /* FeedbackView.swift in Sources */,

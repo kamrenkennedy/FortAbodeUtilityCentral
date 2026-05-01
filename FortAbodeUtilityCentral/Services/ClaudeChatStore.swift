@@ -31,6 +31,7 @@ public final class ClaudeChatStore {
 
     private static let toolsEnabledKey = "claudeChat.toolsEnabled"
     private static let sessionIDKey = "claudeChat.sessionID"
+    private static let sessionEstablishedKey = "claudeChat.sessionEstablished"
 
     private static let inputBreadcrumbCharLimit = 200
     private static let outputBreadcrumbCharLimit = 500
@@ -64,6 +65,16 @@ public final class ClaudeChatStore {
             }
         }
         self.messages = healed
+
+        // Migration: builds before Phase 5a passed --session-id on every spawn
+        // (which the CLI rejects on the second use with "Session ID is already
+        // in use"). On the upgrade path, the server-side session is already
+        // established — flag it so the first turn of the new build uses
+        // --resume instead of trying to create the same session again.
+        if UserDefaults.standard.object(forKey: Self.sessionEstablishedKey) == nil,
+           !healed.isEmpty {
+            UserDefaults.standard.set(true, forKey: Self.sessionEstablishedKey)
+        }
 
         // Detect CLI in the background; first send will re-detect if this is
         // still .notFound by then.
@@ -108,10 +119,13 @@ public final class ClaudeChatStore {
         let placeholderID = placeholder.id
         let tools = toolsEnabled
         let session = sessionID
+        let mode: ClaudeChatTurnRunner.SessionMode =
+            UserDefaults.standard.bool(forKey: Self.sessionEstablishedKey) ? .resuming : .creating
 
         await runner.run(
             cliPath: cliPath,
             sessionID: session,
+            sessionMode: mode,
             userMessage: trimmed,
             toolsEnabled: tools
         ) { [weak self] event in
@@ -131,6 +145,7 @@ public final class ClaudeChatStore {
         await persistence.clear()
         sessionID = UUID()
         UserDefaults.standard.set(sessionID.uuidString, forKey: Self.sessionIDKey)
+        UserDefaults.standard.set(false, forKey: Self.sessionEstablishedKey)
     }
 
     /// Diagnostic accessor — current chat-history.json path. Useful for the
@@ -157,6 +172,10 @@ public final class ClaudeChatStore {
 
         case .turnComplete:
             messages[idx].isStreaming = false
+            // Server-side session is now established. Subsequent turns must
+            // use --resume <UUID> instead of --session-id <UUID>, otherwise
+            // the CLI rejects them with "Session ID is already in use".
+            UserDefaults.standard.set(true, forKey: Self.sessionEstablishedKey)
 
         case .turnFailed(let reason):
             messages[idx].isStreaming = false

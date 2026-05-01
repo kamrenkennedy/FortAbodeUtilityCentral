@@ -53,13 +53,25 @@ public actor ClaudeChatTurnRunner {
         self.timeoutSeconds = timeoutSeconds
     }
 
+    /// Whether we're starting a fresh server-side session (`--session-id`) or
+    /// continuing an existing one (`--resume`). The CLI's `--session-id` flag
+    /// only accepts a UUID for a NOT-YET-CREATED session — reusing it on a
+    /// follow-up `claude --print` invocation hits an "already in use" guard.
+    /// `--resume` is the flag for continuing an existing session.
+    public enum SessionMode: Sendable {
+        case creating  // first turn — CLI creates the session with this UUID
+        case resuming  // every turn after — CLI resumes the existing session
+    }
+
     /// Run a single turn. Spawns the CLI, sends `userMessage`, streams events
     /// via `onEvent`, and returns when the process exits or the timeout fires.
     /// `sessionID` is reused across turns so Claude's server-side context
-    /// survives between spawns.
+    /// survives between spawns; `sessionMode` picks the right flag (creating
+    /// vs resuming) so we don't double-create.
     public func run(
         cliPath: String,
         sessionID: UUID,
+        sessionMode: SessionMode,
         userMessage: String,
         toolsEnabled: Bool,
         timeoutSecondsOverride: Double? = nil,
@@ -67,6 +79,14 @@ public actor ClaudeChatTurnRunner {
     ) async {
         let effectiveTimeout = timeoutSecondsOverride ?? timeoutSeconds
         let permissionMode = toolsEnabled ? "bypassPermissions" : "default"
+
+        let sessionFlag: [String]
+        switch sessionMode {
+        case .creating:
+            sessionFlag = ["--session-id", sessionID.uuidString]
+        case .resuming:
+            sessionFlag = ["--resume", sessionID.uuidString]
+        }
 
         let process = Process()
         process.executableURL = URL(fileURLWithPath: cliPath)
@@ -78,9 +98,8 @@ public actor ClaudeChatTurnRunner {
             "--replay-user-messages",
             // `--print` with stream-json requires `--verbose` (CLI validation).
             "--verbose",
-            "--permission-mode", permissionMode,
-            "--session-id", sessionID.uuidString
-        ]
+            "--permission-mode", permissionMode
+        ] + sessionFlag
 
         // Inherit a sensible PATH so MCP server subprocesses spawned by
         // `claude` can find their dependencies (Node, Python, etc.).
@@ -131,6 +150,7 @@ public actor ClaudeChatTurnRunner {
             context: [
                 "cliPath": cliPath,
                 "sessionID": sessionID.uuidString,
+                "sessionMode": sessionMode == .creating ? "creating" : "resuming",
                 "toolsEnabled": "\(toolsEnabled)",
                 "permissionMode": permissionMode
             ]

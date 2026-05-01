@@ -68,6 +68,26 @@ public final class WeeklyRhythmEngineStore {
         runState = .idle
     }
 
+    /// Probe `claude mcp list` independently of an engine run. Called at app
+    /// launch (after CLI detection) so the Engine Status modal has real
+    /// per-MCP connectivity to render even when the user hasn't kicked off
+    /// an engine run yet — without it the modal falls through to the
+    /// `RunReport.synthesized(...)` fallback with no probe data, which means
+    /// every MCP row renders as `.neutral` with em-dash placeholders.
+    /// Best-effort: if the CLI isn't found yet the call is a no-op, and any
+    /// probe failure leaves `lastMCPProbe == nil` so the synthesizer still
+    /// shows the polite neutral state instead of a false red.
+    public func probeMCPsIfPossible() async {
+        guard case .found(let path, _) = cliDetection else { return }
+        let probe = await mcpProbe.probe(cliPath: path)
+        // Only overwrite an existing probe if the new one didn't fail —
+        // a successful probe from an earlier run is more useful than a
+        // failed launch-time probe.
+        if !probe.probeFailed || lastMCPProbe == nil {
+            lastMCPProbe = probe
+        }
+    }
+
     // MARK: - Manual run
 
     /// Spawn the engine via the embedded CLI. Updates `runState` through the

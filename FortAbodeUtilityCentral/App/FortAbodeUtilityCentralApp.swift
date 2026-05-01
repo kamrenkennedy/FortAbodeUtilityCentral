@@ -401,9 +401,16 @@ struct FortAbodeUtilityCentralApp: App {
     /// section in Settings + the run pill on the Weekly Rhythm tab can label
     /// themselves correctly without waiting for the user to open Settings.
     /// Cached on the store; views can force-refresh from Settings.
+    ///
+    /// Phase 8.2: also kicks off an MCP probe right after CLI detection so the
+    /// Engine Status modal shows real per-MCP connectivity from the moment the
+    /// user opens it — without this, the synthesized report defaults to all
+    /// rows neutral until the next manual engine run (which on Tiera's first
+    /// launch is whenever, hours or days later).
     private func detectEngineCLI() {
         Task { @MainActor in
             await weeklyRhythmEngineStore.detectCLI()
+            await weeklyRhythmEngineStore.probeMCPsIfPossible()
         }
     }
 

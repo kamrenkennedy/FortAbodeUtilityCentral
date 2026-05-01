@@ -63,6 +63,28 @@ public actor ClaudeChatTurnRunner {
         case resuming  // every turn after — CLI resumes the existing session
     }
 
+    /// User-facing permission state. The runner maps each case to the right
+    /// `--permission-mode` + `--allowedTools` flag combo at spawn time.
+    public enum PermissionMode: String, Sendable, Hashable, CaseIterable {
+        /// No tools — Claude can think and reply but every tool call is denied.
+        /// Maps to `--permission-mode default` with no allowlist.
+        case off
+
+        /// Claude can use any tool the user pre-approved in their allowlist.
+        /// Maps to `--permission-mode default --allowedTools <list>`.
+        case allowlist
+
+        /// Claude drafts a plan first via the built-in Plan tool; no tools
+        /// actually execute. The store captures the plan from the assistant
+        /// event, the view surfaces it as a Plan Card with Execute / Cancel.
+        /// Maps to `--permission-mode plan`.
+        case preview
+
+        /// Claude can use any tool. Bypasses every permission check.
+        /// Maps to `--permission-mode bypassPermissions`.
+        case all
+    }
+
     /// Run a single turn. Spawns the CLI, sends `userMessage`, streams events
     /// via `onEvent`, and returns when the process exits or the timeout fires.
     /// `sessionID` is reused across turns so Claude's server-side context
@@ -73,12 +95,32 @@ public actor ClaudeChatTurnRunner {
         sessionID: UUID,
         sessionMode: SessionMode,
         userMessage: String,
-        toolsEnabled: Bool,
+        permissionMode: PermissionMode,
+        allowedTools: [String],
         timeoutSecondsOverride: Double? = nil,
         onEvent: @Sendable @escaping (ClaudeChatEvent) -> Void
     ) async {
         let effectiveTimeout = timeoutSecondsOverride ?? timeoutSeconds
-        let permissionMode = toolsEnabled ? "bypassPermissions" : "default"
+
+        // Map UI-facing PermissionMode → actual CLI flags.
+        let cliPermissionMode: String
+        var allowedToolsFlag: [String] = []
+        switch permissionMode {
+        case .off:
+            cliPermissionMode = "default"
+        case .allowlist:
+            cliPermissionMode = "default"
+            // Empty allowlist in `.allowlist` mode behaves like `.off` — no tools.
+            // That's intentional: a user with an empty allowlist gets the same
+            // safety as disabling tools entirely.
+            if !allowedTools.isEmpty {
+                allowedToolsFlag = ["--allowedTools"] + allowedTools
+            }
+        case .preview:
+            cliPermissionMode = "plan"
+        case .all:
+            cliPermissionMode = "bypassPermissions"
+        }
 
         let sessionFlag: [String]
         switch sessionMode {
@@ -98,8 +140,8 @@ public actor ClaudeChatTurnRunner {
             "--replay-user-messages",
             // `--print` with stream-json requires `--verbose` (CLI validation).
             "--verbose",
-            "--permission-mode", permissionMode
-        ] + sessionFlag
+            "--permission-mode", cliPermissionMode
+        ] + allowedToolsFlag + sessionFlag
 
         // Inherit a sensible PATH so MCP server subprocesses spawned by
         // `claude` can find their dependencies (Node, Python, etc.).
@@ -151,8 +193,9 @@ public actor ClaudeChatTurnRunner {
                 "cliPath": cliPath,
                 "sessionID": sessionID.uuidString,
                 "sessionMode": sessionMode == .creating ? "creating" : "resuming",
-                "toolsEnabled": "\(toolsEnabled)",
-                "permissionMode": permissionMode
+                "permissionMode": permissionMode.rawValue,
+                "cliPermissionMode": cliPermissionMode,
+                "allowedToolsCount": "\(allowedTools.count)"
             ]
         )
 

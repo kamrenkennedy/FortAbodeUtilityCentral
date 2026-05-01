@@ -104,7 +104,7 @@ struct ClaudeChatPane: View {
         HStack(spacing: Space.s2) {
             pageContextPill
             Spacer(minLength: Space.s2)
-            toolsTogglePill
+            permissionModePill
         }
     }
 
@@ -120,34 +120,87 @@ struct ClaudeChatPane: View {
         .padding(.horizontal, Space.s2)
     }
 
-    private var toolsTogglePill: some View {
-        Button {
-            store.toolsEnabled.toggle()
+    private var permissionModePill: some View {
+        Menu {
+            Section("Tools") {
+                ForEach(ClaudeChatTurnRunner.PermissionMode.allCases, id: \.self) { mode in
+                    Button {
+                        store.permissionMode = mode
+                    } label: {
+                        Label(label(for: mode), systemImage: store.permissionMode == mode ? "checkmark" : "")
+                    }
+                }
+            }
         } label: {
             HStack(spacing: Space.s1) {
-                Image(systemName: store.toolsEnabled
-                      ? "wrench.and.screwdriver.fill"
-                      : "wrench.and.screwdriver")
+                Image(systemName: icon(for: store.permissionMode))
                     .font(.system(size: 10, weight: .semibold))
-                Text("Tools: \(store.toolsEnabled ? "on" : "off")")
+                Text("Tools: \(label(for: store.permissionMode))")
                     .font(.labelSM.weight(.medium))
             }
-            .foregroundStyle(store.toolsEnabled ? Color.brandRust : Color.onSurfaceVariant)
+            .foregroundStyle(foreground(for: store.permissionMode))
             .padding(.horizontal, Space.s2)
             .padding(.vertical, 3)
             .overlay(
                 Capsule().stroke(
-                    store.toolsEnabled
-                        ? Color.brandRust.opacity(0.5)
-                        : Color.outlineVariant,
+                    stroke(for: store.permissionMode),
                     lineWidth: 1
                 )
             )
         }
-        .buttonStyle(.plain)
-        .help(store.toolsEnabled
-              ? "Tools on — Claude can read files, run commands, and use MCPs."
-              : "Tools off — Claude will respond conversationally without using tools.")
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help(help(for: store.permissionMode))
+    }
+
+    private func label(for mode: ClaudeChatTurnRunner.PermissionMode) -> String {
+        switch mode {
+        case .off:       return "Off"
+        case .allowlist: return "Allowlist"
+        case .preview:   return "Preview"
+        case .all:       return "All"
+        }
+    }
+
+    private func icon(for mode: ClaudeChatTurnRunner.PermissionMode) -> String {
+        switch mode {
+        case .off:       return "wrench.and.screwdriver"
+        case .allowlist: return "checklist"
+        case .preview:   return "eye"
+        case .all:       return "wrench.and.screwdriver.fill"
+        }
+    }
+
+    private func foreground(for mode: ClaudeChatTurnRunner.PermissionMode) -> Color {
+        switch mode {
+        case .off:       return Color.onSurfaceVariant
+        case .allowlist: return Color.brandRust
+        case .preview:   return Color.tertiary
+        case .all:       return Color.brandRust
+        }
+    }
+
+    private func stroke(for mode: ClaudeChatTurnRunner.PermissionMode) -> Color {
+        switch mode {
+        case .off:       return Color.outlineVariant
+        case .allowlist: return Color.brandRust.opacity(0.5)
+        case .preview:   return Color.tertiary.opacity(0.5)
+        case .all:       return Color.brandRust.opacity(0.7)
+        }
+    }
+
+    private func help(for mode: ClaudeChatTurnRunner.PermissionMode) -> String {
+        switch mode {
+        case .off:
+            return "Tools off — Claude will respond conversationally without using tools."
+        case .allowlist:
+            return "Allowlist — Claude can use the tools you've pre-approved in Settings."
+        case .preview:
+            return "Preview — Claude drafts a plan first; you click Execute to actually run it."
+        case .all:
+            return "All tools — Claude can use any tool, including Bash. Use with care."
+        }
     }
 
     private var modelBadge: some View {

@@ -17,9 +17,20 @@ import Observation
 public final class ClaudeChatStore {
 
     public private(set) var messages: [ChatTurn] = []
-    public var toolsEnabled: Bool {
-        didSet { UserDefaults.standard.set(toolsEnabled, forKey: Self.toolsEnabledKey) }
+
+    /// User-facing permission state. Cycles via the chat composer's mode pill.
+    /// Persisted across launches.
+    public var permissionMode: ClaudeChatTurnRunner.PermissionMode {
+        didSet { UserDefaults.standard.set(permissionMode.rawValue, forKey: Self.permissionModeKey) }
     }
+
+    /// Pre-approved built-in tools when `permissionMode == .allowlist`. Edited
+    /// in Settings; persisted as a string list. Selector syntax allowed
+    /// (`Bash(git *)`) — passed through verbatim to `--allowedTools`.
+    public var allowedTools: [String] {
+        didSet { UserDefaults.standard.set(allowedTools, forKey: Self.allowedToolsKey) }
+    }
+
     public private(set) var isStreaming: Bool = false
     public private(set) var lastError: String?
     public private(set) var cliDetection: ClaudeCLIDetector.Result = .notFound
@@ -29,9 +40,17 @@ public final class ClaudeChatStore {
     private let detector: ClaudeCLIDetector
     private var sessionID: UUID
 
-    private static let toolsEnabledKey = "claudeChat.toolsEnabled"
+    private static let permissionModeKey = "claudeChat.permissionMode"
+    private static let allowedToolsKey = "claudeChat.allowedTools"
+    private static let legacyToolsEnabledKey = "claudeChat.toolsEnabled"  // pre-Phase-5c
     private static let sessionIDKey = "claudeChat.sessionID"
     private static let sessionEstablishedKey = "claudeChat.sessionEstablished"
+
+    /// Sensible default allowlist. Read-shape tools that don't change state
+    /// or run shell commands. Users can add Bash, WebFetch, etc. via Settings.
+    public static let defaultAllowedTools: [String] = [
+        "Read", "Write", "Edit", "Grep", "Glob"
+    ]
 
     private static let inputBreadcrumbCharLimit = 200
     private static let outputBreadcrumbCharLimit = 500
@@ -44,8 +63,44 @@ public final class ClaudeChatStore {
         self.runner = runner
         self.persistence = persistence
         self.detector = detector
-        self.toolsEnabled = UserDefaults.standard.bool(forKey: Self.toolsEnabledKey)
+
+        // Resolve permission mode + allowedTools into local vars FIRST so we
+        // don't touch `self` until every stored property has a value (Swift's
+        // strict init rule).
+
+        let resolvedMode: ClaudeChatTurnRunner.PermissionMode
+        if let raw = UserDefaults.standard.string(forKey: Self.permissionModeKey),
+           let mode = ClaudeChatTurnRunner.PermissionMode(rawValue: raw) {
+            resolvedMode = mode
+        } else if UserDefaults.standard.object(forKey: Self.legacyToolsEnabledKey) != nil {
+            // Migration from Phase 4 binary toggle. Old `true` (Tools on) maps
+            // to .allowlist, not .all — safer landing for an upgrade. Users
+            // who want the old all-tools behavior can switch to .all manually.
+            let oldOn = UserDefaults.standard.bool(forKey: Self.legacyToolsEnabledKey)
+            resolvedMode = oldOn ? .allowlist : .off
+            UserDefaults.standard.removeObject(forKey: Self.legacyToolsEnabledKey)
+        } else {
+            resolvedMode = .allowlist
+        }
+
+        let resolvedTools: [String]
+        if let stored = UserDefaults.standard.array(forKey: Self.allowedToolsKey) as? [String] {
+            resolvedTools = stored
+        } else {
+            resolvedTools = Self.defaultAllowedTools
+        }
+
+        self.permissionMode = resolvedMode
+        self.allowedTools = resolvedTools
         self.sessionID = Self.loadOrGenerateSessionID()
+
+        // Persist any first-run defaults so subsequent launches read the same
+        // values. Doing this AFTER all stored properties are set so we can
+        // freely access `self`.
+        UserDefaults.standard.set(resolvedMode.rawValue, forKey: Self.permissionModeKey)
+        if UserDefaults.standard.array(forKey: Self.allowedToolsKey) == nil {
+            UserDefaults.standard.set(resolvedTools, forKey: Self.allowedToolsKey)
+        }
     }
 
     /// Hydrate `messages` from disk and warm CLI detection. Call from a
@@ -117,17 +172,19 @@ public final class ClaudeChatStore {
         lastError = nil
 
         let placeholderID = placeholder.id
-        let tools = toolsEnabled
+        let mode = permissionMode
+        let tools = allowedTools
         let session = sessionID
-        let mode: ClaudeChatTurnRunner.SessionMode =
+        let sessionMode: ClaudeChatTurnRunner.SessionMode =
             UserDefaults.standard.bool(forKey: Self.sessionEstablishedKey) ? .resuming : .creating
 
         await runner.run(
             cliPath: cliPath,
             sessionID: session,
-            sessionMode: mode,
+            sessionMode: sessionMode,
             userMessage: trimmed,
-            toolsEnabled: tools
+            permissionMode: mode,
+            allowedTools: tools
         ) { [weak self] event in
             Task { @MainActor [weak self] in
                 self?.applyEvent(event, toMessageID: placeholderID)

@@ -2,12 +2,18 @@ import SwiftUI
 import AlignedDesignSystem
 
 // Home — the v4.0.0 landing page. Editorial header, Family Vitals + Triage
-// two-column, This Week at a Glance card, Marketplace Pulse. Each row links
-// to the destination tab via AppState.selectedDestination. Mocked data for
-// v4.0.0; live wiring is a Phase 5 concern.
+// two-column, This Week at a Glance card, Marketplace Updates. Each row links
+// to the destination tab via AppState.selectedDestination.
 
 struct HomeView: View {
     @Environment(AppState.self) private var appState
+    @Environment(WeeklyRhythmStore.self) private var weeklyRhythmStore
+    @Environment(ComponentListViewModel.self) private var componentList
+
+    @State private var facts: FamilyFacts?
+    @State private var lastModified: String?
+
+    private let familyMemoryService = FamilyMemoryService()
 
     var body: some View {
         ScrollView {
@@ -17,7 +23,7 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: Space.s10) {
                     twoColumnSection
                     thisWeekSection
-                    marketplacePulseSection
+                    marketplaceUpdatesSection
                 }
                 .padding(.horizontal, Space.s10)
                 .padding(.bottom, Space.s16)
@@ -26,6 +32,16 @@ struct HomeView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
+        .task {
+            // Load Weekly Rhythm snapshot if it hasn't been loaded yet (e.g.
+            // user opened Home before Weekly Rhythm tab). The store is shared
+            // across tabs so this is a no-op once any tab loads it.
+            if weeklyRhythmStore.snapshot == nil {
+                await weeklyRhythmStore.load(weekOffset: 0)
+            }
+            facts = await familyMemoryService.loadFacts()
+            lastModified = await familyMemoryService.loadLastModified()
+        }
     }
 
     private var todaysTitle: String {
@@ -40,20 +56,30 @@ struct HomeView: View {
         HStack(alignment: .top, spacing: Space.s8) {
             VStack(alignment: .leading, spacing: Space.s6) {
                 SectionEyebrow(text: "Family Vitals")
-                FamilyVitalsCard {
+                FamilyVitalsCard(facts: facts, lastModified: lastModified) {
                     appState.selectedDestination = .family
                 }
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
 
             VStack(alignment: .leading, spacing: Space.s6) {
-                SectionEyebrow(text: "Triage", trailing: "3 need attention")
-                TriageCard {
+                SectionEyebrow(text: "Triage", trailing: triageTrailingLabel)
+                TriageCard(items: triageItems) {
                     appState.selectedDestination = .weeklyRhythm
                 }
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
+    }
+
+    private var triageItems: [TriageEntry] {
+        Array((weeklyRhythmStore.snapshot?.triage ?? []).prefix(3))
+    }
+
+    private var triageTrailingLabel: String? {
+        let count = weeklyRhythmStore.snapshot?.triage.count ?? 0
+        guard count > 0 else { return nil }
+        return "\(count) need\(count == 1 ? "s" : "") attention"
     }
 
     // MARK: - This Week
@@ -62,23 +88,58 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: Space.s6) {
             SectionEyebrow(text: "This Week at a Glance")
 
-            ThisWeekCard {
+            ThisWeekCard(
+                todaysBrief: weeklyRhythmStore.snapshot?.todaysBrief,
+                today: todayWeekDay,
+                tomorrow: tomorrowWeekDay
+            ) {
                 appState.selectedDestination = .weeklyRhythm
             }
         }
     }
 
-    // MARK: - Marketplace Pulse
+    private var todayWeekDay: WeekDay? {
+        weeklyRhythmStore.snapshot?.weekDays.first { $0.isToday }
+    }
 
-    private var marketplacePulseSection: some View {
+    /// Best-effort tomorrow lookup: pick the WeekDay one position after today
+    /// in the snapshot's weekDays array. nil if today isn't in the array.
+    private var tomorrowWeekDay: WeekDay? {
+        guard let days = weeklyRhythmStore.snapshot?.weekDays,
+              let i = days.firstIndex(where: { $0.isToday }),
+              i + 1 < days.count else {
+            return nil
+        }
+        return days[i + 1]
+    }
+
+    // MARK: - Marketplace Updates
+
+    private var marketplaceUpdatesSection: some View {
         VStack(alignment: .leading, spacing: Space.s6) {
-            SectionEyebrow(text: "Marketplace Pulse", trailingLink: "View all →") {
+            SectionEyebrow(text: "Marketplace Updates", trailingLink: "View all →") {
                 appState.selectedDestination = .marketplace
             }
 
-            MarketplacePulseCard {
+            MarketplaceUpdatesCard(items: marketplaceUpdateItems) {
                 appState.selectedDestination = .marketplace
             }
+        }
+    }
+
+    private var marketplaceUpdateItems: [MarketplaceUpdateItem] {
+        let updatable: [(Component, String, String)] = componentList.components.compactMap { component in
+            guard case .updateAvailable(let installed, let latest) = componentList.statuses[component.id] else {
+                return nil
+            }
+            return (component, installed, latest)
+        }
+        return Array(updatable.prefix(3)).map { (component, installed, latest) in
+            MarketplaceUpdateItem(
+                id: component.id,
+                title: component.displayName,
+                meta: "v\(installed) → v\(latest)"
+            )
         }
     }
 }
@@ -86,31 +147,28 @@ struct HomeView: View {
 // MARK: - Family Vitals card
 
 private struct FamilyVitalsCard: View {
+    let facts: FamilyFacts?
+    let lastModified: String?
     let onTap: () -> Void
 
     var body: some View {
         DashboardCard(isHoverable: true) {
-            VStack(spacing: 0) {
-                vitalRow(
-                    eyebrow: "Next Family Event",
-                    title: "Tiera's birthday",
-                    subtitle: "Tuesday May 6",
-                    trailingNumber: "12",
-                    trailingUnit: "days"
-                )
-                RowSeparator()
-                vitalRow(
-                    eyebrow: "Health Alerts",
-                    title: "All clear",
-                    subtitle: "No prescription refills due",
-                    titleDot: .scheduled
-                )
-                RowSeparator()
-                vitalRow(
-                    eyebrow: "Shared Docs",
-                    title: "Family Memory",
-                    subtitle: "Updated 2 days ago by Tiera"
-                )
+            if let rows = vitalRows, !rows.isEmpty {
+                VStack(spacing: 0) {
+                    ForEach(Array(rows.enumerated()), id: \.offset) { idx, row in
+                        vitalRow(
+                            eyebrow: row.eyebrow,
+                            title: row.title,
+                            subtitle: row.subtitle,
+                            titleDot: row.titleDot
+                        )
+                        if idx < rows.count - 1 {
+                            RowSeparator()
+                        }
+                    }
+                }
+            } else {
+                emptyState
             }
         }
         .onTapGesture(perform: onTap)
@@ -118,14 +176,87 @@ private struct FamilyVitalsCard: View {
         .accessibilityLabel(Text("Family vitals — tap to open Family"))
     }
 
+    private struct VitalRow {
+        let eyebrow: String
+        let title: String
+        let subtitle: String
+        let titleDot: StatusKind?
+    }
+
+    private var vitalRows: [VitalRow]? {
+        guard let facts else { return nil }
+        var rows: [VitalRow] = []
+
+        if let healthPlans = facts.insurance?.health, !healthPlans.isEmpty {
+            let summary: String
+            if healthPlans.count == 1, let name = healthPlans.first?.planName {
+                summary = name
+            } else {
+                summary = "\(healthPlans.count) plan\(healthPlans.count == 1 ? "" : "s")"
+            }
+            let subtitle: String
+            if let monthly = healthPlans.first?.monthlyPremium {
+                subtitle = "\(monthly)/mo"
+            } else if let carrier = healthPlans.first?.carrier {
+                subtitle = carrier
+            } else {
+                subtitle = "Plan details on file"
+            }
+            rows.append(VitalRow(
+                eyebrow: "Health Insurance",
+                title: summary,
+                subtitle: subtitle,
+                titleDot: .scheduled
+            ))
+        }
+
+        if let members = facts.household?.members, !members.isEmpty {
+            let subtitle: String
+            if let pets = facts.household?.pets, !pets.isEmpty {
+                subtitle = "\(members.count) people · \(pets.count) pet\(pets.count == 1 ? "" : "s")"
+            } else {
+                subtitle = "\(members.count) member\(members.count == 1 ? "" : "s")"
+            }
+            rows.append(VitalRow(
+                eyebrow: "Household",
+                title: members.joined(separator: " · "),
+                subtitle: subtitle,
+                titleDot: nil
+            ))
+        }
+
+        if let lastModified {
+            rows.append(VitalRow(
+                eyebrow: "Shared Docs",
+                title: "Family Memory",
+                subtitle: "Updated \(lastModified)",
+                titleDot: nil
+            ))
+        }
+
+        return rows
+    }
+
+    @ViewBuilder
+    private var emptyState: some View {
+        VStack(alignment: .leading, spacing: Space.s2) {
+            Text("Family Memory")
+                .font(.bodyMD.weight(.medium))
+                .foregroundStyle(Color.onSurface)
+            Text("Not set up yet — tap to open Family.")
+                .font(.bodySM)
+                .foregroundStyle(Color.onSurfaceVariant)
+        }
+        .padding(.vertical, Space.s4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     @ViewBuilder
     private func vitalRow(
         eyebrow: String,
         title: String,
         subtitle: String,
-        titleDot: StatusKind? = nil,
-        trailingNumber: String? = nil,
-        trailingUnit: String? = nil
+        titleDot: StatusKind? = nil
     ) -> some View {
         HStack(alignment: .top, spacing: Space.s4) {
             VStack(alignment: .leading, spacing: Space.s1) {
@@ -148,19 +279,7 @@ private struct FamilyVitalsCard: View {
                     .font(.bodySM)
                     .foregroundStyle(Color.onSurfaceVariant)
             }
-
             Spacer(minLength: Space.s4)
-
-            if let trailingNumber, let trailingUnit {
-                HStack(alignment: .firstTextBaseline, spacing: Space.s1_5) {
-                    Text(trailingNumber)
-                        .font(.custom("Manrope", size: 32).weight(.light))
-                        .foregroundStyle(Color.onSurface)
-                    Text(trailingUnit)
-                        .font(.bodySM)
-                        .foregroundStyle(Color.onSurfaceVariant)
-                }
-            }
         }
         .padding(.vertical, Space.s4)
     }
@@ -169,21 +288,29 @@ private struct FamilyVitalsCard: View {
 // MARK: - Triage card
 
 private struct TriageCard: View {
+    let items: [TriageEntry]
     let onTap: () -> Void
-
-    private let items: [TriageItem] = [
-        TriageItem(status: .error, title: "Re: Downtown Gallery — proof timing?", meta: "Marisol · client · 2h ago"),
-        TriageItem(status: .draft, title: "Studio site DNS — propagation report", meta: "Cloudflare · 6h ago"),
-        TriageItem(status: .draft, title: "Tiera shared a Memory edit — review?", meta: "Family Memory · yesterday")
-    ]
 
     var body: some View {
         DashboardCard(isHoverable: true) {
-            VStack(spacing: 0) {
-                ForEach(items) { item in
-                    triageRow(item)
-                    if item.id != items.last?.id {
-                        RowSeparator()
+            if items.isEmpty {
+                VStack(alignment: .leading, spacing: Space.s2) {
+                    Text("No triage items this week")
+                        .font(.bodyMD.weight(.medium))
+                        .foregroundStyle(Color.onSurface)
+                    Text("Tap to open Weekly Rhythm")
+                        .font(.bodySM)
+                        .foregroundStyle(Color.onSurfaceVariant)
+                }
+                .padding(.vertical, Space.s4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(items) { item in
+                        triageRow(item)
+                        if item.id != items.last?.id {
+                            RowSeparator()
+                        }
                     }
                 }
             }
@@ -193,9 +320,9 @@ private struct TriageCard: View {
         .accessibilityLabel(Text("Triage — tap to open Weekly Rhythm"))
     }
 
-    private func triageRow(_ item: TriageItem) -> some View {
+    private func triageRow(_ item: TriageEntry) -> some View {
         HStack(alignment: .top, spacing: Space.s3) {
-            StatusDot(item.status)
+            StatusDot(item.status.styleKind)
                 .padding(.top, 7)
 
             VStack(alignment: .leading, spacing: Space.s1) {
@@ -219,48 +346,53 @@ private struct TriageCard: View {
     }
 }
 
-private struct TriageItem: Identifiable {
-    let id = UUID()
-    let status: StatusKind
-    let title: String
-    let meta: String
-}
-
 // MARK: - This Week card
 
 private struct ThisWeekCard: View {
+    let todaysBrief: TodaysBrief?
+    let today: WeekDay?
+    let tomorrow: WeekDay?
     let onTap: () -> Void
 
     var body: some View {
         DashboardCard(isHoverable: true) {
-            HStack(alignment: .top, spacing: Space.s8) {
-                dayColumn(
-                    title: "Today",
-                    dayMeta: "Friday · Make",
-                    events: [
-                        ("10:00 AM", "Braxton edit — pass 3", "Make block · 2h"),
-                        ("3:00 PM", "Braxton sync", "Recurring · video call"),
-                        ("7:00 PM", "Call Mom", "Reminder")
-                    ]
-                )
-                .frame(maxWidth: .infinity, alignment: .topLeading)
+            if todaysBrief == nil && today == nil {
+                VStack(alignment: .leading, spacing: Space.s2) {
+                    Text("Run the engine to generate your brief")
+                        .font(.bodyMD.weight(.medium))
+                        .foregroundStyle(Color.onSurface)
+                    Text("Tap to open Weekly Rhythm")
+                        .font(.bodySM)
+                        .foregroundStyle(Color.onSurfaceVariant)
+                }
+                .padding(.vertical, Space.s4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                VStack(alignment: .leading, spacing: Space.s5) {
+                    if let todaysBrief {
+                        briefHeader(todaysBrief)
+                    }
 
-                Rectangle()
-                    .fill(Color.outlineVariant.opacity(0.20))
-                    .frame(width: 1)
+                    HStack(alignment: .top, spacing: Space.s8) {
+                        if let today {
+                            dayColumn(title: "Today", day: today, narrative: todaysBrief?.narrative)
+                                .frame(maxWidth: .infinity, alignment: .topLeading)
+                        }
 
-                dayColumn(
-                    title: "Tomorrow",
-                    dayMeta: "Saturday · Recover",
-                    events: [
-                        ("9:30 AM", "Long run with Tiera", "Riverside loop"),
-                        ("12:00 PM", "Downtown Gallery delivery", "Drop-off · 30 min"),
-                        ("3:00 PM", "Rae reels — review cuts", "Solo · 1h")
-                    ]
-                )
-                .frame(maxWidth: .infinity, alignment: .topLeading)
+                        if today != nil && tomorrow != nil {
+                            Rectangle()
+                                .fill(Color.outlineVariant.opacity(0.20))
+                                .frame(width: 1)
+                        }
+
+                        if let tomorrow {
+                            dayColumn(title: "Tomorrow", day: tomorrow, narrative: nil)
+                                .frame(maxWidth: .infinity, alignment: .topLeading)
+                        }
+                    }
+                }
+                .padding(.vertical, Space.s2)
             }
-            .padding(.vertical, Space.s2)
         }
         .onTapGesture(perform: onTap)
         .accessibilityAddTraits(.isButton)
@@ -268,29 +400,73 @@ private struct ThisWeekCard: View {
     }
 
     @ViewBuilder
-    private func dayColumn(title: String, dayMeta: String, events: [(String, String, String)]) -> some View {
+    private func briefHeader(_ brief: TodaysBrief) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
+            dayTypePill(brief.dayType)
+            Text(brief.label)
+                .font(.bodySM)
+                .foregroundStyle(Color.onSurfaceVariant)
+            Spacer(minLength: Space.s2)
+            if brief.weekGoalsTotal > 0 {
+                Text("Goals \(brief.weekGoalsComplete)/\(brief.weekGoalsTotal)")
+                    .font(.bodySM)
+                    .monospacedDigit()
+                    .foregroundStyle(Color.onSurfaceVariant)
+            }
+        }
+    }
+
+    private func dayTypePill(_ type: WRDayType) -> some View {
+        Text(type.label)
+            .font(.labelSM.weight(.semibold))
+            .tracking(0.8)
+            .foregroundStyle(Color.onSurface)
+            .padding(.horizontal, Space.s3)
+            .padding(.vertical, Space.s1)
+            .background(
+                Capsule().fill(Color.surfaceContainer)
+            )
+            .overlay(
+                Capsule().stroke(Color.outlineVariant, lineWidth: 1)
+            )
+    }
+
+    @ViewBuilder
+    private func dayColumn(title: String, day: WeekDay, narrative: String?) -> some View {
         VStack(alignment: .leading, spacing: Space.s5) {
             HStack(alignment: .firstTextBaseline) {
                 Text(title)
                     .font(.headlineMD)
                     .foregroundStyle(Color.onSurface)
                 Spacer(minLength: Space.s2)
-                Text(dayMeta)
+                Text(day.dayMeta)
                     .font(.bodySM)
                     .foregroundStyle(Color.onSurfaceVariant)
             }
 
-            VStack(alignment: .leading, spacing: Space.s4) {
-                ForEach(Array(events.enumerated()), id: \.offset) { _, event in
-                    eventRow(time: event.0, title: event.1, meta: event.2)
+            if let narrative, !narrative.isEmpty {
+                Text(narrative)
+                    .font(.bodyMD)
+                    .foregroundStyle(Color.onSurfaceVariant)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if day.events.isEmpty {
+                Text("No events")
+                    .font(.bodySM)
+                    .foregroundStyle(Color.onSurfaceVariant)
+            } else {
+                VStack(alignment: .leading, spacing: Space.s4) {
+                    ForEach(day.events.prefix(3)) { event in
+                        eventRow(event)
+                    }
                 }
             }
         }
     }
 
-    private func eventRow(time: String, title: String, meta: String) -> some View {
+    private func eventRow(_ event: WREvent) -> some View {
         HStack(alignment: .top, spacing: Space.s3) {
-            Text(time)
+            Text(event.time ?? "")
                 .font(.custom("Inter-Regular", size: 12))
                 .monospacedDigit()
                 .foregroundStyle(Color.secondaryText)
@@ -298,47 +474,83 @@ private struct ThisWeekCard: View {
                 .padding(.top, 2)
 
             VStack(alignment: .leading, spacing: Space.s1) {
-                Text(title)
+                Text(event.title)
                     .font(.bodyMD.weight(.medium))
                     .foregroundStyle(Color.onSurface)
-                Text(meta)
-                    .font(.bodySM)
-                    .foregroundStyle(Color.onSurfaceVariant)
             }
         }
     }
 }
 
-// MARK: - Marketplace Pulse card
+private extension WeekDay {
+    /// "Friday · Make" style label — uses the day's first/primary day type.
+    var dayMeta: String {
+        let typeLabel = primaryDayType.label
+        // `name` is the short form ("Mon"). Try to expand to full weekday name.
+        let full = WeekDay.fullWeekdayName(from: name) ?? name
+        return "\(full) · \(typeLabel)"
+    }
 
-private struct MarketplacePulseCard: View {
+    private static func fullWeekdayName(from short: String) -> String? {
+        switch short.lowercased().prefix(3) {
+        case "mon": return "Monday"
+        case "tue": return "Tuesday"
+        case "wed": return "Wednesday"
+        case "thu": return "Thursday"
+        case "fri": return "Friday"
+        case "sat": return "Saturday"
+        case "sun": return "Sunday"
+        default:    return nil
+        }
+    }
+}
+
+// MARK: - Marketplace Updates card
+
+private struct MarketplaceUpdateItem: Identifiable {
+    let id: String
+    let title: String
+    let meta: String
+}
+
+private struct MarketplaceUpdatesCard: View {
+    let items: [MarketplaceUpdateItem]
     let onTap: () -> Void
-
-    private let items: [PulseItem] = [
-        PulseItem(kind: .update, title: "2 updates ready", meta: "Gmail v1.9.0 · GitHub v2.2.0", date: "Today"),
-        PulseItem(kind: .new, title: "Figma added to Marketplace", meta: "New · design files, comments, prototypes", date: "Yesterday"),
-        PulseItem(kind: .installed, title: "Linear installed", meta: "By Kam · connected to Kam Studios workspace", date: "2d ago")
-    ]
 
     var body: some View {
         DashboardCard(isHoverable: true) {
-            VStack(spacing: 0) {
-                ForEach(items) { item in
-                    pulseRow(item)
-                    if item.id != items.last?.id {
-                        RowSeparator()
+            if items.isEmpty {
+                VStack(alignment: .leading, spacing: Space.s2) {
+                    Text("All components up to date")
+                        .font(.bodyMD.weight(.medium))
+                        .foregroundStyle(Color.onSurface)
+                    Text("No updates pending")
+                        .font(.bodySM)
+                        .foregroundStyle(Color.onSurfaceVariant)
+                }
+                .padding(.vertical, Space.s4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(items) { item in
+                        updateRow(item)
+                        if item.id != items.last?.id {
+                            RowSeparator()
+                        }
                     }
                 }
             }
         }
         .onTapGesture(perform: onTap)
         .accessibilityAddTraits(.isButton)
-        .accessibilityLabel(Text("Marketplace pulse — tap to open Marketplace"))
+        .accessibilityLabel(Text("Marketplace updates — tap to open Marketplace"))
     }
 
-    private func pulseRow(_ item: PulseItem) -> some View {
+    private func updateRow(_ item: MarketplaceUpdateItem) -> some View {
         HStack(alignment: .top, spacing: Space.s3) {
-            pulseDot(item.kind)
+            Circle()
+                .fill(Color.statusDraft)
+                .frame(width: 8, height: 8)
                 .padding(.top, 7)
 
             VStack(alignment: .leading, spacing: Space.s1) {
@@ -352,37 +564,11 @@ private struct MarketplacePulseCard: View {
 
             Spacer(minLength: Space.s3)
 
-            Text(item.date)
-                .font(.bodySM)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(Color.onSurfaceVariant)
-                .padding(.top, 2)
+                .padding(.top, 5)
         }
         .padding(.vertical, Space.s3)
     }
-
-    @ViewBuilder
-    private func pulseDot(_ kind: PulseKind) -> some View {
-        switch kind {
-        case .update:
-            Circle().fill(Color.statusDraft).frame(width: 8, height: 8)
-        case .new:
-            Circle().fill(Color.brandRust).frame(width: 8, height: 8)
-        case .installed:
-            Circle().fill(Color.statusScheduled).frame(width: 8, height: 8)
-        }
-    }
-}
-
-private enum PulseKind {
-    case update
-    case new
-    case installed
-}
-
-private struct PulseItem: Identifiable {
-    let id = UUID()
-    let kind: PulseKind
-    let title: String
-    let meta: String
-    let date: String
 }

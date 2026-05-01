@@ -21,6 +21,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Reset per-session UI state that should not survive a launch — e.g.
+        // the EngineAttentionBanner's dismissed-message hash. Window close +
+        // reopen preserves dismissal; a true relaunch surfaces the warning
+        // again so degraded engine health stays visible across boots.
+        EngineAttentionBanner.clearDismissalOnLaunch()
+
         // If launched by LaunchAgent for a background check, start as .accessory so
         // the Dock icon doesn't flash while we run through the component check loop.
         // Normal launches stay .regular (default) so the Dock icon appears as expected.

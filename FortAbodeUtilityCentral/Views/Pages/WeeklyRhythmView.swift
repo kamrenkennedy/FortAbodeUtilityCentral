@@ -136,6 +136,7 @@ struct WeeklyRhythmView: View {
                     }
 
                 VStack(alignment: .leading, spacing: Space.s8) {
+                    EngineAttentionBanner(runHealth: runHealth)
                     if !alerts.isEmpty {
                         alertsBannerSection
                     }

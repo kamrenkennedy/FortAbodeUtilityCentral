@@ -21,6 +21,7 @@ struct HomeView: View {
                 EditorialHeader(eyebrow: "Dashboard", title: todaysTitle)
 
                 VStack(alignment: .leading, spacing: Space.s10) {
+                    EngineAttentionBanner(runHealth: weeklyRhythmStore.snapshot?.runHealth ?? .allGood)
                     twoColumnSection
                     thisWeekSection
                     marketplaceUpdatesSection

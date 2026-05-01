@@ -40,6 +40,7 @@
 		3B1B8E9B129468193257A0A2 /* WeeklyRhythmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0115CDA875DB5D2D4BA7C4AA /* WeeklyRhythmView.swift */; };
 		3B8CF00712BD137247649E22 /* VersionDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52A1E55BD560971A940F171A /* VersionDetectionService.swift */; };
 		3CFDC64737A93718CFE3AE95 /* WeeklyRhythmEngineSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C5D0EF96B4D7D82238B66ED /* WeeklyRhythmEngineSection.swift */; };
+		3DA8DDC6A71588E1CF270BE0 /* ClaudeChatToolsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C83FF7CAE6C8D8123814DAE4 /* ClaudeChatToolsSection.swift */; };
 		3DAC043E1F1CE49D3F91AA79 /* PageScaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC9BDBAE1BA8CDCF7640CE6B /* PageScaffold.swift */; };
 		3F9322104FD17EB1DA4801C8 /* RunHealthPill.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9462C3630F3A00A990888CA2 /* RunHealthPill.swift */; };
 		49AFDBE9BAB4BDF2520332FF /* VersionDetectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE4CB53B5CB04DACA0FDC375 /* VersionDetectionTests.swift */; };
@@ -216,6 +217,7 @@
 		BD5F1C96EFA4D647FFDA57BB /* RunHealthDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunHealthDetailSheet.swift; sourceTree = "<group>"; };
 		C2743470CF6F7A2E42396FAC /* FamilyHealthDashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyHealthDashboard.swift; sourceTree = "<group>"; };
 		C32B9115221657AAE3B2B132 /* BadgeTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgeTracker.swift; sourceTree = "<group>"; };
+		C83FF7CAE6C8D8123814DAE4 /* ClaudeChatToolsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeChatToolsSection.swift; sourceTree = "<group>"; };
 		C8F9DE0077075CA77D29FF77 /* FortAbodeUtilityCentralApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FortAbodeUtilityCentralApp.swift; sourceTree = "<group>"; };
 		C939E66D6E0DCFD3C6E6B28F /* AppNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNavigation.swift; sourceTree = "<group>"; };
 		CB0B45EFBB7DD5A133107515 /* ComponentRegistryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentRegistryTests.swift; sourceTree = "<group>"; };
@@ -355,6 +357,7 @@
 			children = (
 				8BECADF7B96CB7D3842E642F /* ActivationView.swift */,
 				69E67AB0BE82AA7AE5E6F418 /* CheckForUpdatesView.swift */,
+				C83FF7CAE6C8D8123814DAE4 /* ClaudeChatToolsSection.swift */,
 				D1A394C02034C7CEDA5FA603 /* ComponentDetailView.swift */,
 				37EB2DD0D3E1CBC8A343C150 /* ComponentHealthCard.swift */,
 				C2743470CF6F7A2E42396FAC /* FamilyHealthDashboard.swift */,
@@ -670,6 +673,7 @@
 				149284AD1AF7CC868055E9C7 /* ClaudeCLIDetector.swift in Sources */,
 				DFEE2E123FFC73F011AA13EB /* ClaudeChatPane.swift in Sources */,
 				BE37A5EB2E990AF93D5C09B6 /* ClaudeChatStore.swift in Sources */,
+				3DA8DDC6A71588E1CF270BE0 /* ClaudeChatToolsSection.swift in Sources */,
 				D96D31FEA9E9BAD74A5DCFD6 /* ClaudeChatTurnRunner.swift in Sources */,
 				0D7F85E45BFAFB9CBA75F829 /* ClaudeCodeConfigService.swift in Sources */,
 				91D50E1EB920B8C40D6B33FB /* ClaudeDesktopConfigService.swift in Sources */,

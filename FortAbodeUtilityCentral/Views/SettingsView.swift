@@ -29,6 +29,7 @@ struct SettingsView: View {
                     componentChecksSection
                     appUpdatesSection
                     WeeklyRhythmEngineSection()
+                    ClaudeChatToolsSection()
                     accountSection
                     apiKeysSection
                     advancedSection

@@ -180,6 +180,74 @@ struct AttachmentChip: View {
     }
 }
 
+// Y6 Phase 5c.2: Plan Card. Renders Claude's drafted plan (from
+// `--permission-mode plan`) with Execute and Cancel buttons. Execute
+// re-runs the originating prompt in `.allowlist` mode so the plan
+// actually gets carried out; Cancel just dismisses the buttons.
+struct PlanCardMessage: View {
+    let plan: String
+    let onExecute: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: Space.s2) {
+            Circle()
+                .fill(Color.tertiary.opacity(0.15))
+                .frame(width: 28, height: 28)
+                .overlay(
+                    Image(systemName: "eye")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.tertiary)
+                )
+
+            VStack(alignment: .leading, spacing: Space.s2) {
+                HStack(spacing: Space.s1) {
+                    Image(systemName: "list.bullet.rectangle")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text("PLAN PREVIEW")
+                        .font(.labelSM)
+                        .tracking(1.5)
+                }
+                .foregroundStyle(Color.tertiary)
+
+                Text(plan)
+                    .font(.bodyMD)
+                    .foregroundStyle(Color.onSurface)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
+
+                HStack(spacing: Space.s2) {
+                    Spacer()
+                    Button("Cancel", action: onCancel)
+                        .buttonStyle(.plain)
+                        .font(.labelMD)
+                        .foregroundStyle(Color.onSurfaceVariant)
+                        .padding(.horizontal, Space.s3)
+                        .padding(.vertical, Space.s1_5)
+                    Button("Execute", action: onExecute)
+                        .buttonStyle(.plain)
+                        .font(.labelMD.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, Space.s3)
+                        .padding(.vertical, Space.s1_5)
+                        .background(
+                            Capsule().fill(Color.brandRust)
+                        )
+                }
+                .padding(.top, Space.s1)
+            }
+            .padding(Space.s3)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous)
+                    .fill(Color.surfaceContainer)
+            )
+
+            Spacer(minLength: Space.s10)
+        }
+    }
+}
+
 struct RichCardMessage: View {
     let kicker: String
     let kickerSymbol: String

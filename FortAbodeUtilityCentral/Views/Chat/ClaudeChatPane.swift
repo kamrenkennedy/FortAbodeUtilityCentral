@@ -37,12 +37,8 @@ struct ClaudeChatPane: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.s4) {
                     ForEach(store.messages) { turn in
-                        MessageBubble(
-                            speaker: turn.role == .user ? .user : .claude,
-                            text: bubbleText(for: turn),
-                            actionChips: breadcrumbChips(for: turn)
-                        )
-                        .id(turn.id)
+                        turnView(for: turn)
+                            .id(turn.id)
                     }
                 }
                 .padding(.horizontal, Space.s4)
@@ -60,6 +56,23 @@ struct ClaudeChatPane: View {
                 guard let lastID = store.messages.last?.id else { return }
                 proxy.scrollTo(lastID, anchor: .bottom)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func turnView(for turn: ChatTurn) -> some View {
+        if let plan = turn.pendingPlan {
+            PlanCardMessage(
+                plan: plan,
+                onExecute: { Task { await store.executePlan(turnID: turn.id) } },
+                onCancel: { Task { await store.cancelPlan(turnID: turn.id) } }
+            )
+        } else {
+            MessageBubble(
+                speaker: turn.role == .user ? .user : .claude,
+                text: bubbleText(for: turn),
+                actionChips: breadcrumbChips(for: turn)
+            )
         }
     }
 

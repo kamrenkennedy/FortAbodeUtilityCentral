@@ -141,8 +141,13 @@ public final class ClaudeChatStore {
 
     /// Send one user message and stream the assistant reply. Drops calls
     /// while another turn is in flight (UI guards send button via
-    /// `isStreaming`, but defend in depth).
-    public func sendUserMessage(_ text: String) async {
+    /// `isStreaming`, but defend in depth). `modeOverride` lets one caller
+    /// bypass the user's currently-selected mode for a single turn — used
+    /// by `executePlan` to force `.allowlist` after a Preview turn.
+    public func sendUserMessage(
+        _ text: String,
+        modeOverride: ClaudeChatTurnRunner.PermissionMode? = nil
+    ) async {
         guard !isStreaming else { return }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -172,7 +177,7 @@ public final class ClaudeChatStore {
         lastError = nil
 
         let placeholderID = placeholder.id
-        let mode = permissionMode
+        let mode = modeOverride ?? permissionMode
         let tools = allowedTools
         let session = sessionID
         let sessionMode: ClaudeChatTurnRunner.SessionMode =
@@ -192,6 +197,31 @@ public final class ClaudeChatStore {
         }
 
         isStreaming = false
+        await persist()
+    }
+
+    /// User clicked Execute on a Plan Card. Re-send the prior user message
+    /// in `.allowlist` mode so Claude actually runs the plan it just drafted.
+    /// Clears `pendingPlan` so the buttons go away immediately.
+    public func executePlan(turnID: UUID) async {
+        guard let planIdx = messages.firstIndex(where: {
+            $0.id == turnID && $0.pendingPlan != nil
+        }) else { return }
+        guard planIdx > 0,
+              messages[planIdx - 1].role == .user else { return }
+        let originalPrompt = messages[planIdx - 1].content
+        messages[planIdx].pendingPlan = nil
+        await persist()
+        await sendUserMessage(originalPrompt, modeOverride: .allowlist)
+    }
+
+    /// User clicked Cancel on a Plan Card. Just dismiss the buttons; the
+    /// plan text remains in the bubble for the user's reference.
+    public func cancelPlan(turnID: UUID) async {
+        guard let idx = messages.firstIndex(where: {
+            $0.id == turnID && $0.pendingPlan != nil
+        }) else { return }
+        messages[idx].pendingPlan = nil
         await persist()
     }
 
@@ -237,6 +267,14 @@ public final class ClaudeChatStore {
         case .turnFailed(let reason):
             messages[idx].isStreaming = false
             messages[idx].failureReason = reason
+
+        case .planDrafted(let plan):
+            // Stash the plan on the turn. The view swaps the regular bubble
+            // for a Plan Card when this is non-nil. Mirror the plan into
+            // `content` so it survives even if the user clicks Execute (which
+            // clears pendingPlan but keeps the bubble showing the plan text).
+            messages[idx].pendingPlan = plan
+            messages[idx].content = plan
 
         case .terminated(let exitCode):
             messages[idx].isStreaming = false

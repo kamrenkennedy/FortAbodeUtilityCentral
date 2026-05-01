@@ -27,6 +27,12 @@ public enum ClaudeChatEvent: Sendable {
     /// human-readable reason for surfacing in the bubble.
     case turnFailed(reason: String)
 
+    /// Claude drafted a plan in `--permission-mode plan`. The plan text is
+    /// extracted from the Plan tool's `input.plan` field (or ExitPlanMode's
+    /// equivalent). Store sets this on the turn and the view renders a Plan
+    /// Card with Execute / Cancel instead of a regular bubble.
+    case planDrafted(plan: String)
+
     /// Always the last event for a turn. Carries the CLI's exit code.
     case terminated(exitCode: Int32)
 }
@@ -412,6 +418,7 @@ private final class ChatStreamParser: @unchecked Sendable {
     private let queue = DispatchQueue(label: "FortAbode.ClaudeChat.StreamParser")
     private var pendingToolUses: [String: (name: String, input: String)] = [:]
     private var emittedTerminal: Bool = false
+    private var didEmitPlan: Bool = false
 
     var didEmitTerminalEvent: Bool {
         queue.sync { emittedTerminal }
@@ -450,21 +457,45 @@ private final class ChatStreamParser: @unchecked Sendable {
               let content = message["content"] as? [[String: Any]] else {
             return []
         }
+        var emitted: [ClaudeChatEvent] = []
         for block in content {
             guard (block["type"] as? String) == "tool_use",
                   let id = block["id"] as? String,
                   let name = block["name"] as? String else { continue }
+            let inputDict = block["input"] as? [String: Any]
             let inputJSON: String
-            if let input = block["input"],
+            if let input = inputDict,
                let data = try? JSONSerialization.data(withJSONObject: input),
                let s = String(data: data, encoding: .utf8) {
                 inputJSON = s
             } else {
                 inputJSON = ""
             }
+
+            // In `--permission-mode plan`, Claude calls the Plan tool (and
+            // sometimes ExitPlanMode) with the plan markdown in `input.plan`.
+            // Capture the FIRST occurrence as a planDrafted event so the
+            // store can surface the Plan Card.
+            if (name == "Plan" || name == "ExitPlanMode"),
+               let plan = inputDict?["plan"] as? String,
+               !plan.isEmpty {
+                let shouldEmit = queue.sync { () -> Bool in
+                    if didEmitPlan { return false }
+                    didEmitPlan = true
+                    return true
+                }
+                if shouldEmit {
+                    emitted.append(.planDrafted(plan: plan))
+                }
+                // Don't track Plan/ExitPlanMode for breadcrumb pairing — they
+                // are implementation detail of plan mode, not user-visible
+                // tool calls.
+                continue
+            }
+
             queue.sync { pendingToolUses[id] = (name, inputJSON) }
         }
-        return []
+        return emitted
     }
 
     private func handleUserEvent(_ obj: [String: Any]) -> [ClaudeChatEvent] {

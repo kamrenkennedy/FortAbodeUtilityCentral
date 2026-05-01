@@ -21,6 +21,11 @@ public struct ChatTurn: Identifiable, Codable, Hashable, Sendable {
     /// Populated on `.turnFailed` / non-zero exit. Renders as a warning bubble
     /// instead of regular content.
     public var failureReason: String?
+    /// Set when this turn ran in `--permission-mode plan`. The runner captures
+    /// the plan text from the Plan tool's input field; the view swaps the
+    /// regular bubble for a Plan Card with Execute / Cancel buttons. Cleared
+    /// when the user clicks Execute or Cancel.
+    public var pendingPlan: String?
 
     public enum Role: String, Codable, Sendable, Hashable {
         case user, assistant, system
@@ -33,7 +38,8 @@ public struct ChatTurn: Identifiable, Codable, Hashable, Sendable {
         content: String = "",
         isStreaming: Bool = false,
         toolBreadcrumbs: [ToolBreadcrumb] = [],
-        failureReason: String? = nil
+        failureReason: String? = nil,
+        pendingPlan: String? = nil
     ) {
         self.id = id
         self.role = role
@@ -42,6 +48,7 @@ public struct ChatTurn: Identifiable, Codable, Hashable, Sendable {
         self.isStreaming = isStreaming
         self.toolBreadcrumbs = toolBreadcrumbs
         self.failureReason = failureReason
+        self.pendingPlan = pendingPlan
     }
 }
 

@@ -41,6 +41,11 @@ struct FamilyMessage: Identifiable, Hashable, Sendable {
     let actionItems: [String]
     let body: String
     let timestamp: Date             // parsed from filename's ISO prefix
+    /// Resolved absolute file URLs for attachments referenced by this
+    /// message's frontmatter. Empty when no attachments. Hydrated from the
+    /// frontmatter's relative paths against the message's inbox directory
+    /// at parse time so views can use them directly without re-resolving.
+    let attachments: [URL]
 
     enum Urgency: String, Codable, Sendable, CaseIterable, Hashable {
         case low, normal, high
@@ -63,18 +68,24 @@ struct FamilyMessageDraft: Sendable {
     let subject: String
     let body: String
     let actionItems: [String]
+    /// Local file URLs to be copied into the partner's per-message attachments
+    /// directory when the message is sent. The service reads each file once
+    /// at send time; the originals can move or be deleted afterward.
+    let attachments: [URL]
 
     init(
         subject: String,
         body: String,
         category: String = "update",
         urgency: FamilyMessage.Urgency = .normal,
-        actionItems: [String] = []
+        actionItems: [String] = [],
+        attachments: [URL] = []
     ) {
         self.subject = subject
         self.body = body
         self.category = category
         self.urgency = urgency
         self.actionItems = actionItems
+        self.attachments = attachments
     }
 }

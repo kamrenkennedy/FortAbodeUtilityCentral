@@ -23,6 +23,7 @@ actor FamilyMessagesService {
         case invalidDraft(String)
         case writeFailed(String)
         case partnerUnknown
+        case attachmentCopyFailed(URL, String)
 
         var errorDescription: String? {
             switch self {
@@ -30,6 +31,8 @@ actor FamilyMessagesService {
             case .invalidDraft(let m):  return "Invalid message draft: \(m)"
             case .writeFailed(let m):   return "Failed to send message: \(m)"
             case .partnerUnknown:       return "Couldn't determine partner — only one user folder exists."
+            case .attachmentCopyFailed(let url, let m):
+                return "Failed to attach \(url.lastPathComponent): \(m)"
             }
         }
     }
@@ -156,6 +159,45 @@ actor FamilyMessagesService {
 
         let filename = makeFilename(timestamp: now, sender: active, category: draft.category)
         let path = "\(inbox)/\(filename)"
+        let stem = filename.replacingOccurrences(of: ".md", with: "")
+
+        // Copy attachments BEFORE writing the .md so a half-sent message
+        // (md present, attachments missing) is impossible. If any copy fails,
+        // delete the partial subdirectory and abort.
+        let attachmentsDir = attachmentsDirectoryPath(
+            root: resolved.rootPath,
+            user: partner,
+            messageStem: stem
+        )
+        var copiedAttachmentURLs: [URL] = []
+        var attachmentRelativePaths: [String] = []
+        if !draft.attachments.isEmpty {
+            do {
+                try fm.createDirectory(atPath: attachmentsDir, withIntermediateDirectories: true)
+            } catch {
+                throw MessagesError.attachmentCopyFailed(
+                    URL(fileURLWithPath: attachmentsDir),
+                    "mkdir: \(error.localizedDescription)"
+                )
+            }
+            for source in draft.attachments {
+                let destName = source.lastPathComponent
+                let destPath = "\(attachmentsDir)/\(destName)"
+                let destURL = URL(fileURLWithPath: destPath)
+                do {
+                    if fm.fileExists(atPath: destPath) {
+                        try fm.removeItem(at: destURL)
+                    }
+                    try fm.copyItem(at: source, to: destURL)
+                    copiedAttachmentURLs.append(destURL)
+                    attachmentRelativePaths.append("../attachments/\(stem)/\(destName)")
+                } catch {
+                    // Roll back partial copies.
+                    try? fm.removeItem(atPath: attachmentsDir)
+                    throw MessagesError.attachmentCopyFailed(source, error.localizedDescription)
+                }
+            }
+        }
 
         let frontmatter = renderFrontmatter(
             from: active,
@@ -164,7 +206,8 @@ actor FamilyMessagesService {
             subject: trimmedSubject.isEmpty ? "(no subject)" : trimmedSubject,
             status: .unread,
             readAt: nil,
-            actionItems: draft.actionItems
+            actionItems: draft.actionItems,
+            attachments: attachmentRelativePaths
         )
         let bodyBlock = trimmedBody.isEmpty ? "" : "\n" + trimmedBody + "\n"
         let combined = "---\n\(frontmatter)---\n\(bodyBlock)"
@@ -173,11 +216,16 @@ actor FamilyMessagesService {
         do {
             try combined.data(using: .utf8)?.write(to: url, options: [.atomic])
         } catch {
+            // Clean up any attachments we copied — without the .md they're
+            // orphaned and would never be referenced.
+            if !attachmentRelativePaths.isEmpty {
+                try? fm.removeItem(atPath: attachmentsDir)
+            }
             throw MessagesError.writeFailed(error.localizedDescription)
         }
 
         return FamilyMessage(
-            id: filename.replacingOccurrences(of: ".md", with: ""),
+            id: stem,
             filename: filename,
             absolutePath: path,
             from: active,
@@ -189,7 +237,8 @@ actor FamilyMessagesService {
             readAt: nil,
             actionItems: draft.actionItems,
             body: trimmedBody,
-            timestamp: now
+            timestamp: now,
+            attachments: copiedAttachmentURLs
         )
     }
 
@@ -197,6 +246,13 @@ actor FamilyMessagesService {
 
     private func inboxPath(root: String, user: String) -> String {
         "\(root)/\(user)/messages/inbox"
+    }
+
+    /// Per-message attachments subdirectory. The stem matches the message's
+    /// filename without the .md extension, so the attachments folder sits
+    /// adjacent to its message in a Finder-sorted listing.
+    private func attachmentsDirectoryPath(root: String, user: String, messageStem: String) -> String {
+        "\(root)/\(user)/messages/attachments/\(messageStem)"
     }
 
     private func makeFilename(timestamp: Date, sender: String, category: String) -> String {
@@ -223,6 +279,7 @@ actor FamilyMessagesService {
         let (frontmatter, body) = splitFrontmatter(raw)
         let fields = parseScalarFields(frontmatter)
         let actionItems = parseListField(frontmatter, key: "action_items")
+        let attachmentRelPaths = parseListField(frontmatter, key: "attachments")
 
         let filename = (path as NSString).lastPathComponent
         let id = filename.replacingOccurrences(of: ".md", with: "")
@@ -234,6 +291,17 @@ actor FamilyMessagesService {
         let subject = fields["subject"] ?? "(no subject)"
         let status = FamilyMessage.ReadStatus(rawValue: fields["status"] ?? "unread") ?? .unread
         let readAt = fields["read_at"].flatMap { Self.iso8601.date(from: $0) }
+
+        // Resolve relative attachment paths against the message's inbox dir.
+        // Frontmatter stores `../attachments/<stem>/<filename>` so it's
+        // portable across machines; here we hydrate to absolute URLs the
+        // view can hand directly to NSWorkspace.
+        let inboxDir = (path as NSString).deletingLastPathComponent
+        let attachments: [URL] = attachmentRelPaths.compactMap { rel in
+            let combined = (inboxDir as NSString).appendingPathComponent(rel)
+            let normalized = (combined as NSString).standardizingPath
+            return fm.fileExists(atPath: normalized) ? URL(fileURLWithPath: normalized) : nil
+        }
 
         return FamilyMessage(
             id: id,
@@ -248,7 +316,8 @@ actor FamilyMessagesService {
             readAt: readAt,
             actionItems: actionItems,
             body: body.trimmingCharacters(in: .whitespacesAndNewlines),
-            timestamp: timestamp
+            timestamp: timestamp,
+            attachments: attachments
         )
     }
 
@@ -274,8 +343,10 @@ actor FamilyMessagesService {
         return (frontmatterLines.joined(separator: "\n") + "\n", bodyLines.joined(separator: "\n"))
     }
 
-    /// Scalar fields are `key: value` per line. List fields (`action_items:`)
-    /// are skipped here and handled by `parseListField`.
+    /// Scalar fields are `key: value` per line. List fields (`action_items:`,
+    /// `attachments:`) are skipped here and handled by `parseListField`.
+    private static let listKeys: Set<String> = ["action_items", "attachments"]
+
     private func parseScalarFields(_ frontmatter: String) -> [String: String] {
         var out: [String: String] = [:]
         var skipUntilDedent = false
@@ -290,9 +361,9 @@ actor FamilyMessagesService {
             let key = String(line[..<colonIdx]).trimmingCharacters(in: .whitespaces)
             let value = String(line[line.index(after: colonIdx)...]).trimmingCharacters(in: .whitespaces)
             if value.isEmpty {
-                // Either nil scalar OR start of a list. Mark for skip if it
-                // looks like a list key; either way the scalar map gets nil.
-                if key == "action_items" {
+                // Either nil scalar OR start of a list. Mark for skip if it's
+                // a known list key; either way the scalar map gets nil.
+                if Self.listKeys.contains(key) {
                     skipUntilDedent = true
                 }
                 continue
@@ -366,7 +437,8 @@ actor FamilyMessagesService {
         subject: String,
         status: FamilyMessage.ReadStatus,
         readAt: Date?,
-        actionItems: [String]
+        actionItems: [String],
+        attachments: [String]
     ) -> String {
         var lines: [String] = []
         lines.append("from: \(from)")
@@ -385,6 +457,14 @@ actor FamilyMessagesService {
             lines.append("action_items:")
             for item in actionItems {
                 lines.append("  - \(escapeForYaml(item))")
+            }
+        }
+        if attachments.isEmpty {
+            lines.append("attachments: []")
+        } else {
+            lines.append("attachments:")
+            for path in attachments {
+                lines.append("  - \(escapeForYaml(path))")
             }
         }
         return lines.joined(separator: "\n") + "\n"

@@ -15,11 +15,13 @@ struct MessageBubble: View {
     let speaker: Speaker
     let text: String
     let actionChips: [String]
+    let attachments: [URL]
 
-    init(speaker: Speaker, text: String, actionChips: [String] = []) {
+    init(speaker: Speaker, text: String, actionChips: [String] = [], attachments: [URL] = []) {
         self.speaker = speaker
         self.text = text
         self.actionChips = actionChips
+        self.attachments = attachments
     }
 
     var body: some View {
@@ -40,6 +42,14 @@ struct MessageBubble: View {
                         RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous)
                             .fill(bubbleColor)
                     )
+
+                if !attachments.isEmpty {
+                    VStack(alignment: alignment, spacing: Space.s1) {
+                        ForEach(attachments, id: \.self) { url in
+                            AttachmentChip(url: url)
+                        }
+                    }
+                }
 
                 if !actionChips.isEmpty {
                     HStack(spacing: Space.s1_5) {
@@ -99,6 +109,74 @@ struct MessageBubble: View {
 
     private var bubbleColor: Color {
         speaker == .user ? Color.tertiary : Color.surfaceContainer
+    }
+}
+
+/// One attachment row beneath a message bubble. Tap opens the file with the
+/// system's default handler (NSWorkspace.shared.open). For images, embeds a
+/// small inline preview above the chip; for everything else, just an icon.
+struct AttachmentChip: View {
+    let url: URL
+
+    @State private var thumbnail: NSImage?
+
+    var body: some View {
+        Button(action: open) {
+            VStack(alignment: .leading, spacing: Space.s1) {
+                if let thumbnail {
+                    Image(nsImage: thumbnail)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(maxWidth: 200, maxHeight: 80)
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                }
+                HStack(spacing: Space.s1_5) {
+                    Image(systemName: iconName)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.onSurfaceVariant)
+                    Text(url.lastPathComponent)
+                        .font(.bodySM)
+                        .foregroundStyle(Color.onSurface)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+                .padding(.horizontal, Space.s2)
+                .padding(.vertical, Space.s1_5)
+                .background(
+                    Capsule().fill(Color.surfaceContainer)
+                )
+            }
+        }
+        .buttonStyle(.plain)
+        .help("Open \(url.lastPathComponent)")
+        .onAppear(perform: loadThumbnailIfImage)
+    }
+
+    private var iconName: String {
+        switch url.pathExtension.lowercased() {
+        case "pdf":                                            return "doc.richtext"
+        case "png", "jpg", "jpeg", "gif", "heic", "webp":      return "photo"
+        case "mp4", "mov", "m4v":                              return "play.rectangle"
+        case "mp3", "m4a", "wav":                              return "speaker.wave.2"
+        case "md", "txt":                                      return "doc.text"
+        case "zip":                                            return "archivebox"
+        default:                                               return "paperclip"
+        }
+    }
+
+    private func open() {
+        NSWorkspace.shared.open(url)
+    }
+
+    private func loadThumbnailIfImage() {
+        guard ["png", "jpg", "jpeg", "heic", "webp", "gif"]
+                .contains(url.pathExtension.lowercased()) else { return }
+        DispatchQueue.global(qos: .userInitiated).async {
+            let image = NSImage(contentsOf: url)
+            DispatchQueue.main.async {
+                thumbnail = image
+            }
+        }
     }
 }
 

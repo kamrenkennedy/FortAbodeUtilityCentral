@@ -58,6 +58,7 @@ private extension WRAlertKind {
 
 struct WeeklyRhythmView: View {
     @Environment(WeeklyRhythmStore.self) private var store
+    @Environment(WeeklyRhythmEngineStore.self) private var engineStore
 
     // Transient UI state — view-only, NOT engine-emitted. Stays @State.
     @State private var weekOffset: Int = 0
@@ -217,8 +218,17 @@ struct WeeklyRhythmView: View {
             }
         }
         .sheet(isPresented: $runHealthDetailOpen) {
+            // Engine v2.3.0 doesn't emit runReport in dashboard.json yet
+            // (Phase 8.1 contract gap). Fall back to a synthesized report
+            // built from the live MCP probe + last run state, so the modal
+            // tells the truth about per-MCP connectivity instead of rendering
+            // a static "All checks passed" mock under a warning banner.
             RunHealthDetailSheet(
-                report: snapshot?.runReport ?? MockWeeklyRhythmDataSource.runReport,
+                report: snapshot?.runReport ?? RunReport.synthesized(
+                    probe: engineStore.lastMCPProbe,
+                    lastRun: engineStore.lastRunResult,
+                    runHealth: runHealth
+                ),
                 runHealth: runHealth,
                 onDismiss: { runHealthDetailOpen = false }
             )

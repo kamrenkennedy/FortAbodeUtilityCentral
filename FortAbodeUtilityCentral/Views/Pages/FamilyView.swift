@@ -8,6 +8,12 @@ import AlignedDesignSystem
 // Phase 5 polish concern.
 
 struct FamilyView: View {
+
+    @State private var healthPlan: HealthInsurancePlan?
+    @State private var hasLoadedFacts = false
+
+    private let familyMemoryService = FamilyMemoryService()
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
@@ -25,6 +31,11 @@ struct FamilyView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
+        .task {
+            let facts = await familyMemoryService.loadFacts()
+            healthPlan = facts?.insurance?.health?.first
+            hasLoadedFacts = true
+        }
     }
 
     // MARK: - Members
@@ -59,58 +70,24 @@ struct FamilyView: View {
 
     // MARK: - Health Dashboard
 
+    @ViewBuilder
     private var healthSection: some View {
         VStack(alignment: .leading, spacing: Space.s6) {
             SectionEyebrow(text: "Health Dashboard")
 
-            DashboardCard(verticalPadding: Space.s6, horizontalPadding: Space.s6) {
-                VStack(alignment: .leading, spacing: Space.s8) {
-                    HealthGroup(
-                        title: "Doctors",
-                        rows: [
-                            HealthRow(
-                                title: "Dr. Mendoza",
-                                meta: "Primary care · Kam",
-                                trailing: "Last visit: Mar 12"
-                            ),
-                            HealthRow(
-                                title: "Dr. Han",
-                                meta: "Dermatology · Tiera",
-                                trailing: "Next: May 9"
-                            ),
-                            HealthRow(
-                                title: "Dr. Vargas",
-                                meta: "Dental · Both",
-                                trailing: "Due Q3"
-                            )
-                        ]
-                    )
-
-                    HealthGroup(
-                        title: "Prescriptions",
-                        rows: [
-                            HealthRow(
-                                status: .scheduled,
-                                title: "Lisinopril 10mg",
-                                meta: "Kam · 30-day",
-                                trailing: "Refilled Apr 18"
-                            ),
-                            HealthRow(
-                                status: .scheduled,
-                                title: "Vitamin D 5000 IU",
-                                meta: "Tiera · daily",
-                                trailing: "In stock"
-                            )
-                        ]
-                    )
-
-                    ActionItemsGroup(
-                        items: [
-                            LegacyMockActionItem(text: "Schedule Tiera's annual derm follow-up", isDone: true),
-                            LegacyMockActionItem(text: "Confirm dental cleaning Q3 · both", isDone: false),
-                            LegacyMockActionItem(text: "Update emergency contacts in Family Memory", isDone: false)
-                        ]
-                    )
+            if let plan = healthPlan {
+                FamilyHealthSections(plan: plan)
+            } else if hasLoadedFacts {
+                DashboardCard(verticalPadding: Space.s6, horizontalPadding: Space.s6) {
+                    VStack(alignment: .leading, spacing: Space.s2) {
+                        Text("No health plan in Family Memory yet")
+                            .font(.bodyMD.weight(.medium))
+                            .foregroundStyle(Color.onSurface)
+                        Text("Add an insurance plan via a Claude family-memory session — the dashboard reads from facts.json#insurance.health.")
+                            .font(.bodySM)
+                            .foregroundStyle(Color.onSurfaceVariant)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
         }
@@ -275,101 +252,3 @@ private struct FamilyMemberCard: View {
     }
 }
 
-// MARK: - Health subsections
-
-private struct HealthGroup: View {
-    let title: String
-    let rows: [HealthRow]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Space.s4) {
-            Text(title)
-                .font(.headlineSM)
-                .foregroundStyle(Color.onSurface)
-
-            VStack(spacing: 0) {
-                ForEach(Array(rows.enumerated()), id: \.offset) { offset, row in
-                    row
-                    if offset < rows.count - 1 {
-                        RowSeparator()
-                    }
-                }
-            }
-        }
-    }
-}
-
-private struct HealthRow: View {
-    var status: StatusKind? = nil
-    let title: String
-    let meta: String
-    let trailing: String
-
-    var body: some View {
-        HStack(alignment: .top, spacing: Space.s3) {
-            if let status {
-                StatusDot(status)
-                    .padding(.top, 6)
-            }
-
-            VStack(alignment: .leading, spacing: Space.s1) {
-                Text(title)
-                    .font(.bodyMD.weight(.medium))
-                    .foregroundStyle(Color.onSurface)
-                Text(meta)
-                    .font(.bodySM)
-                    .foregroundStyle(Color.onSurfaceVariant)
-            }
-
-            Spacer(minLength: Space.s3)
-
-            Text(trailing)
-                .font(.bodySM)
-                .foregroundStyle(Color.onSurfaceVariant)
-                .padding(.top, 2)
-        }
-        .padding(.vertical, Space.s3)
-    }
-}
-
-private struct ActionItemsGroup: View {
-    let items: [LegacyMockActionItem]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Space.s4) {
-            Text("Action items")
-                .font(.headlineSM)
-                .foregroundStyle(Color.onSurface)
-
-            VStack(alignment: .leading, spacing: Space.s3) {
-                ForEach(items) { item in
-                    actionItemRow(item)
-                }
-            }
-        }
-    }
-
-    private func actionItemRow(_ item: LegacyMockActionItem) -> some View {
-        HStack(alignment: .center, spacing: Space.s3) {
-            Image(systemName: item.isDone ? "checkmark.square.fill" : "square")
-                .font(.system(size: 18))
-                .foregroundStyle(item.isDone ? Color.tertiary : Color.outlineVariant)
-
-            Text(item.text)
-                .font(.bodyMD)
-                .foregroundStyle(item.isDone ? Color.onSurfaceVariant : Color.onSurface)
-                .strikethrough(item.isDone, color: Color.onSurfaceVariant)
-        }
-    }
-}
-
-/// Mock-only — used by the legacy `Health Dashboard` section in `FamilyView`,
-/// which renders hardcoded sample content. Distinct from the real `ActionItem`
-/// in `FamilyMemoryModels.swift` that backs `FamilyHealthDashboard` against
-/// shared iCloud completion state. When this section is migrated to read from
-/// the real source-of-truth, this struct goes away with it.
-private struct LegacyMockActionItem: Identifiable {
-    let id = UUID()
-    let text: String
-    let isDone: Bool
-}

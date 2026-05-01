@@ -5,10 +5,30 @@ import AlignedDesignSystem
 // MARK: - Family Health Dashboard
 //
 // Reads the first entry of facts.json#insurance.health and renders the 2026
-// Kennedy family health plan as a first-class dashboard. Everything is
-// read-only — edits happen outside the app, in FAMILY_MEMORY.md or facts.json.
+// Kennedy family health plan. Two callers:
+//   • Legacy `FamilyMemoryView` uses `FamilyHealthDashboard` (this file's
+//     thin wrapper) which adds a ScrollView + page padding.
+//   • The current `.family` destination (`FamilyView`) embeds
+//     `FamilyHealthSections` directly inside its own ScrollView, with no
+//     outer padding so the section sits flush inside the surrounding
+//     DashboardCard.
+//
+// All section views and the action-item toggle live on `FamilyHealthSections`
+// so both call sites get the same Y4 wiring without code duplication.
 
 struct FamilyHealthDashboard: View {
+    let plan: HealthInsurancePlan
+
+    var body: some View {
+        ScrollView {
+            FamilyHealthSections(plan: plan)
+                .padding(28)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+}
+
+struct FamilyHealthSections: View {
 
     let plan: HealthInsurancePlan
 
@@ -17,48 +37,45 @@ struct FamilyHealthDashboard: View {
     private let completionService = FamilyMemoryCompletionService()
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                premiumHero
+        VStack(alignment: .leading, spacing: 24) {
+            premiumHero
 
-                if let components = plan.components, !components.isEmpty {
-                    sectionHeader("Plan Components")
-                    componentGrid(components)
-                }
+            if let components = plan.components, !components.isEmpty {
+                sectionHeader("Plan Components")
+                componentGrid(components)
+            }
 
-                if let doctors = plan.inNetworkDoctors, !doctors.isEmpty {
-                    sectionHeader("In-Network Doctors")
-                    VStack(spacing: 8) {
-                        ForEach(doctors, id: \.self) { doctor in
-                            doctorRow(doctor)
-                        }
+            if let doctors = plan.inNetworkDoctors, !doctors.isEmpty {
+                sectionHeader("In-Network Doctors")
+                VStack(spacing: 8) {
+                    ForEach(doctors, id: \.self) { doctor in
+                        doctorRow(doctor)
                     }
-                }
-
-                phoneSection
-
-                if !actionItems.isEmpty {
-                    sectionHeader("Action Items (2026)")
-                    VStack(spacing: 8) {
-                        ForEach(actionItems) { item in
-                            actionItemRow(item)
-                        }
-                    }
-                }
-
-                if let exclusions = plan.exclusions, !exclusions.isEmpty {
-                    sectionHeader("What's Not Covered")
-                    exclusionsCard(exclusions)
-                }
-
-                if let agent = plan.agent {
-                    sectionHeader("Insurance Agent")
-                    agentCard(agent)
                 }
             }
-            .padding(28)
-            .frame(maxWidth: .infinity, alignment: .leading)
+
+            phoneSection
+
+            if !actionItems.isEmpty {
+                sectionHeader("Action Items (2026)")
+                VStack(spacing: 8) {
+                    ForEach(actionItems) { item in
+                        actionItemRow(item)
+                    }
+                }
+            }
+
+            if let exclusions = plan.exclusions, !exclusions.isEmpty {
+                sectionHeader("What's Not Covered")
+                exclusionsCard(exclusions)
+            }
+
+            if let agent = plan.agent {
+                sectionHeader("Insurance Agent")
+                agentCard(agent)
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .task(id: plan.actionItems2026 ?? []) {
             await reloadActionItems()
         }

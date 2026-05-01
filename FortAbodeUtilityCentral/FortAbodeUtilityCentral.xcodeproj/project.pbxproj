@@ -50,6 +50,7 @@
 		527E21E6BC0AA688C00FA4E9 /* GitHubServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ED7ECBE41703B1FC4EB0791 /* GitHubServiceTests.swift */; };
 		52D654FD0BE7A805B4F3F1A3 /* FamilyHealthDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2743470CF6F7A2E42396FAC /* FamilyHealthDashboard.swift */; };
 		53AEA16097825500F8268329 /* FileBackedWeeklyRhythmDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F2F5EA39EAE9558037F9670 /* FileBackedWeeklyRhythmDataSource.swift */; };
+		55FEAC94FECD7513E36D8F87 /* SynthesizedRunReport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 656DB4A4A15347472DE4BF02 /* SynthesizedRunReport.swift */; };
 		5A4C032BD13E7B95BFCABB96 /* RunHealthDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD5F1C96EFA4D647FFDA57BB /* RunHealthDetailSheet.swift */; };
 		5AB3F1610DB5361CAC618ECC /* SecureInputStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88614DCA2B0E6155C755D3C /* SecureInputStorage.swift */; };
 		61D6E60947EC0AEB30BF7D97 /* WhatsNewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16FB3766D3708E744FA90472 /* WhatsNewView.swift */; };
@@ -164,6 +165,7 @@
 		5914439D10E470294A91A039 /* FortAbodeUtilityCentral.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FortAbodeUtilityCentral.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5C01EEE9A69F8B9DE4572C90 /* WeeklyRhythmSkillInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmSkillInstaller.swift; sourceTree = "<group>"; };
 		5EF56794AE0F9F09B953BC13 /* MockWeeklyRhythmDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockWeeklyRhythmDataSource.swift; sourceTree = "<group>"; };
+		656DB4A4A15347472DE4BF02 /* SynthesizedRunReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SynthesizedRunReport.swift; sourceTree = "<group>"; };
 		66C0B457A755E70A4E21D034 /* WeeklyRhythmService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmService.swift; sourceTree = "<group>"; };
 		67CBAA3E68AE042FD8F6FFDF /* ClaudeCodeConfigService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeCodeConfigService.swift; sourceTree = "<group>"; };
 		69E67AB0BE82AA7AE5E6F418 /* CheckForUpdatesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckForUpdatesView.swift; sourceTree = "<group>"; };
@@ -248,6 +250,7 @@
 			children = (
 				DBFD216C2A59D0C5332408B4 /* ClaudeCLIDetector.swift */,
 				7DF8C7B7AABE2431944A25E9 /* MCPProbe.swift */,
+				656DB4A4A15347472DE4BF02 /* SynthesizedRunReport.swift */,
 				DCC66F9F30443EC4D0D153F9 /* WeeklyRhythmEngineRunner.swift */,
 				CD284AB922259409852EBE73 /* WeeklyRhythmEngineStore.swift */,
 				5C01EEE9A69F8B9DE4572C90 /* WeeklyRhythmSkillInstaller.swift */,
@@ -699,6 +702,7 @@
 				B7C538A5D2630B86AEF3E048 /* SidebarCollapseButton.swift in Sources */,
 				EF6A84B87BF7C01CF51F88F6 /* StepContentView.swift in Sources */,
 				A97EBD40591158370B2039CC /* StepIllustrationView.swift in Sources */,
+				55FEAC94FECD7513E36D8F87 /* SynthesizedRunReport.swift in Sources */,
 				EC2CC8D874906D44ABAA6C72 /* TriageRsvpControl.swift in Sources */,
 				112863CDD6F3C554DAF8C3A9 /* UpdateExecutionService.swift in Sources */,
 				A5D861B2D8E9BA0284E7ECF6 /* UpdateStatus.swift in Sources */,

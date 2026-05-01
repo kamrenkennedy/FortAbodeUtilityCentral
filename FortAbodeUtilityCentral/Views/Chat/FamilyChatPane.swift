@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import AlignedDesignSystem
 
 // Family DMs — Kam ↔ Tiera. File-backed via FamilyMessagesService:
@@ -13,6 +14,7 @@ struct FamilyChatPane: View {
     @State private var partnerName: String?
     @State private var sendError: String?
     @State private var isSending = false
+    @State private var pendingAttachments: [URL] = []
 
     private let service = FamilyMessagesService()
 
@@ -136,19 +138,84 @@ struct FamilyChatPane: View {
     private var composer: some View {
         VStack(spacing: 0) {
             Divider().opacity(0.4)
-            ChatComposer(
-                text: $draft,
-                placeholder: composerPlaceholder,
-                leadingIcons: [
-                    ComposerIconButton(symbol: "calendar", help: "Insert event", action: {}),
-                    ComposerIconButton(symbol: "checkmark.circle", help: "Insert errand", action: {}),
-                    ComposerIconButton(symbol: "paperclip", help: "Attach", action: {})
-                ],
-                onSend: { text in
-                    Task { await sendDraft(text) }
+            VStack(alignment: .leading, spacing: Space.s2) {
+                if !pendingAttachments.isEmpty {
+                    pendingAttachmentsRow
                 }
-            )
+                ChatComposer(
+                    text: $draft,
+                    placeholder: composerPlaceholder,
+                    leadingIcons: [
+                        ComposerIconButton(
+                            symbol: "paperclip",
+                            help: pendingAttachments.isEmpty
+                                ? "Attach files"
+                                : "Add more (\(pendingAttachments.count) attached)",
+                            action: pickAttachments
+                        )
+                    ],
+                    onSend: { text in
+                        Task { await sendDraft(text) }
+                    }
+                )
+            }
             .padding(Space.s3)
+        }
+    }
+
+    /// Row of pending-attachment chips above the composer, shown only while
+    /// the user has files queued for the next send. Each chip has a small "x"
+    /// to remove it before sending. On send, the list clears.
+    private var pendingAttachmentsRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Space.s2) {
+                ForEach(Array(pendingAttachments.enumerated()), id: \.offset) { idx, url in
+                    HStack(spacing: Space.s1_5) {
+                        Image(systemName: "paperclip")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(Color.onSurfaceVariant)
+                        Text(url.lastPathComponent)
+                            .font(.bodySM)
+                            .foregroundStyle(Color.onSurface)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .frame(maxWidth: 180)
+                        Button {
+                            pendingAttachments.remove(at: idx)
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(Color.onSurfaceVariant)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.horizontal, Space.s2)
+                    .padding(.vertical, Space.s1_5)
+                    .background(
+                        Capsule().fill(Color.surfaceContainer)
+                    )
+                }
+            }
+        }
+    }
+
+    /// Open an NSOpenPanel for one or more files. Selected URLs are added to
+    /// `pendingAttachments`; the next send bundles them into the message.
+    private func pickAttachments() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = true
+        panel.message = "Choose files to attach to this message."
+        panel.prompt = "Attach"
+        if panel.runModal() == .OK {
+            // De-dupe against already-pending paths so adding the same file
+            // twice doesn't surface as two chips.
+            let existing = Set(pendingAttachments.map { $0.standardizedFileURL })
+            let additions = panel.urls
+                .map { $0.standardizedFileURL }
+                .filter { !existing.contains($0) }
+            pendingAttachments.append(contentsOf: additions)
         }
     }
 
@@ -215,17 +282,24 @@ struct FamilyChatPane: View {
 
     private func sendDraft(_ text: String) async {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+        let attachmentsSnapshot = pendingAttachments
+        // Allow attachment-only sends (no text body) when files are queued.
+        guard !trimmed.isEmpty || !attachmentsSnapshot.isEmpty else { return }
         isSending = true
         defer { isSending = false }
         do {
             // Default category is "update" — future iterations can offer a
             // picker on the leading icon row to pick errand / question / etc.
-            let draft = FamilyMessageDraft(subject: "", body: trimmed)
+            let draft = FamilyMessageDraft(
+                subject: "",
+                body: trimmed,
+                attachments: attachmentsSnapshot
+            )
             let sent = try await service.send(draft: draft)
             await MainActor.run {
                 messages.append(sent)
                 sendError = nil
+                pendingAttachments.removeAll()
             }
         } catch {
             await MainActor.run {

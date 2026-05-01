@@ -104,12 +104,14 @@
 		DF4E9A21418662B5D610866B /* ChangelogEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91BE7F2F52EFF582932E8B9D /* ChangelogEntry.swift */; };
 		DFEE2E123FFC73F011AA13EB /* ClaudeChatPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 767920B3A5A38AFD4081D133 /* ClaudeChatPane.swift */; };
 		E2A034CE471A68B4E0222C3E /* FamilyMemoryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8599C33B343D91784A3618B0 /* FamilyMemoryModels.swift */; };
+		E2FF7433B9E85A711CB8E305 /* ChatHistoryPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 896394791324A365221B36FB /* ChatHistoryPersistence.swift */; };
 		E39F0B6F301568824A772E71 /* Component.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7E990CE834E05B52EAF553 /* Component.swift */; };
 		EB1961D3A6B1297856EF3C69 /* ComponentDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A394C02034C7CEDA5FA603 /* ComponentDetailView.swift */; };
 		EC2CC8D874906D44ABAA6C72 /* TriageRsvpControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47821DD2E2C90209AADE1131 /* TriageRsvpControl.swift */; };
 		ED44975C50A6C6A64F4954DE /* CheckForUpdatesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E67AB0BE82AA7AE5E6F418 /* CheckForUpdatesView.swift */; };
 		EE0563F9E4C13C649D44F181 /* Sidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = D107F8C5D300A4F18DF49A3F /* Sidebar.swift */; };
 		EF6A84B87BF7C01CF51F88F6 /* StepContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04657FBC8960E17F4E585ECA /* StepContentView.swift */; };
+		EFE47B08A1D5ED98303213CE /* ChatTurn.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6C2861366CF6D5812912539 /* ChatTurn.swift */; };
 		F2EA15F87DAAF9BDF02FDFAE /* component-registry.json in Resources */ = {isa = PBXBuildFile; fileRef = CB45A8A63D1E4873C3D739AA /* component-registry.json */; };
 		F37E0647A0A8D347473AA752 /* ComponentListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC09EC9C57BA66F1650B44A0 /* ComponentListViewModel.swift */; };
 		F4855FF4FA0E88D59716A23B /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03AD9F9995E212DEDA199051 /* HomeView.swift */; };
@@ -189,6 +191,7 @@
 		83171E1A838C0577BABFF23F /* EditEventSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditEventSheet.swift; sourceTree = "<group>"; };
 		8599C33B343D91784A3618B0 /* FamilyMemoryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyMemoryModels.swift; sourceTree = "<group>"; };
 		8776F4FEAAFE5DD29E8C1730 /* WhyModal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhyModal.swift; sourceTree = "<group>"; };
+		896394791324A365221B36FB /* ChatHistoryPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHistoryPersistence.swift; sourceTree = "<group>"; };
 		8BECADF7B96CB7D3842E642F /* ActivationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivationView.swift; sourceTree = "<group>"; };
 		8ED7ECBE41703B1FC4EB0791 /* GitHubServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubServiceTests.swift; sourceTree = "<group>"; };
 		8F5E929A9A401F87718B0983 /* PendingMutationsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingMutationsStore.swift; sourceTree = "<group>"; };
@@ -234,6 +237,7 @@
 		EE892C2183E7CF82B548E18D /* BackgroundTaskService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundTaskService.swift; sourceTree = "<group>"; };
 		F4FB784FE53060D8FF7EEE72 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		F67306E0D4DE7A228BD944B8 /* HealthCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthCheck.swift; sourceTree = "<group>"; };
+		F6C2861366CF6D5812912539 /* ChatTurn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatTurn.swift; sourceTree = "<group>"; };
 		F8B7BB0163579ACD834ADBB1 /* Destination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Destination.swift; sourceTree = "<group>"; };
 		FE4CB53B5CB04DACA0FDC375 /* VersionDetectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionDetectionTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -269,6 +273,7 @@
 			children = (
 				032C293DBDA62F6DEA4FCB24 /* AppUpdaterService.swift */,
 				EE892C2183E7CF82B548E18D /* BackgroundTaskService.swift */,
+				896394791324A365221B36FB /* ChatHistoryPersistence.swift */,
 				249CE7BC7FB6CB8C7FA08D10 /* ClaudeAuthKeychainService.swift */,
 				783E1B9E6312BBB3DB53587B /* ClaudeChatTurnRunner.swift */,
 				67CBAA3E68AE042FD8F6FFDF /* ClaudeCodeConfigService.swift */,
@@ -440,6 +445,7 @@
 				9A1B1F334020349AF1BB567F /* AppSettings.swift */,
 				C32B9115221657AAE3B2B132 /* BadgeTracker.swift */,
 				91BE7F2F52EFF582932E8B9D /* ChangelogEntry.swift */,
+				F6C2861366CF6D5812912539 /* ChatTurn.swift */,
 				6F7E990CE834E05B52EAF553 /* Component.swift */,
 				782EFED7B8F2AD1265BCF690 /* ComponentRegistry.swift */,
 				8599C33B343D91784A3618B0 /* FamilyMemoryModels.swift */,
@@ -650,9 +656,11 @@
 				A7D447D032884F15F3EA762E /* BadgeTracker.swift in Sources */,
 				DF4E9A21418662B5D610866B /* ChangelogEntry.swift in Sources */,
 				7F7577B11C2D1F70D5E6F9B7 /* ChatComposer.swift in Sources */,
+				E2FF7433B9E85A711CB8E305 /* ChatHistoryPersistence.swift in Sources */,
 				15DC17F5631A4CF72E02C261 /* ChatMessage.swift in Sources */,
 				107872FAAEF37D55D156492E /* ChatPanel.swift in Sources */,
 				4CB55B39A51109E2D3DAE9F1 /* ChatPanelHeader.swift in Sources */,
+				EFE47B08A1D5ED98303213CE /* ChatTurn.swift in Sources */,
 				ED44975C50A6C6A64F4954DE /* CheckForUpdatesView.swift in Sources */,
 				7C8FF70F6E7111308CEAA754 /* ClaudeAuthKeychainService.swift in Sources */,
 				7FCF70E4B640FED1EAD72A90 /* ClaudeAuthSetupSheet.swift in Sources */,

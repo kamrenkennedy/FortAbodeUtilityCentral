@@ -28,6 +28,13 @@ struct Sidebar: View {
 
             Spacer()
 
+            // Inline auto-updater notification — only renders when Sparkle has
+            // staged an update for install-on-quit. Sits just above Settings so
+            // it reads as a footer-tier message; tap relaunches the app.
+            SidebarUpdateRow()
+                .padding(.horizontal, appState.sidebarCollapsed ? Space.s1 : Space.s2)
+                .padding(.bottom, Space.s2)
+
             // Settings sits at the bottom — separate from the main nav, lower
             // visual weight (smaller padding) so it reads as a footer item.
             SidebarNavItem(destination: .settings, compact: true)

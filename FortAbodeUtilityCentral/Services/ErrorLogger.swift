@@ -385,7 +385,7 @@ actor ErrorLogger {
         guard !FileManager.default.fileExists(atPath: readmeURL.path) else { return }
 
         let contents = """
-            This folder contains diagnostic logs from Fort Abode Utility Central.
+            This folder contains diagnostic logs from Fort Abode.
 
             errors.jsonl        — current error + instrumentation log (JSON Lines format)
             errors-legacy.jsonl — prior logs migrated from the old location (if present)

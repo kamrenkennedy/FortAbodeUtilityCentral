@@ -69,6 +69,16 @@ public actor ClaudeChatTurnRunner {
         case resuming  // every turn after — CLI resumes the existing session
     }
 
+    /// User-pickable Claude model for this turn. Maps to the CLI's `--model`
+    /// flag with short aliases (`sonnet` / `opus` / `haiku`); the CLI resolves
+    /// each alias to its current latest version, so this stays correct as
+    /// Anthropic ships new minor versions without us needing to bump anything.
+    public enum ClaudeModel: String, Sendable, Hashable, CaseIterable {
+        case sonnet
+        case opus
+        case haiku
+    }
+
     /// User-facing permission state. The runner maps each case to the right
     /// `--permission-mode` + `--allowedTools` flag combo at spawn time.
     public enum PermissionMode: String, Sendable, Hashable, CaseIterable {
@@ -103,6 +113,7 @@ public actor ClaudeChatTurnRunner {
         userMessage: String,
         permissionMode: PermissionMode,
         allowedTools: [String],
+        model: ClaudeModel,
         timeoutSecondsOverride: Double? = nil,
         onEvent: @Sendable @escaping (ClaudeChatEvent) -> Void
     ) async {
@@ -146,6 +157,7 @@ public actor ClaudeChatTurnRunner {
             "--replay-user-messages",
             // `--print` with stream-json requires `--verbose` (CLI validation).
             "--verbose",
+            "--model", model.rawValue,
             "--permission-mode", cliPermissionMode
         ] + allowedToolsFlag + sessionFlag
 
@@ -201,7 +213,8 @@ public actor ClaudeChatTurnRunner {
                 "sessionMode": sessionMode == .creating ? "creating" : "resuming",
                 "permissionMode": permissionMode.rawValue,
                 "cliPermissionMode": cliPermissionMode,
-                "allowedToolsCount": "\(allowedTools.count)"
+                "allowedToolsCount": "\(allowedTools.count)",
+                "model": model.rawValue
             ]
         )
 

@@ -31,7 +31,7 @@ struct ActivationView: View {
                     .shadow(color: .black.opacity(0.3), radius: 12, y: 4)
 
                 VStack(spacing: Space.s2) {
-                    Text("Fort Abode Utility Central")
+                    Text("Fort Abode")
                         .font(.headlineLG)
                         .foregroundStyle(Color.onSurface)
 

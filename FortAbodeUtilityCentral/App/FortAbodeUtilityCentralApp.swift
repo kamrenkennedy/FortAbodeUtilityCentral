@@ -242,7 +242,7 @@ struct FortAbodeUtilityCentralApp: App {
         updaterController = SPUStandardUpdaterController(
             startingUpdater: true,
             updaterDelegate: service,
-            userDriverDelegate: nil
+            userDriverDelegate: service
         )
         // Hand the service a reference to the live updater so its bring-to-front
         // observer can ask Sparkle to poll the appcast on demand. Combined with
@@ -253,7 +253,7 @@ struct FortAbodeUtilityCentralApp: App {
     }
 
     var body: some Scene {
-        Window("Fort Abode Utility Central", id: "main") {
+        Window("Fort Abode", id: "main") {
             Group {
                 if !isActivated {
                     ActivationView {
@@ -269,10 +269,10 @@ struct FortAbodeUtilityCentralApp: App {
                         .environment(claudeChatStore)
                 } else {
                     ProgressView("Loading...")
-                        .frame(minWidth: 900, minHeight: 600)
+                        .frame(minWidth: 1080, minHeight: 720)
                 }
             }
-            .frame(minWidth: 900, minHeight: 600)
+            .frame(minWidth: 1080, minHeight: 720)
             .background(WindowAppearanceModifier())
             .sheet(isPresented: Binding(
                 get: { whatsNewReleases != nil },
@@ -320,12 +320,25 @@ struct FortAbodeUtilityCentralApp: App {
                 refreshUnreadFamilyCount()
             }
         }
-        .defaultSize(width: 1440, height: 900)
+        .defaultSize(width: 1280, height: 820)
         .windowResizability(.contentMinSize)
         .windowStyle(.hiddenTitleBar)
         .commands {
             CommandGroup(after: .appInfo) {
                 CheckForUpdatesView(updater: updaterController.updater)
+                #if DEBUG
+                Button("Preview Update Row (DEBUG)") {
+                    if updaterService.updateIsReady {
+                        updaterService.updateIsReady = false
+                        updaterService.pendingVersion = nil
+                    } else {
+                        updaterService.pendingVersion = "3.12.0"
+                        updaterService.updateIsReady = true
+                        updaterService.dismissedForSession = false
+                    }
+                }
+                .keyboardShortcut("u", modifiers: [.command, .shift, .option])
+                #endif
             }
         }
 

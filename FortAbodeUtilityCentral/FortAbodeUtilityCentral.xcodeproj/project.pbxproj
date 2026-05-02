@@ -30,6 +30,7 @@
 		2B92C1E7ECA9DC4D7DC50F0E /* FeedbackService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DACD2838A1C216461103AE6 /* FeedbackService.swift */; };
 		2C512BA73630DE2CCC93F99F /* AlignedSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F6F08569570B37845FC1387 /* AlignedSheet.swift */; };
 		2C7ED0531E56C8235AFCE6BC /* PendingMutationsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F5E929A9A401F87718B0983 /* PendingMutationsStore.swift */; };
+		30EE43C675DEE5B1B99D104C /* SidebarUpdateRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7BCAD83B941C6267D90E5F9 /* SidebarUpdateRow.swift */; };
 		330A710170B2B74902D579D5 /* EditTriageSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 564A22B818E62E0E1921A86F /* EditTriageSheet.swift */; };
 		355F6705C0380EC8CCED0279 /* WeeklyRhythmUIStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80DD857A1CB762AC7991C68C /* WeeklyRhythmUIStateStore.swift */; };
 		377AE9482D6974941E963E1B /* FamilyMemoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14788FA8AC138E58AD03BFC7 /* FamilyMemoryView.swift */; };
@@ -242,6 +243,7 @@
 		F4FB784FE53060D8FF7EEE72 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		F67306E0D4DE7A228BD944B8 /* HealthCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthCheck.swift; sourceTree = "<group>"; };
 		F6C2861366CF6D5812912539 /* ChatTurn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatTurn.swift; sourceTree = "<group>"; };
+		F7BCAD83B941C6267D90E5F9 /* SidebarUpdateRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarUpdateRow.swift; sourceTree = "<group>"; };
 		F8B7BB0163579ACD834ADBB1 /* Destination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Destination.swift; sourceTree = "<group>"; };
 		FE4CB53B5CB04DACA0FDC375 /* VersionDetectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionDetectionTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -470,6 +472,7 @@
 				1341A36E69A185933A6187F4 /* RootView.swift */,
 				D107F8C5D300A4F18DF49A3F /* Sidebar.swift */,
 				18F6C3CFC3DE69126D5C70F1 /* SidebarCollapseButton.swift */,
+				F7BCAD83B941C6267D90E5F9 /* SidebarUpdateRow.swift */,
 			);
 			path = Navigation;
 			sourceTree = "<group>";
@@ -728,6 +731,7 @@
 				1BE2080AB4AF9C0D5DDF3A05 /* SetupWizardViewModel.swift in Sources */,
 				EE0563F9E4C13C649D44F181 /* Sidebar.swift in Sources */,
 				B7C538A5D2630B86AEF3E048 /* SidebarCollapseButton.swift in Sources */,
+				30EE43C675DEE5B1B99D104C /* SidebarUpdateRow.swift in Sources */,
 				EF6A84B87BF7C01CF51F88F6 /* StepContentView.swift in Sources */,
 				A97EBD40591158370B2039CC /* StepIllustrationView.swift in Sources */,
 				55FEAC94FECD7513E36D8F87 /* SynthesizedRunReport.swift in Sources */,

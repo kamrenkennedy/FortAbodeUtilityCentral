@@ -245,7 +245,7 @@ actor FeedbackService {
         let readme = dir.appendingPathComponent("README.txt")
         if !fm.fileExists(atPath: readme.path) {
             let contents = """
-                This folder contains Fort Abode Utility Central feedback reports from
+                This folder contains Fort Abode feedback reports from
                 Kamren and Tiera's Macs. It lives inside Kennedy Family Docs/Claude/
                 so both Macs can see it via iCloud Folder Sharing.
 
@@ -409,7 +409,7 @@ actor FeedbackService {
         let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
         let macOS = ProcessInfo.processInfo.operatingSystemVersionString
 
-        lines.append("App: Fort Abode Utility Central v\(appVersion) (build \(buildNumber))")
+        lines.append("App: Fort Abode v\(appVersion) (build \(buildNumber))")
         lines.append("macOS: \(macOS)")
         lines.append("")
         lines.append("Components:")

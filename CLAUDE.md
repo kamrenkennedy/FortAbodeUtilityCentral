@@ -89,6 +89,20 @@ Format: array entries with `{version: "X.Y.Z", notes: ["..."]}`. Notes are user-
 
 **Cross-repo discipline — non-negotiable:** When a bundled component bumps version (Weekly Rhythm engine, setup-claude-memory, travel-itinerary, etc.), the corresponding Fort Abode release that ships the new bundled copy MUST include WHAT'S NEW notes describing the user-visible component change. Without this, users see a Fort Abode update card with no idea their Weekly Rhythm now writes a dashboard JSON, their Travel Itinerary added a new feature, etc. Every project CLAUDE.md that ships through Fort Abode mirrors this rule in its own release ceremony.
 
+#### Authoring rules — Tiera's reading guide
+
+Tiera is the primary reader of every WHAT'S NEW entry. If an entry is too long or too technical she'll skip it, and the update lands silently from her perspective. The volume creep on bigger releases makes it easy to ship a 12-bullet wall of text — every entry must pass these seven rules:
+
+1. Lead with user-visible behavior. Never the implementation.
+2. Plain English. No `MCP`, phase codes (`Y6`, etc.), `engine spec`, `session-id`, `runner`, `parser`, `delegate`, `appcast`, `Sparkle`, internal file/class names, etc.
+3. One sentence per bullet. If two are needed, the second is a "how to use it" line for Tiera, not a "how it works" line.
+4. **Maximum 5–7 bullets per release.** Consolidate aggressively — a 12-bullet draft becomes a 5-bullet final by collapsing related work and dropping anything invisible to the user.
+5. Reference where the user finds the change ("in the Family tab", "on the Weekly Rhythm dashboard", etc.).
+6. Silent bug fixes aggregate to ONE bottom bullet: "Various fixes and stability improvements."
+7. Bundled-component bumps still get a bullet describing the user-visible improvement, not the version number.
+
+**Kam-approval gate (enforced by the `fort-abode-preflight` skill):** before staging any change to `whats-new.json`, Claude must draft the proposed entry as plain text in chat — for big releases, draft both a "long version" and a ≤5-bullet "Tiera version" side-by-side — and explicitly ask "Is this Tiera-ready, or want me to consolidate further?" Only commit after Kam confirms in chat. See the preflight skill's "If the diff touches `Resources/whats-new.json`" section for the full procedure.
+
 ## Release Process
 
 1. **Update `FortAbodeUtilityCentral/Resources/whats-new.json` FIRST** — add a new top-of-array entry for the version about to ship. Cover both Fort Abode app changes AND any bundled-component changes from upstream releases (Weekly Rhythm, setup-claude-memory, travel-itinerary, etc.).

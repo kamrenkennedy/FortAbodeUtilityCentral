@@ -94,7 +94,7 @@ struct FeedbackView: View {
 
             Picker("", selection: $viewModel.selectedComponentId) {
                 Text("General / Not sure").tag(nil as String?)
-                ForEach(listViewModel.installedComponents) { component in
+                ForEach(listViewModel.components) { component in
                     Text(component.displayName).tag(component.id as String?)
                 }
             }
@@ -191,7 +191,7 @@ struct FeedbackView: View {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(Color.statusScheduled)
                         .font(.system(size: 14))
-                    Text("Feedback saved — Kam will pick it up from iCloud")
+                    Text("Feedback saved to your shared iCloud folder")
                         .font(.bodyMD.weight(.medium))
                         .foregroundStyle(Color.onSurface)
                 }

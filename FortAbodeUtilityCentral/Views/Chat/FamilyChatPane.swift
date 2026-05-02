@@ -96,7 +96,7 @@ struct FamilyChatPane: View {
         MessageBubble(
             speaker: speaker,
             text: text,
-            actionChips: msg.actionItems,
+            actionChips: msg.actionItems.map { .simple($0) },
             attachments: msg.attachments
         )
     }

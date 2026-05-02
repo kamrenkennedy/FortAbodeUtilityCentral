@@ -5,6 +5,23 @@ import AlignedDesignSystem
 // - MessageBubble: a plain text message (user/tiera/claude variants)
 // - RichCardMessage: an event/errand/proposal card with optional Accept/Decline
 
+/// Typed chip for `MessageBubble.actionChips`. `.simple` and `.success` both
+/// render as the design system's `ActionChip` (tertiary tint, leading checkmark
+/// — the checkmark IS the success indicator). `.failure` renders as a red-tinted
+/// pill with a leading xmark so failed Claude tool calls visually distinct
+/// without the contradictory "✓ Read ✗" double-glyph problem.
+enum ChatActionChip: Hashable {
+    case simple(String)
+    case success(String)
+    case failure(String)
+
+    var label: String {
+        switch self {
+        case .simple(let s), .success(let s), .failure(let s): return s
+        }
+    }
+}
+
 struct MessageBubble: View {
     enum Speaker {
         case user
@@ -14,10 +31,10 @@ struct MessageBubble: View {
 
     let speaker: Speaker
     let text: String
-    let actionChips: [String]
+    let actionChips: [ChatActionChip]
     let attachments: [URL]
 
-    init(speaker: Speaker, text: String, actionChips: [String] = [], attachments: [URL] = []) {
+    init(speaker: Speaker, text: String, actionChips: [ChatActionChip] = [], attachments: [URL] = []) {
         self.speaker = speaker
         self.text = text
         self.actionChips = actionChips
@@ -54,7 +71,12 @@ struct MessageBubble: View {
                 if !actionChips.isEmpty {
                     HStack(spacing: Space.s1_5) {
                         ForEach(actionChips, id: \.self) { chip in
-                            ActionChip(chip)
+                            switch chip {
+                            case .simple(let title), .success(let title):
+                                ActionChip(title)
+                            case .failure(let title):
+                                FailedActionChip(title: title)
+                            }
                         }
                     }
                 }
@@ -245,6 +267,33 @@ struct PlanCardMessage: View {
 
             Spacer(minLength: Space.s10)
         }
+    }
+}
+
+// Failure-variant chip for tool breadcrumbs that errored. Mirrors the design
+// system's `ActionChip` geometry (capsule, Space.s3 horizontal / s1_5 vertical
+// padding, labelMD font, 11pt semibold leading symbol) so success + failure
+// chips align visually side-by-side. Red-tinted background + xmark glyph
+// communicates failure without the contradictory leading-checkmark from
+// ActionChip's default.
+struct FailedActionChip: View {
+    let title: String
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        HStack(spacing: Space.s1) {
+            Image(systemName: "xmark")
+                .font(.system(size: 11, weight: .semibold))
+            Text(title)
+                .font(.labelMD)
+        }
+        .foregroundStyle(Color.statusError)
+        .padding(.horizontal, Space.s3)
+        .padding(.vertical, Space.s1_5)
+        .background(
+            Capsule()
+                .fill(Color.statusError.opacity(scheme == .dark ? 0.18 : 0.12))
+        )
     }
 }
 

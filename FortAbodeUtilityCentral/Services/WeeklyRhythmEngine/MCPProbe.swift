@@ -63,26 +63,133 @@ public struct MCPProbe: Sendable {
         }
     }
 
-    /// Run `claude mcp list` and parse the result. Returns the set of MCP
-    /// names that report as Connected. On any CLI failure, returns
-    /// `probeFailed: true` with an empty set so the caller can decide whether
-    /// to block (we don't — fail open and run anyway).
+    /// Probe Claude's MCP configuration from two sources, merged:
+    ///
+    /// 1. `claude mcp list` — the live CLI invocation. Sees Anthropic-hosted
+    ///    MCPs (`claude.ai *` entries served over HTTPS, accessible regardless
+    ///    of CWD) plus any user-scoped local MCPs.
+    ///
+    /// 2. `~/.claude.json` — the on-disk config. Read directly to discover
+    ///    project-scoped MCPs that `claude mcp list` only shows when invoked
+    ///    inside the matching project tree. The Fort Abode .app launches with
+    ///    CWD `/`, so without this fallback the probe misses every
+    ///    project-scoped local stdio MCP (apple-reminders, Kam-Memory, etc.).
+    ///
+    /// Source 1 is authoritative for connection status (✓ Connected). Source 2
+    /// only proves CONFIGURED, not connected — but for the preflight heuristic
+    /// "configured" is the right signal, since the engine itself surfaces the
+    /// real failure if a tool is broken. We fail-open: probeFailed = true only
+    /// when BOTH sources fail.
     public func probe(cliPath: String) async -> ProbeResult {
+        // Source 1: live CLI
+        var cliConnected: Set<String> = []
+        var cliFailed = false
         let outcome = await Self.runProcess(cliPath: cliPath, arguments: ["mcp", "list"])
-        guard outcome.exitCode == 0 else {
-            return ProbeResult(connected: [], probeFailed: true)
+        if outcome.exitCode == 0 {
+            cliConnected = Self.parseConnected(from: outcome.stdout)
+        } else {
+            cliFailed = true
+            await ErrorLogger.shared.log(
+                area: "MCPProbe.probe",
+                message: "claude mcp list failed",
+                context: [
+                    "exitCode": "\(outcome.exitCode)",
+                    "stderr": String(outcome.stderr.prefix(500)),
+                    "stdout": String(outcome.stdout.prefix(500))
+                ]
+            )
         }
-        return ProbeResult(connected: Self.parseConnected(from: outcome.stdout), probeFailed: false)
+
+        // Source 2: ~/.claude.json (CWD-independent)
+        let jsonConfigured = Self.readConfiguredFromClaudeJSON()
+
+        let merged = cliConnected.union(jsonConfigured)
+        let missing = Self.missingRequirements(in: merged)
+
+        await ErrorLogger.shared.log(
+            area: "MCPProbe.probe",
+            message: "probe complete",
+            context: [
+                "cliConnectedCount": "\(cliConnected.count)",
+                "cliConnected": cliConnected.sorted().joined(separator: ", "),
+                "jsonConfiguredCount": "\(jsonConfigured.count)",
+                "jsonConfigured": jsonConfigured.sorted().joined(separator: ", "),
+                "mergedCount": "\(merged.count)",
+                "missing": missing.map(\.displayName).joined(separator: ", "),
+                "cliFailed": "\(cliFailed)"
+            ]
+        )
+
+        // Only flag probeFailed if BOTH sources failed entirely.
+        let probeFailed = cliFailed && jsonConfigured.isEmpty
+        return ProbeResult(connected: merged, probeFailed: probeFailed)
+    }
+
+    /// Read `~/.claude.json` and return the union of MCP names from the
+    /// user-scoped `mcpServers` map and every project-scoped
+    /// `projects.<path>.mcpServers` map. CWD-independent — works regardless
+    /// of where the host process is launched from. Returns an empty set on
+    /// any read/parse error (caller fails open).
+    static func readConfiguredFromClaudeJSON() -> Set<String> {
+        let path = (NSHomeDirectory() as NSString).appendingPathComponent(".claude.json")
+        let url = URL(fileURLWithPath: path)
+        guard let data = try? Data(contentsOf: url),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return []
+        }
+        var names: Set<String> = []
+        if let userScope = json["mcpServers"] as? [String: Any] {
+            names.formUnion(userScope.keys)
+        }
+        if let projects = json["projects"] as? [String: Any] {
+            for (_, proj) in projects {
+                guard let projDict = proj as? [String: Any],
+                      let mcps = projDict["mcpServers"] as? [String: Any] else {
+                    continue
+                }
+                names.formUnion(mcps.keys)
+            }
+        }
+        return names
     }
 
     // MARK: - Heuristic
 
     /// Compute the requirements that are NOT covered by the configured set.
-    /// "Covered" = at least one candidate name appears in `configured`.
+    /// Uses the same normalize/substring matcher as `isRequirementCovered`.
     public static func missingRequirements(in configured: Set<String>) -> [Requirement] {
-        requirements.filter { req in
-            req.candidateNames.intersection(configured).isEmpty
+        requirements.filter { !isRequirementCovered($0, in: configured) }
+    }
+
+    /// True iff at least one of the requirement's candidate names appears as
+    /// a substring of any configured MCP's name, after normalizing both sides
+    /// (lowercase, strip non-alphanumeric). Shared by both
+    /// `missingRequirements` (preflight dialog) and the per-row connection
+    /// status in `SynthesizedRunReport` (Run Health modal). Normalization
+    /// makes the matching robust to real-world variations:
+    ///   - `claude.ai Gmail` (space + period) matches `gmail`
+    ///   - `claude.ai Google Calendar` matches `google-calendar` (space ↔ hyphen)
+    ///   - `Kam-Memory` matches `memory` (case insensitive)
+    ///   - `google-workspace` matches `gws` (also a candidate explicitly listed)
+    public static func isRequirementCovered(
+        _ requirement: Requirement,
+        in configured: Set<String>
+    ) -> Bool {
+        let normalizedConfigured = configured.map { Self.normalize($0) }
+        let normalizedCandidates = requirement.candidateNames.map { Self.normalize($0) }
+        for configuredName in normalizedConfigured {
+            for candidate in normalizedCandidates where configuredName.contains(candidate) {
+                return true
+            }
         }
+        return false
+    }
+
+    /// Lowercase + strip everything that isn't a letter or digit. Lets the
+    /// substring matcher treat `claude.ai Google Calendar`, `google-calendar`,
+    /// and `googleCalendar` as equivalent for capability detection.
+    private static func normalize(_ s: String) -> String {
+        s.lowercased().filter { $0.isLetter || $0.isNumber }
     }
 
     // MARK: - Parsing
@@ -94,23 +201,32 @@ public struct MCPProbe: Sendable {
     ///
     /// kam-memory: npx -y mcp-knowledge-graph --memory-path … - ✓ Connected
     /// google-workspace: npx -y @aaronsb/google-workspace-mcp - ✓ Connected
+    /// claude.ai Gmail: https://gmailmcp.googleapis.com/mcp/v1 - ✓ Connected
     /// some-broken: bad-command - ✗ Failed: connection refused
     /// ```
     ///
     /// We only return the names where the line contains a "✓" / "Connected"
     /// status — Failed entries don't count for the requirements heuristic.
+    /// Names with spaces (like `claude.ai Gmail`) are kept; only the standalone
+    /// header line "Checking MCP server health…" needs to be skipped, which
+    /// we filter via the absence of a `: ` separator (header has no colon
+    /// or has a colon followed immediately by something non-MCP-shaped).
     static func parseConnected(from output: String) -> Set<String> {
         var names: Set<String> = []
         for rawLine in output.split(separator: "\n", omittingEmptySubsequences: true) {
             let line = String(rawLine)
-            guard let colonIdx = line.firstIndex(of: ":") else { continue }
-            let name = line[..<colonIdx].trimmingCharacters(in: .whitespaces)
-            // Skip header lines like "Checking MCP server health…" — those
-            // either don't have a colon or have spaces in the prefix.
-            guard !name.isEmpty, !name.contains(" ") else { continue }
+            // Require a `: ` (colon then space) to filter out lines like the
+            // header "Checking MCP server health…" that may contain other
+            // colons (e.g., a URL in a future format) but not in this shape.
+            guard let colonRange = line.range(of: ": ") else { continue }
+            let name = String(line[..<colonRange.lowerBound])
+                .trimmingCharacters(in: .whitespaces)
+            guard !name.isEmpty else { continue }
             // Only count connected MCPs. The CLI uses ✓ / ✗ glyphs;
             // "Connected" / "Failed" hedge against future glyph changes.
-            if line.contains("✓") || line.contains("Connected") {
+            // Avoid matching "Connected" within a "Failed: connection ..."
+            // string by also requiring the ✓ glyph or end-of-line "Connected".
+            if line.contains("✓") || line.contains("- Connected") {
                 names.insert(name)
             }
         }

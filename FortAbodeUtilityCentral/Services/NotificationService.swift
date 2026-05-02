@@ -116,7 +116,7 @@ final class NotificationService: NSObject, @unchecked Sendable, UNUserNotificati
     func postSummaryNotification(count: Int) async {
         let content = UNMutableNotificationContent()
         content.title = "Claude Updates Available"
-        content.body = "\(count) components have updates available. Open Fort Abode Utility Central to update."
+        content.body = "\(count) components have updates available. Open Fort Abode to update."
         content.sound = .default
 
         let request = UNNotificationRequest(

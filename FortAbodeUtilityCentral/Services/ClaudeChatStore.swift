@@ -31,6 +31,12 @@ public final class ClaudeChatStore {
         didSet { UserDefaults.standard.set(allowedTools, forKey: Self.allowedToolsKey) }
     }
 
+    /// Selected Claude model for this turn. Cycled via the model picker pill
+    /// in the composer's below-row. Maps to the CLI's `--model <alias>` flag.
+    public var selectedModel: ClaudeChatTurnRunner.ClaudeModel {
+        didSet { UserDefaults.standard.set(selectedModel.rawValue, forKey: Self.selectedModelKey) }
+    }
+
     public private(set) var isStreaming: Bool = false
     public private(set) var lastError: String?
     public private(set) var cliDetection: ClaudeCLIDetector.Result = .notFound
@@ -45,6 +51,7 @@ public final class ClaudeChatStore {
     private static let legacyToolsEnabledKey = "claudeChat.toolsEnabled"  // pre-Phase-5c
     private static let sessionIDKey = "claudeChat.sessionID"
     private static let sessionEstablishedKey = "claudeChat.sessionEstablished"
+    private static let selectedModelKey = "claudeChat.selectedModel"
 
     /// Sensible default allowlist. Read-shape tools that don't change state
     /// or run shell commands. Users can add Bash, WebFetch, etc. via Settings.
@@ -90,8 +97,17 @@ public final class ClaudeChatStore {
             resolvedTools = Self.defaultAllowedTools
         }
 
+        let resolvedModel: ClaudeChatTurnRunner.ClaudeModel
+        if let raw = UserDefaults.standard.string(forKey: Self.selectedModelKey),
+           let m = ClaudeChatTurnRunner.ClaudeModel(rawValue: raw) {
+            resolvedModel = m
+        } else {
+            resolvedModel = .sonnet
+        }
+
         self.permissionMode = resolvedMode
         self.allowedTools = resolvedTools
+        self.selectedModel = resolvedModel
         self.sessionID = Self.loadOrGenerateSessionID()
 
         // Persist any first-run defaults so subsequent launches read the same
@@ -101,6 +117,7 @@ public final class ClaudeChatStore {
         if UserDefaults.standard.array(forKey: Self.allowedToolsKey) == nil {
             UserDefaults.standard.set(resolvedTools, forKey: Self.allowedToolsKey)
         }
+        UserDefaults.standard.set(resolvedModel.rawValue, forKey: Self.selectedModelKey)
     }
 
     /// Hydrate `messages` from disk and warm CLI detection. Call from a
@@ -189,7 +206,8 @@ public final class ClaudeChatStore {
             sessionMode: sessionMode,
             userMessage: trimmed,
             permissionMode: mode,
-            allowedTools: tools
+            allowedTools: tools,
+            model: selectedModel
         ) { [weak self] event in
             Task { @MainActor [weak self] in
                 self?.applyEvent(event, toMessageID: placeholderID)

@@ -112,7 +112,7 @@ extension RunReport {
             )
         }
 
-        let isConnected = !requirement.candidateNames.intersection(probe.connected).isEmpty
+        let isConnected = MCPProbe.isRequirementCovered(requirement, in: probe.connected)
         return MCPStatus(
             id: requirement.displayName,
             name: requirement.displayName,

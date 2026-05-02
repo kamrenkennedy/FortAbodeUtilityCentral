@@ -83,9 +83,11 @@ struct ClaudeChatPane: View {
         return turn.content
     }
 
-    private func breadcrumbChips(for turn: ChatTurn) -> [String] {
+    private func breadcrumbChips(for turn: ChatTurn) -> [ChatActionChip] {
         turn.toolBreadcrumbs.map { breadcrumb in
-            "\(breadcrumb.toolName) \(breadcrumb.succeeded ? "✓" : "✗")"
+            breadcrumb.succeeded
+                ? .success(breadcrumb.toolName)
+                : .failure(breadcrumb.toolName)
         }
     }
 
@@ -101,7 +103,7 @@ struct ClaudeChatPane: View {
                         ComposerIconButton(symbol: "paperclip", help: "Attach", action: {})
                     ],
                     trailingIcons: [],
-                    trailingTrailing: AnyView(modelBadge),
+                    trailingTrailing: nil,
                     onSend: { sent in
                         Task { await store.sendUserMessage(sent) }
                     }
@@ -115,22 +117,70 @@ struct ClaudeChatPane: View {
 
     private var belowPillRow: some View {
         HStack(spacing: Space.s2) {
-            pageContextPill
+            modelAndContextPill
             Spacer(minLength: Space.s2)
             permissionModePill
         }
     }
 
-    private var pageContextPill: some View {
+    /// Replaces the prior static "Fort Abode · Home" page-context pill with
+    /// a clickable Claude model picker followed by the current page label.
+    /// The Menu cascades upward (composer sits at the bottom of the window
+    /// so SwiftUI naturally opens the menu above the trigger).
+    private var modelAndContextPill: some View {
         HStack(spacing: Space.s1) {
             Image(systemName: "circle.fill")
                 .font(.system(size: 6))
                 .foregroundStyle(Color.tertiary)
-            Text("Fort Abode · \(appState.selectedDestination.label)")
+
+            Menu {
+                Section("Model") {
+                    ForEach(ClaudeChatTurnRunner.ClaudeModel.allCases, id: \.self) { model in
+                        Button {
+                            store.selectedModel = model
+                        } label: {
+                            Label(
+                                modelLabel(for: model),
+                                systemImage: store.selectedModel == model ? "checkmark" : ""
+                            )
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 2) {
+                    Text(modelLabel(for: store.selectedModel))
+                        .font(.labelSM.weight(.medium))
+                    Image(systemName: "chevron.up")
+                        .font(.system(size: 7, weight: .semibold))
+                }
+                .foregroundStyle(Color.onSurface)
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help(modelHelp(for: store.selectedModel))
+
+            Text("· \(appState.selectedDestination.label)")
                 .font(.labelSM)
                 .foregroundStyle(Color.onSurfaceVariant)
         }
         .padding(.horizontal, Space.s2)
+    }
+
+    private func modelLabel(for model: ClaudeChatTurnRunner.ClaudeModel) -> String {
+        switch model {
+        case .sonnet: return "Sonnet"
+        case .opus:   return "Opus"
+        case .haiku:  return "Haiku"
+        }
+    }
+
+    private func modelHelp(for model: ClaudeChatTurnRunner.ClaudeModel) -> String {
+        switch model {
+        case .sonnet: return "Sonnet — balanced quality and speed (default)."
+        case .opus:   return "Opus — deepest reasoning, slower and pricier."
+        case .haiku:  return "Haiku — fastest and lightest."
+        }
     }
 
     private var permissionModePill: some View {
@@ -214,18 +264,6 @@ struct ClaudeChatPane: View {
         case .all:
             return "All tools — Claude can use any tool, including Bash. Use with care."
         }
-    }
-
-    private var modelBadge: some View {
-        Text("Sonnet 4.5")
-            .font(.labelSM)
-            .foregroundStyle(Color.onSurfaceVariant)
-            .padding(.horizontal, Space.s2)
-            .padding(.vertical, 2)
-            .background(
-                Capsule()
-                    .strokeBorder(Color.outlineVariant.opacity(0.5), lineWidth: 1)
-            )
     }
 
     private var greeting: some View {

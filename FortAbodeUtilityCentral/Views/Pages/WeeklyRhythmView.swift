@@ -2,7 +2,7 @@ import SwiftUI
 import AlignedDesignSystem
 
 // Weekly Rhythm — bento dashboard. Project Pulse strip → Week Grid (7 days,
-// absolute-positioned event blocks) → Triage + Claude Proposals two-column →
+// absolute-positioned event blocks) → Triage + Proposals two-column →
 // sticky Confirm Bar (visible when at least one proposal is checked).
 //
 // Mocked data for v4.0.0; live wiring against the engine output (existing
@@ -43,6 +43,21 @@ private extension WRDayType {
     /// others — the dropdown hides its plus cell. None of the redesign HTML's
     /// 5 mock types are exclusive; v4.1 wiring may surface real exclusives.
     var isExclusive: Bool { false }
+}
+
+private extension WeekDay {
+    /// Engine emits short weekday names ("Mon", "Tue", …); the
+    /// `dayTypeChange` mutation + `ConfigMdEditor.updateDayType` expect full
+    /// English names ("Monday", …). Falls back to the short name for any
+    /// unrecognized prefix so engine extensions don't crash the mutation.
+    var fullName: String {
+        let map: [String: String] = [
+            "sun": "Sunday", "mon": "Monday", "tue": "Tuesday",
+            "wed": "Wednesday", "thu": "Thursday", "fri": "Friday",
+            "sat": "Saturday"
+        ]
+        return map[name.prefix(3).lowercased()] ?? name
+    }
 }
 
 private extension WRAlertKind {
@@ -699,8 +714,15 @@ struct WeeklyRhythmView: View {
         HStack(alignment: .top, spacing: 0) {
             Color.clear.frame(width: 44)
             ForEach(weekDays) { day in
-                DayHeader(day: day)
-                    .frame(maxWidth: .infinity)
+                DayHeader(day: day) { newType in
+                    Task {
+                        await store.apply(.dayTypeChange(
+                            weekdayName: day.fullName,
+                            newType: newType
+                        ))
+                    }
+                }
+                .frame(maxWidth: .infinity)
             }
         }
     }
@@ -929,7 +951,7 @@ struct WeeklyRhythmView: View {
         }
     }
 
-    // MARK: - Triage + Claude Proposals
+    // MARK: - Triage + Proposals
 
     private var triageAndProposalsSection: some View {
         HStack(alignment: .top, spacing: Space.s4) {
@@ -1020,7 +1042,7 @@ struct WeeklyRhythmView: View {
         DashboardCard(verticalPadding: Space.s6, horizontalPadding: Space.s6) {
             VStack(alignment: .leading, spacing: Space.s5) {
                 HStack {
-                    Text("Claude Proposals".uppercased())
+                    Text("Proposals".uppercased())
                         .font(.labelSM)
                         .tracking(2.0)
                         .foregroundStyle(Color.secondaryText)
@@ -2187,10 +2209,18 @@ private struct ProjectPulseCard: View {
 // MARK: - Day header + column
 
 private struct DayHeader: View {
-    // Phase 5a: read-only day header. The inline DayTypeEditor (which mutated
-    // a binding into day.dayTypes) is gone; day-type editing flows through the
-    // gear-icon → DayTypeSettingsSheet path until write-back lands in 5b.
+    // v3.12: regression fix — restored tap-to-change-type. Each rendered
+    // DayTypePill is wrapped in a Menu that opens a single-select picker
+    // over the 5 built-in WRDayType values; selection fires the existing
+    // single-type `.dayTypeChange` mutation via the onTypeChange callback.
+    //
+    // Multi-type stacking (the `+` button in the legacy `DayTypeEditor`) is
+    // intentionally out of scope for v3.12 — it requires a comma-separated
+    // config.md format and a matching engine parser update, both deferred
+    // to v3.13. The legacy `DayTypeEditor` / `DayTypeDropdown` views below
+    // remain in the file unchanged so v3.13 can re-wire them.
     let day: WeekDay
+    let onTypeChange: (WRDayType) -> Void
 
     var body: some View {
         VStack(alignment: .center, spacing: Space.s1) {
@@ -2203,8 +2233,25 @@ private struct DayHeader: View {
 
             VStack(spacing: 3) {
                 ForEach(day.sortedDayTypes, id: \.self) { type in
-                    DayTypePill(kind: type)
-                        .fixedSize(horizontal: true, vertical: false)
+                    Menu {
+                        ForEach(DayType.allCases, id: \.self) { candidate in
+                            Button {
+                                onTypeChange(candidate)
+                            } label: {
+                                Label(
+                                    candidate.label,
+                                    systemImage: candidate == type ? "checkmark" : ""
+                                )
+                            }
+                        }
+                    } label: {
+                        DayTypePill(kind: type)
+                            .fixedSize(horizontal: true, vertical: false)
+                    }
+                    .menuStyle(.borderlessButton)
+                    .menuIndicator(.hidden)
+                    .fixedSize()
+                    .help("Change day type")
                 }
             }
         }

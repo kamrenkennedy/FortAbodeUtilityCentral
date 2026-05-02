@@ -74,18 +74,37 @@ jobs:
       - name: Resolve packages
         working-directory: FortAbodeUtilityCentral
         run: |
-          xcodebuild -project FortAbodeUtilityCentral.xcodeproj \
+          # xcodebuild -resolvePackageDependencies can hang indefinitely after
+          # successfully resolving packages when private SPM deps are involved
+          # (observed 40+ min hangs on macos-15 with the AlignedDesignSystem PAT).
+          # Run with a 4-minute ceiling — packages typically resolve in <60s; if
+          # Package.resolved is on disk we trust the resolve and proceed.
+          set +e
+          timeout 240 xcodebuild -project FortAbodeUtilityCentral.xcodeproj \
             -scheme "$SCHEME" \
             -resolvePackageDependencies
+          RC=$?
+          set -e
+          RESOLVED_PATH="FortAbodeUtilityCentral.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+          if [ -f "$RESOLVED_PATH" ]; then
+            echo "Package.resolved present — proceeding"
+            exit 0
+          fi
+          echo "::error::Package resolve failed and Package.resolved missing (xcodebuild exit $RC)"
+          exit 1
 
       - name: Archive
         working-directory: FortAbodeUtilityCentral
         run: |
+          # -onlyUsePackageVersionsFromResolvedFile prevents Archive from re-resolving
+          # SPM packages, dodging the same hang the explicit resolve step hits with
+          # private deps. Trust Package.resolved from the prior step.
           xcodebuild archive \
             -project FortAbodeUtilityCentral.xcodeproj \
             -scheme "$SCHEME" \
             -configuration Release \
             -archivePath "${{ github.workspace }}/build/FortAbodeUtilityCentral.xcarchive" \
+            -onlyUsePackageVersionsFromResolvedFile \
             CODE_SIGN_IDENTITY="Developer ID Application" \
             DEVELOPMENT_TEAM="X6LBF9H7M5" \
             CODE_SIGN_STYLE=Manual \

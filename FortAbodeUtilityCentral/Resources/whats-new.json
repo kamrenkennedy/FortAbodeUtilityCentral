@@ -2,7 +2,13 @@
   {
     "version": "3.12.0",
     "notes": [
-      "PLACEHOLDER — will be replaced when stash applies the Tiera-approved entry."
+      "Weekly Rhythm runs now show fresh data every time, with clear errors if anything breaks. The engine no longer silently skips writing the dashboard, so you'll either see this week's data or a specific error in the attention banner — never stale data with no signal.",
+      "Fort Abode keeps the dashboard fresh on its own. Opening the app re-runs the engine if your last run is more than 6 hours old. Settings → Weekly Rhythm Engine lets you tune the threshold (or turn it off) and opt in to a background re-run timer for when you leave the app open.",
+      "The run pill shows live progress while the engine works. Watch it stream 'Using Gmail', 'Using Notion', etc. instead of staring at a static 'Running…'. New Run timeout picker (default 20 min) lets you tune per machine.",
+      "Dashboard cards and banners are now interactive. 'View itinerary' and 'Reschedule' buttons in the attention banner open the right sheets. Project Pulse cards show real project data, and tapping a card highlights its matching events on the Week Grid.",
+      "Pick your Claude model from the chat input. A new menu next to the input lets you choose Sonnet, Opus, or Haiku — your choice is remembered. Chat action chips now visually distinguish success and failure.",
+      "App updates appear as a small row in the sidebar instead of a popup. When a new version is ready, you'll see it above Settings — click 'Relaunch to apply' when you're ready.",
+      "The app is now called 'Fort Abode' — plus various fixes and stability improvements (Family Chat unread badge no longer sticks at 2 on launch; Feedback dropdown shows the full component list; 'Claude Proposals' is now just 'Proposals'; the engine finds all your project-scoped data sources; roomier default window size with a sensible minimum)."
     ]
   },
   {

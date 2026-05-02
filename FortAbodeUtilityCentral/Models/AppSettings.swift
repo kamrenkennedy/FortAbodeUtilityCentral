@@ -42,6 +42,15 @@ enum AppSettingsKey {
     /// deterministically — without it, the resolver falls back to filesystem
     /// ordering, which previously caused Kam's Mac to read Tiera's dashboards.
     static let weeklyRhythmActiveUserName           = "WeeklyRhythmEngine.activeUserName"
+
+    // Live Mode v0.1 (v3.12.0). Foundation for the always-on assistant
+    // direction — the engine re-runs at the right moments so the dashboard
+    // doesn't go stale between manual runs. Bigger pieces (delta processing,
+    // two-way calendar write, scratch-pad reasoning) are punted to v3.13.0+.
+    static let weeklyRhythmEngineAutoRunOnForeground       = "WeeklyRhythmEngine.autoRunOnForeground"
+    static let weeklyRhythmEngineForegroundThresholdHours  = "WeeklyRhythmEngine.foregroundThresholdHours"
+    static let weeklyRhythmEngineBackgroundTimerEnabled    = "WeeklyRhythmEngine.backgroundTimerEnabled"
+    static let weeklyRhythmEngineBackgroundTimerMinutes    = "WeeklyRhythmEngine.backgroundTimerMinutes"
 }
 
 // MARK: - Notification Names

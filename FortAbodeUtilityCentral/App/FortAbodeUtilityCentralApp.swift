@@ -431,10 +431,17 @@ struct FortAbodeUtilityCentralApp: App {
     /// user opens it — without this, the synthesized report defaults to all
     /// rows neutral until the next manual engine run (which on Tiera's first
     /// launch is whenever, hours or days later).
+    ///
+    /// Live Mode v0.1 (v3.12.0): also wires the foreground auto-run observer
+    /// and applies the background timer setting. Both calls are idempotent —
+    /// the observer guards against double-registration, and the timer cancels
+    /// any prior task before starting a fresh one.
     private func detectEngineCLI() {
         Task { @MainActor in
             await weeklyRhythmEngineStore.detectCLI()
             await weeklyRhythmEngineStore.probeMCPsIfPossible()
+            weeklyRhythmEngineStore.startObservingActivation()
+            weeklyRhythmEngineStore.applyBackgroundTimerSettings()
         }
     }
 

@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import AppKit
 
 // MARK: - Engine Store
 //
@@ -37,6 +38,22 @@ public final class WeeklyRhythmEngineStore {
     private let runner: WeeklyRhythmEngineRunner
     private let installer: WeeklyRhythmSkillInstaller
     private let mcpProbe: MCPProbe
+
+    // MARK: - Live Mode v0.1 state (v3.12.0)
+    //
+    // Foreground auto-run + opt-in background timer. The "always-on assistant"
+    // direction starts here — instead of the dashboard sitting stale between
+    // manual run-button presses, the engine re-runs at the right moments.
+
+    private var activationObserver: NSObjectProtocol?
+    private var seenFirstActivation: Bool = false
+    private var lastForegroundCheck: Date?
+    private var backgroundTimerTask: Task<Void, Never>?
+
+    /// Quick alt-tab debounce. The real gate for foreground auto-runs is the
+    /// hours-since-last-run threshold; this just prevents back-to-back fires
+    /// from rapid window cycling (cmd-tab into the app, cmd-tab back out, etc).
+    private static let foregroundCooldown: TimeInterval = 60
 
     public init(
         detector: ClaudeCLIDetector = ClaudeCLIDetector(),
@@ -96,7 +113,15 @@ public final class WeeklyRhythmEngineStore {
     /// surface `.needsSkill` if it's not installed — the UI presents an
     /// install sheet rather than running blind and getting an opaque CLI
     /// error.
-    public func runNow() async {
+    ///
+    /// `silent: true` is for auto-triggered runs (foreground auto-run, the
+    /// background timer) — they bail early on missing CLI/skill instead of
+    /// transitioning into states that drive surprise sheets, and they proceed
+    /// with degraded MCPs (engine v2.5.0's reduced-mode emission rules emit
+    /// warnings into the run report so the attention banner still surfaces
+    /// what degraded). Manual runs (`silent: false`, default) keep the full
+    /// guided sheet flow.
+    public func runNow(silent: Bool = false) async {
         // Always re-detect right before a run so a freshly-installed CLI gets
         // picked up without forcing a Settings round-trip.
         if case .notFound = cliDetection {
@@ -104,26 +129,30 @@ public final class WeeklyRhythmEngineStore {
         }
 
         guard case .found(let path, _) = cliDetection else {
+            if silent { return }
             runState = .failed(error: "Claude CLI not found. Install it from claude.ai/code or pin a custom path in Settings.")
             return
         }
 
         // Skill probe — if missing, hand back to the UI so the user can
         // choose to install. The view layer calls `installSkillThenRun()`
-        // when they accept.
+        // when they accept. Auto-runs don't surface install sheets.
         let skillInstalled = await installer.detectInstalled(cliPath: path)
         guard skillInstalled else {
+            if silent { return }
             runState = .needsSkill
             return
         }
 
         // MCP pre-flight — if any required group is uncovered, hand back to
         // the UI for a "Run anyway?" decision. Probe failures fail open.
+        // Auto-runs proceed with whatever's connected; the engine's
+        // reduced-mode emission produces a partial dashboard with warnings.
         let probe = await mcpProbe.probe(cliPath: path)
         lastMCPProbe = probe
         if !probe.probeFailed {
             let missing = MCPProbe.missingRequirements(in: probe.connected)
-            if !missing.isEmpty {
+            if !missing.isEmpty && !silent {
                 runState = .missingMCPs(missing)
                 return
             }
@@ -212,6 +241,116 @@ public final class WeeklyRhythmEngineStore {
                 succeeded: result.succeeded,
                 summary: result.summary
             )
+        }
+    }
+
+    // MARK: - Live Mode v0.1: foreground auto-run
+    //
+    // Mirrors `AppUpdaterService.startObservingActivation()`'s shape — listen
+    // for `NSApplication.didBecomeActiveNotification`, skip the first
+    // activation (engine has its own launch-time detect/probe pass on
+    // `.onAppear`), and on subsequent activations re-run the engine if the
+    // last successful run is older than the user's threshold.
+
+    /// Wire up the foreground auto-run observer. Idempotent — safe to call
+    /// from `.onAppear` on every render. Called from
+    /// `FortAbodeUtilityCentralApp.detectEngineCLI()`.
+    public func startObservingActivation() {
+        guard activationObserver == nil else { return }
+        activationObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            // queue: .main guarantees the closure runs on the main thread,
+            // so MainActor.assumeIsolated is safe under Swift 6 strict
+            // concurrency. Same pattern as AppUpdaterService.
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                if !self.seenFirstActivation {
+                    self.seenFirstActivation = true
+                    return
+                }
+                if let last = self.lastForegroundCheck,
+                   Date().timeIntervalSince(last) < Self.foregroundCooldown {
+                    return
+                }
+                self.lastForegroundCheck = Date()
+                Task { @MainActor in
+                    await self.runIfStaleOnForeground()
+                }
+            }
+        }
+    }
+
+    /// Decide whether to fire an auto-run on a foreground activation. The
+    /// real gate is the user's hours-since-last-run threshold; the alt-tab
+    /// debounce in `startObservingActivation` is just a guardrail.
+    private func runIfStaleOnForeground() async {
+        let defaults = UserDefaults.standard
+        // Default ON. Reading via `object(forKey:)` so we can distinguish
+        // "user explicitly disabled" from "never set."
+        let enabled = defaults.object(forKey: AppSettingsKey.weeklyRhythmEngineAutoRunOnForeground) as? Bool ?? true
+        guard enabled else { return }
+
+        // Don't trample an in-flight run or a state that's waiting on user
+        // input. Idle / succeeded / failed are all safe to re-run from.
+        switch runState {
+        case .idle, .succeeded, .failed:
+            break
+        default:
+            return
+        }
+
+        let thresholdHours = defaults.object(forKey: AppSettingsKey.weeklyRhythmEngineForegroundThresholdHours) as? Int ?? 6
+        let lastRunAt = defaults.double(forKey: AppSettingsKey.weeklyRhythmEngineLastRunAt)
+        if lastRunAt > 0 {
+            let elapsed = Date().timeIntervalSince(Date(timeIntervalSince1970: lastRunAt))
+            if elapsed < TimeInterval(max(1, thresholdHours)) * 3600 { return }
+        }
+
+        await runNow(silent: true)
+    }
+
+    // MARK: - Live Mode v0.1: background timer
+    //
+    // Opt-in. Off by default — running the engine costs tokens, and the
+    // foreground auto-run already covers most "I just opened the app, give
+    // me fresh data" cases. The timer is for users who leave Fort Abode
+    // open all day and want it to refresh on a cadence.
+
+    /// Reconcile the timer with the user's current settings. Cancel any
+    /// running task, then start a fresh one if the toggle is on. Called from
+    /// `.onAppear` and from the Settings toggle/picker `onChange` so changes
+    /// take effect without an app relaunch.
+    public func applyBackgroundTimerSettings() {
+        backgroundTimerTask?.cancel()
+        backgroundTimerTask = nil
+
+        let defaults = UserDefaults.standard
+        let enabled = defaults.object(forKey: AppSettingsKey.weeklyRhythmEngineBackgroundTimerEnabled) as? Bool ?? false
+        guard enabled else { return }
+
+        let intervalMinutes = max(15, defaults.object(forKey: AppSettingsKey.weeklyRhythmEngineBackgroundTimerMinutes) as? Int ?? 60)
+        let intervalSeconds = TimeInterval(intervalMinutes) * 60
+
+        backgroundTimerTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(intervalSeconds))
+                guard !Task.isCancelled, let self else { return }
+
+                // Re-read the toggle each iteration in case the user disabled
+                // the timer during the sleep window.
+                let stillEnabled = UserDefaults.standard.object(forKey: AppSettingsKey.weeklyRhythmEngineBackgroundTimerEnabled) as? Bool ?? false
+                guard stillEnabled else { return }
+
+                switch self.runState {
+                case .idle, .succeeded, .failed:
+                    await self.runNow(silent: true)
+                default:
+                    continue
+                }
+            }
         }
     }
 

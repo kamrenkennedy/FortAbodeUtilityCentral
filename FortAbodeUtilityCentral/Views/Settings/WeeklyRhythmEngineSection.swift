@@ -22,6 +22,12 @@ struct WeeklyRhythmEngineSection: View {
     @AppStorage(AppSettingsKey.weeklyRhythmEngineCLIPathOverride)   private var cliPathOverride: String = ""
     @AppStorage(AppSettingsKey.weeklyRhythmEngineTimeoutMinutes)    private var timeoutMinutes: Int = 20
 
+    // Live Mode v0.1 (v3.12.0)
+    @AppStorage(AppSettingsKey.weeklyRhythmEngineAutoRunOnForeground)      private var autoRunOnForeground: Bool = true
+    @AppStorage(AppSettingsKey.weeklyRhythmEngineForegroundThresholdHours) private var foregroundThresholdHours: Int = 6
+    @AppStorage(AppSettingsKey.weeklyRhythmEngineBackgroundTimerEnabled)   private var backgroundTimerEnabled: Bool = false
+    @AppStorage(AppSettingsKey.weeklyRhythmEngineBackgroundTimerMinutes)   private var backgroundTimerMinutes: Int = 60
+
     @State private var installSheetOpen: Bool = false
     @State private var authSheetOpen: Bool = false
     @State private var detecting: Bool = false
@@ -47,6 +53,10 @@ struct WeeklyRhythmEngineSection: View {
                     scheduleRow
                     RowSeparator()
                     runTimeoutRow
+                    RowSeparator()
+                    autoRunOnForegroundRow
+                    RowSeparator()
+                    backgroundTimerRow
                     RowSeparator()
                     surfaceOnCompletionRow
                     RowSeparator()
@@ -293,6 +303,80 @@ struct WeeklyRhythmEngineSection: View {
             .frame(width: 120)
         }
         .padding(.vertical, Space.s4)
+    }
+
+    // MARK: - Live Mode v0.1 (v3.12.0)
+
+    private var autoRunOnForegroundRow: some View {
+        HStack(alignment: .top, spacing: Space.s4) {
+            VStack(alignment: .leading, spacing: Space.s1) {
+                Text("Auto-run when you open Fort Abode")
+                    .font(.bodyMD.weight(.medium))
+                    .foregroundStyle(Color.onSurface)
+                Text("Re-runs the engine if your last successful run is older than the threshold below — keeps your dashboard fresh without you pressing Run.")
+                    .font(.bodySM)
+                    .foregroundStyle(Color.onSurfaceVariant)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: Space.s2)
+
+            HStack(spacing: Space.s2) {
+                Picker("", selection: $foregroundThresholdHours) {
+                    Text("2 hours").tag(2)
+                    Text("6 hours").tag(6)
+                    Text("12 hours").tag(12)
+                    Text("24 hours").tag(24)
+                }
+                .labelsHidden()
+                .frame(width: 110)
+                .disabled(!autoRunOnForeground)
+
+                Toggle("", isOn: $autoRunOnForeground)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+            }
+        }
+        .padding(.vertical, Space.s4)
+    }
+
+    private var backgroundTimerRow: some View {
+        HStack(alignment: .top, spacing: Space.s4) {
+            VStack(alignment: .leading, spacing: Space.s1) {
+                Text("Background re-run timer")
+                    .font(.bodyMD.weight(.medium))
+                    .foregroundStyle(Color.onSurface)
+                Text("Re-runs the engine on a schedule while Fort Abode is open. Off by default — engine runs cost tokens. Lays the groundwork for live mode in a future release.")
+                    .font(.bodySM)
+                    .foregroundStyle(Color.onSurfaceVariant)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: Space.s2)
+
+            HStack(spacing: Space.s2) {
+                Picker("", selection: $backgroundTimerMinutes) {
+                    Text("Every 30 min").tag(30)
+                    Text("Every 60 min").tag(60)
+                    Text("Every 2 hours").tag(120)
+                    Text("Every 4 hours").tag(240)
+                }
+                .labelsHidden()
+                .frame(width: 130)
+                .disabled(!backgroundTimerEnabled)
+
+                Toggle("", isOn: $backgroundTimerEnabled)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+            }
+        }
+        .padding(.vertical, Space.s4)
+        .onChange(of: backgroundTimerEnabled) { _, _ in
+            engineStore.applyBackgroundTimerSettings()
+        }
+        .onChange(of: backgroundTimerMinutes) { _, _ in
+            engineStore.applyBackgroundTimerSettings()
+        }
     }
 
     private var surfaceOnCompletionRow: some View {

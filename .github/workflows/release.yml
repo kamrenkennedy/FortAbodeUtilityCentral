@@ -62,6 +62,15 @@ jobs:
           echo "KEYCHAIN_PATH=${KEYCHAIN_PATH}" >> $GITHUB_ENV
           echo "KEYCHAIN_PASSWORD=${KEYCHAIN_PASSWORD}" >> $GITHUB_ENV
 
+      - name: Configure git for private SPM access
+        env:
+          SPM_PAT: ${{ secrets.SPM_PAT }}
+        run: |
+          # Rewrites every github.com clone URL to include the PAT so xcodebuild
+          # -resolvePackageDependencies can clone private deps (AlignedDesignSystem).
+          # Without this the runner has no auth for non-FortAbodeUtilityCentral repos.
+          git config --global url."https://x-access-token:${SPM_PAT}@github.com/".insteadOf "https://github.com/"
+
       - name: Resolve packages
         working-directory: FortAbodeUtilityCentral
         run: |

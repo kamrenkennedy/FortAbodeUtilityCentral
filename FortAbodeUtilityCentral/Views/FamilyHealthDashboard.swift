@@ -1,59 +1,135 @@
 import SwiftUI
 import AppKit
+import AlignedDesignSystem
 
 // MARK: - Family Health Dashboard
 //
 // Reads the first entry of facts.json#insurance.health and renders the 2026
-// Kennedy family health plan as a first-class dashboard. Everything is
-// read-only — edits happen outside the app, in FAMILY_MEMORY.md or facts.json.
+// Kennedy family health plan. Two callers:
+//   • Legacy `FamilyMemoryView` uses `FamilyHealthDashboard` (this file's
+//     thin wrapper) which adds a ScrollView + page padding.
+//   • The current `.family` destination (`FamilyView`) embeds
+//     `FamilyHealthSections` directly inside its own ScrollView, with no
+//     outer padding so the section sits flush inside the surrounding
+//     DashboardCard.
+//
+// All section views and the action-item toggle live on `FamilyHealthSections`
+// so both call sites get the same Y4 wiring without code duplication.
 
 struct FamilyHealthDashboard: View {
-
     let plan: HealthInsurancePlan
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                premiumHero
+            FamilyHealthSections(plan: plan)
+                .padding(28)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+}
 
-                if let components = plan.components, !components.isEmpty {
-                    sectionHeader("Plan Components")
-                    componentGrid(components)
-                }
+struct FamilyHealthSections: View {
 
-                if let doctors = plan.inNetworkDoctors, !doctors.isEmpty {
-                    sectionHeader("In-Network Doctors")
-                    VStack(spacing: 8) {
-                        ForEach(doctors, id: \.self) { doctor in
-                            doctorRow(doctor)
-                        }
+    let plan: HealthInsurancePlan
+
+    @State private var actionItems: [ActionItem] = []
+
+    private let completionService = FamilyMemoryCompletionService()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            premiumHero
+
+            if let components = plan.components, !components.isEmpty {
+                sectionHeader("Plan Components")
+                componentGrid(components)
+            }
+
+            if let doctors = plan.inNetworkDoctors, !doctors.isEmpty {
+                sectionHeader("In-Network Doctors")
+                VStack(spacing: 8) {
+                    ForEach(doctors, id: \.self) { doctor in
+                        doctorRow(doctor)
                     }
-                }
-
-                phoneSection
-
-                if let actionItems = plan.actionItems2026, !actionItems.isEmpty {
-                    sectionHeader("Action Items (2026)")
-                    VStack(spacing: 8) {
-                        ForEach(actionItems, id: \.self) { item in
-                            actionItemRow(item)
-                        }
-                    }
-                }
-
-                if let exclusions = plan.exclusions, !exclusions.isEmpty {
-                    sectionHeader("What's Not Covered")
-                    exclusionsCard(exclusions)
-                }
-
-                if let agent = plan.agent {
-                    sectionHeader("Insurance Agent")
-                    agentCard(agent)
                 }
             }
-            .padding(28)
-            .frame(maxWidth: .infinity, alignment: .leading)
+
+            phoneSection
+
+            if !actionItems.isEmpty {
+                sectionHeader("Action Items (2026)")
+                VStack(spacing: 8) {
+                    ForEach(actionItems) { item in
+                        actionItemRow(item)
+                    }
+                }
+            }
+
+            if let exclusions = plan.exclusions, !exclusions.isEmpty {
+                sectionHeader("What's Not Covered")
+                exclusionsCard(exclusions)
+            }
+
+            if let agent = plan.agent {
+                sectionHeader("Insurance Agent")
+                agentCard(agent)
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .task(id: plan.actionItems2026 ?? []) {
+            await reloadActionItems()
+        }
+    }
+
+    private func reloadActionItems() async {
+        let labels = plan.actionItems2026 ?? []
+        guard !labels.isEmpty else {
+            actionItems = []
+            return
+        }
+        actionItems = await completionService.actionItems(from: labels)
+    }
+
+    private func toggleActionItem(_ item: ActionItem) {
+        let next = !item.completed
+        // Optimistic local update so the checkbox flips immediately even if
+        // iCloud is slow to flush. The service write is the source of truth.
+        if let i = actionItems.firstIndex(where: { $0.id == item.id }) {
+            actionItems[i] = ActionItem(
+                label: item.label,
+                completion: ActionItemCompletion(
+                    completed: next,
+                    completedAt: Date(),
+                    completedBy: Self.activeUserName()
+                )
+            )
+        }
+        Task {
+            do {
+                _ = try await completionService.setCompleted(
+                    label: item.label,
+                    completed: next,
+                    actor: Self.activeUserName()
+                )
+                // Re-load to pick up cross-Mac changes that may have landed
+                // since this view appeared. Cheap — just one JSON read.
+                await reloadActionItems()
+            } catch {
+                // Roll back optimistic state on failure.
+                await reloadActionItems()
+            }
+        }
+    }
+
+    /// Active-user name for the completion record. Prefers the Weekly Rhythm
+    /// resolver (set by the setup wizard), falls back to the macOS account.
+    private static func activeUserName() -> String {
+        if let stored = UserDefaults.standard.string(forKey: AppSettingsKey.weeklyRhythmActiveUserName),
+           !stored.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return stored
+        }
+        let full = NSFullUserName()
+        return full.split(separator: " ").first.map(String.init) ?? full
     }
 
     // MARK: - Hero
@@ -295,8 +371,7 @@ struct FamilyHealthDashboard: View {
 
             if let telURL {
                 Link("Call", destination: telURL)
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .buttonStyle(.alignedSecondaryMini)
             }
         }
         .padding(12)
@@ -309,27 +384,66 @@ struct FamilyHealthDashboard: View {
     // MARK: - Action items
 
     @ViewBuilder
-    private func actionItemRow(_ item: String) -> some View {
-        let isUrgent = item.hasPrefix("URGENT")
-        let color: Color = isUrgent ? .red : .orange
+    private func actionItemRow(_ item: ActionItem) -> some View {
+        let isUrgent = item.label.hasPrefix("URGENT")
+        let accent: Color = isUrgent ? .red : .orange
 
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: isUrgent ? "exclamationmark.triangle.fill" : "checkmark.circle")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(color)
-                .frame(width: 24)
+        Button {
+            toggleActionItem(item)
+        } label: {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: item.completed ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(item.completed ? Color.green : accent)
+                    .frame(width: 24)
+                    .padding(.top, 1)
 
-            Text(item)
-                .font(.caption)
-                .fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.label)
+                        .font(.caption)
+                        .strikethrough(item.completed, color: .secondary)
+                        .foregroundStyle(item.completed ? Color.secondary : Color.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if item.completed, let by = item.completedBy, let at = item.completedAt {
+                        Text("Completed \(Self.relativeFormatter.localizedString(for: at, relativeTo: Date())) by \(by)")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    } else if isUrgent {
+                        Text("URGENT")
+                            .font(.caption2.bold())
+                            .foregroundStyle(.red)
+                    }
+                }
+
+                Spacer(minLength: 8)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(item.completed ? Color.green.opacity(0.05) : accent.opacity(0.08))
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(
+                        item.completed ? Color.green.opacity(0.20) : Color.clear,
+                        lineWidth: 1
+                    )
+            }
+            .contentShape(Rectangle())
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(color.opacity(0.08))
-        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(item.label))
+        .accessibilityValue(Text(item.completed ? "Completed" : "Not completed"))
+        .accessibilityAddTraits(.isButton)
     }
+
+    private static let relativeFormatter: RelativeDateTimeFormatter = {
+        let f = RelativeDateTimeFormatter()
+        f.unitsStyle = .full
+        return f
+    }()
 
     // MARK: - Exclusions
 
@@ -380,8 +494,7 @@ struct FamilyHealthDashboard: View {
 
             if let email = agent.email, let url = URL(string: "mailto:\(email)") {
                 Link("Email", destination: url)
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .buttonStyle(.alignedSecondaryMini)
             }
         }
         .padding(12)

@@ -25,4 +25,40 @@ enum AppSettingsKey {
     static let backgroundChecksEnabled = "backgroundChecksEnabled"
     static let launchAtLogin = "launchAtLogin"
     static let lastCheckDate = "lastCheckDate"
+
+    // Weekly Rhythm Engine (Phase 6 — embedded `claude` CLI runner)
+    static let weeklyRhythmEngineScheduleEnabled    = "WeeklyRhythmEngine.scheduleEnabled"
+    static let weeklyRhythmEngineScheduleHour       = "WeeklyRhythmEngine.scheduleHour"
+    static let weeklyRhythmEngineScheduleWeekday    = "WeeklyRhythmEngine.scheduleWeekday"
+    static let weeklyRhythmEngineSurfaceOnCompletion = "WeeklyRhythmEngine.surfaceOnCompletion"
+    static let weeklyRhythmEngineCLIPathOverride    = "WeeklyRhythmEngine.cliPathOverride"
+    static let weeklyRhythmEngineLastRunAt          = "WeeklyRhythmEngine.lastRunAt"
+    static let weeklyRhythmEngineLastRunSucceeded   = "WeeklyRhythmEngine.lastRunSucceeded"
+    static let weeklyRhythmEngineLastRunSummary     = "WeeklyRhythmEngine.lastRunSummary"
+    static let weeklyRhythmEngineTimeoutMinutes     = "WeeklyRhythmEngine.timeoutMinutes"
+    /// First-name folder under `Weekly Rhythm/` that this Mac belongs to (e.g.
+    /// "Kamren" or "Tiera"). Set by the setup wizard at install time. Read by
+    /// `FileBackedWeeklyRhythmDataSource` to pick the right user folder
+    /// deterministically — without it, the resolver falls back to filesystem
+    /// ordering, which previously caused Kam's Mac to read Tiera's dashboards.
+    static let weeklyRhythmActiveUserName           = "WeeklyRhythmEngine.activeUserName"
+
+    // Live Mode v0.1 (v3.12.0). Foundation for the always-on assistant
+    // direction — the engine re-runs at the right moments so the dashboard
+    // doesn't go stale between manual runs. Bigger pieces (delta processing,
+    // two-way calendar write, scratch-pad reasoning) are punted to v3.13.0+.
+    static let weeklyRhythmEngineAutoRunOnForeground       = "WeeklyRhythmEngine.autoRunOnForeground"
+    static let weeklyRhythmEngineForegroundThresholdHours  = "WeeklyRhythmEngine.foregroundThresholdHours"
+    static let weeklyRhythmEngineBackgroundTimerEnabled    = "WeeklyRhythmEngine.backgroundTimerEnabled"
+    static let weeklyRhythmEngineBackgroundTimerMinutes    = "WeeklyRhythmEngine.backgroundTimerMinutes"
+}
+
+// MARK: - Notification Names
+
+extension Notification.Name {
+    /// Posted when the user taps a `weekly-rhythm-run-*` system notification so
+    /// the app layer can deep-link the foregrounded window to the Weekly Rhythm
+    /// tab. Bridges `NotificationService` (singleton, no AppState access) and
+    /// `AppState.selectedDestination` without coupling them directly.
+    static let engineRunNotificationTapped = Notification.Name("FortAbode.engineRunNotificationTapped")
 }

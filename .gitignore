@@ -24,3 +24,6 @@ build/
 
 # Reference docs (large files, not needed in repo)
 Reference/
+
+# Claude Code per-machine state (worktrees, design refs, plans)
+.claude/

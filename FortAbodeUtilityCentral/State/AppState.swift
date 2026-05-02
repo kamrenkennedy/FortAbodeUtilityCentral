@@ -1,0 +1,164 @@
+import SwiftUI
+import Observation
+
+// Top-level UI state for the v4.0.0 shell.
+//
+// - `selectedDestination` drives the sidebar tab.
+// - `sidebarCollapsed` and `theme` persist to UserDefaults under the same keys
+//   the HTML mockup uses (`fa-sidebar-collapsed`, `fa-theme`) so the redesigned
+//   prototype's interaction notes apply 1:1 here.
+// - Chat panel state lives here so the FAB, panel, and any page that needs
+//   page-aware context (e.g. ClaudeChatPane's "Fort Abode · {page}" pill) read
+//   from a single source.
+// - `feedbackSheetOpen` drives the existing FeedbackView as a sheet — opened
+//   from Settings → Send Feedback OR from the chat panel's "Report a bug"
+//   suggestion chip. Keeps bug reports flowing through FeedbackService's
+//   structured iCloud submission instead of burning Claude API tokens.
+
+@MainActor
+@Observable
+final class AppState {
+
+    var selectedDestination: Destination = .home
+
+    var sidebarCollapsed: Bool {
+        didSet { UserDefaults.standard.set(sidebarCollapsed, forKey: Keys.sidebarCollapsed) }
+    }
+
+    var theme: ThemePref {
+        didSet { UserDefaults.standard.set(theme.rawValue, forKey: Keys.theme) }
+    }
+
+    // Marketplace bento column count — user preference per
+    // UPDATE-2026-04-26-desktop-mac.md §2. Persisted; default `.threeUp` on Mac.
+    var marketplaceColumns: MarketplaceColumns {
+        didSet { UserDefaults.standard.set(marketplaceColumns.rawValue, forKey: Keys.marketplaceColumns) }
+    }
+
+    var chatPanelOpen: Bool = false
+    var chatPanelExpanded: Bool = false
+
+    var chatActiveTab: ChatTab = .family {
+        didSet {
+            if chatActiveTab == .family && oldValue != .family {
+                unreadFamilyCount = 0
+            }
+        }
+    }
+
+    /// Number of unread messages addressed to the active user. Drives the
+    /// brand-rust dot on the Family chat tab. Computed on launch and after
+    /// each chat-pane open via `refreshUnreadFamilyCount()` reading the
+    /// FamilyMessagesService inbox; resets to 0 when the user switches to
+    /// the Family tab (didSet on `chatActiveTab`).
+    var unreadFamilyCount: Int = 0
+    var feedbackSheetOpen: Bool = false
+
+    // Alert counts per destination — drives the small brandRust dot on sidebar
+    // nav items (cross-page ambient awareness). Computed lazily as real data
+    // sources land; defaults to 0 so we don't show phantom alerts.
+    var weeklyRhythmAlertCount: Int = 0
+
+    func alertCount(for destination: Destination) -> Int {
+        switch destination {
+        case .weeklyRhythm: return weeklyRhythmAlertCount
+        default:            return 0
+        }
+    }
+
+    /// Read the active user's inbox via `FamilyMessagesService` and count
+    /// messages still in `.unread` state. Call from app launch and any time
+    /// the chat panel might have stale state. Idempotent.
+    func refreshUnreadFamilyCount() async {
+        let service = FamilyMessagesService()
+        let active = FamilyMessagesService.activeUserName()
+        let conversation = await service.loadConversation()
+        let count = conversation.filter {
+            $0.recipient == active && $0.status == .unread
+        }.count
+        self.unreadFamilyCount = count
+    }
+
+    init() {
+        sidebarCollapsed = UserDefaults.standard.bool(forKey: Keys.sidebarCollapsed)
+        let rawTheme = UserDefaults.standard.string(forKey: Keys.theme) ?? ThemePref.dark.rawValue
+        theme = ThemePref(rawValue: rawTheme) ?? .dark
+        let rawColumns = UserDefaults.standard.string(forKey: Keys.marketplaceColumns) ?? MarketplaceColumns.threeUp.rawValue
+        marketplaceColumns = MarketplaceColumns(rawValue: rawColumns) ?? .threeUp
+    }
+
+    func openChat(_ tab: ChatTab) {
+        chatActiveTab = tab
+        chatPanelOpen = true
+        if tab == .family {
+            unreadFamilyCount = 0
+        }
+    }
+
+    func closeChat() {
+        chatPanelOpen = false
+        chatPanelExpanded = false
+    }
+
+    private enum Keys {
+        static let sidebarCollapsed   = "fa-sidebar-collapsed"
+        static let theme              = "fa-theme"
+        static let marketplaceColumns = "fa-marketplace-columns"
+    }
+}
+
+enum MarketplaceColumns: String, CaseIterable, Identifiable {
+    case twoUp   = "2up"
+    case threeUp = "3up"
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .twoUp:   return "2"
+        case .threeUp: return "3"
+        }
+    }
+
+    var count: Int {
+        switch self {
+        case .twoUp:   return 2
+        case .threeUp: return 3
+        }
+    }
+}
+
+enum ThemePref: String, CaseIterable, Identifiable {
+    case system, dark, light
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .system: return "System"
+        case .dark:   return "Dark"
+        case .light:  return "Light"
+        }
+    }
+
+    var preferredColorScheme: ColorScheme? {
+        switch self {
+        case .system: return nil
+        case .dark:   return .dark
+        case .light:  return .light
+        }
+    }
+}
+
+enum ChatTab: String, CaseIterable, Identifiable {
+    case family, claude
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .family: return "Family"
+        case .claude: return "Claude"
+        }
+    }
+}

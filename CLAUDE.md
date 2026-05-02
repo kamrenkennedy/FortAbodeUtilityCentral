@@ -72,17 +72,49 @@ After changing these, always run `xcodegen generate` before building.
 ### Info.plist
 Uses an **explicit** `Resources/Info.plist` — not `GENERATE_INFOPLIST_FILE`. This is because Sparkle's custom keys (`SUFeedURL`, `SUPublicEDKey`, `SUEnableAutomaticChecks`) are not Apple-recognized keys and would be silently dropped by the generated plist mechanism.
 
+### AlignedDesignSystem package source
+**Always pin via the GitHub URL, never a local `path:`.** `project.yml` must declare:
+```yaml
+AlignedDesignSystem:
+  url: https://github.com/kamrenkennedy/AlignedDesignSystem.git
+  from: "1.1.0"
+```
+Repo: `https://github.com/kamrenkennedy/AlignedDesignSystem` (private). Local Dropbox copy at `~/Library/CloudStorage/Dropbox-KamStudios,LLC/Aligned/App Projects/AlignedDesignSystem/` is for editing the design system itself — never as a SwiftPM source for Fort Abode. The relative-path form (`path: ../../../../...`) breaks in `.claude/worktrees/` because they sit one extra level deep, and it's fragile across machines because resolution is anchored to `project.yml`'s location. When AlignedDesignSystem ships a new tag, bump the `from:` version here in the same commit. The fort-abode-preflight skill (always-check 2b) verifies this on every commit.
+
+### WHAT'S NEW changelog is mandatory for every release
+
+**Every Fort Abode release MUST add an entry to `FortAbodeUtilityCentral/Resources/whats-new.json` before bumping `project.yml`.** That JSON drives the in-app "WHAT'S NEW" panel users see after auto-update — without an entry, Sparkle still ships the new version but users see no description of what changed and may assume nothing did.
+
+Format: array entries with `{version: "X.Y.Z", notes: ["..."]}`. Notes are user-facing (not engineering jargon). One sentence per bullet. Lead with the user-visible change, not the implementation.
+
+**Cross-repo discipline — non-negotiable:** When a bundled component bumps version (Weekly Rhythm engine, setup-claude-memory, travel-itinerary, etc.), the corresponding Fort Abode release that ships the new bundled copy MUST include WHAT'S NEW notes describing the user-visible component change. Without this, users see a Fort Abode update card with no idea their Weekly Rhythm now writes a dashboard JSON, their Travel Itinerary added a new feature, etc. Every project CLAUDE.md that ships through Fort Abode mirrors this rule in its own release ceremony.
+
+#### Authoring rules — Tiera's reading guide
+
+Tiera is the primary reader of every WHAT'S NEW entry. If an entry is too long or too technical she'll skip it, and the update lands silently from her perspective. The volume creep on bigger releases makes it easy to ship a 12-bullet wall of text — every entry must pass these seven rules:
+
+1. Lead with user-visible behavior. Never the implementation.
+2. Plain English. No `MCP`, phase codes (`Y6`, etc.), `engine spec`, `session-id`, `runner`, `parser`, `delegate`, `appcast`, `Sparkle`, internal file/class names, etc.
+3. One sentence per bullet. If two are needed, the second is a "how to use it" line for Tiera, not a "how it works" line.
+4. **Maximum 5–7 bullets per release.** Consolidate aggressively — a 12-bullet draft becomes a 5-bullet final by collapsing related work and dropping anything invisible to the user.
+5. Reference where the user finds the change ("in the Family tab", "on the Weekly Rhythm dashboard", etc.).
+6. Silent bug fixes aggregate to ONE bottom bullet: "Various fixes and stability improvements."
+7. Bundled-component bumps still get a bullet describing the user-visible improvement, not the version number.
+
+**Kam-approval gate (enforced by the `fort-abode-preflight` skill):** before staging any change to `whats-new.json`, Claude must draft the proposed entry as plain text in chat — for big releases, draft both a "long version" and a ≤5-bullet "Tiera version" side-by-side — and explicitly ask "Is this Tiera-ready, or want me to consolidate further?" Only commit after Kam confirms in chat. See the preflight skill's "If the diff touches `Resources/whats-new.json`" section for the full procedure.
+
 ## Release Process
 
-1. Edit `project.yml` — bump `MARKETING_VERSION` + `CURRENT_PROJECT_VERSION`
-2. `/opt/homebrew/bin/xcodegen generate`
-3. Xcode → Product → Archive → Distribute App → Direct Distribution → Export
-4. `xcrun stapler staple "Fort Abode Utility Central.app"` (BEFORE zipping)
-5. `cd build && ditto -c -k --keepParent "Fort Abode Utility Central.app" ../FortAbodeUtilityCentral/FortAbodeUtilityCentral-vX.Y.Z.zip`
-6. Sign: `sign_update FortAbodeUtilityCentral-vX.Y.Z.zip` (outputs EdDSA signature + length)
-7. Update **BOTH** `appcast.xml` files with new `<item>` entry (signature + length from step 6)
-8. `git add && git commit && git push`
-9. `gh release create vX.Y.Z FortAbodeUtilityCentral-vX.Y.Z.zip --title "vX.Y.Z" --notes "..."`
+1. **Update `FortAbodeUtilityCentral/Resources/whats-new.json` FIRST** — add a new top-of-array entry for the version about to ship. Cover both Fort Abode app changes AND any bundled-component changes from upstream releases (Weekly Rhythm, setup-claude-memory, travel-itinerary, etc.).
+2. Edit `project.yml` — bump `MARKETING_VERSION` + `CURRENT_PROJECT_VERSION`
+3. `/opt/homebrew/bin/xcodegen generate`
+4. Xcode → Product → Archive → Distribute App → Direct Distribution → Export
+5. `xcrun stapler staple "Fort Abode Utility Central.app"` (BEFORE zipping)
+6. `cd build && ditto -c -k --keepParent "Fort Abode Utility Central.app" ../FortAbodeUtilityCentral/FortAbodeUtilityCentral-vX.Y.Z.zip`
+7. Sign: `sign_update FortAbodeUtilityCentral-vX.Y.Z.zip` (outputs EdDSA signature + length)
+8. Update **BOTH** `appcast.xml` files with new `<item>` entry (signature + length from step 7)
+9. `git add && git commit && git push`
+10. `gh release create vX.Y.Z FortAbodeUtilityCentral-vX.Y.Z.zip --title "vX.Y.Z" --notes "..."`
 
 ### Tool Locations
 - **xcodegen**: `/opt/homebrew/bin/xcodegen`
@@ -250,6 +282,12 @@ When a new Weekly Rhythm version is ready to ship, ALWAYS do all of these steps.
 ### Common failure modes (fix log)
 
 Update this list any time a new bug surfaces. The goal: never repeat the same mistake.
+
+**[2026-04-28] Fort Abode resolver preferred legacy `Weekly Flow/` over canonical `Weekly Rhythm/`**
+- **Symptom**: After a successful engine run, Fort Abode kept showing mock data with `WeeklyRhythm.FileBacked` logging "falling back to mock". Tiera's most recent engine output landed at `Weekly Rhythm/Tiera/dashboards/weekly-brief-2026-04-13.html` but the data source was scanning `Weekly Flow/Tiera/dashboards/`.
+- **Root cause**: Weekly Rhythm engine v2.1.0 (2026-04-23) renamed the canonical iCloud folder from `Weekly Flow/` → `Weekly Rhythm/`, but the v2.1.0 cleanup that was supposed to delete the legacy folder never ran on Kam's Mac, so both folders still existed. `WeeklyRhythmPathResolver.ResolvedRoot.allCases` listed `weeklyFlow` first, so the resolver always picked the legacy folder when both existed.
+- **Fix**: Reversed the enum case order in `WeeklyRhythmPathResolver.swift` — `weeklyRhythm` first, `weeklyFlow` as a legacy fallback. Updated the header comment.
+- **Prevention**: When the upstream Weekly Rhythm engine renames a path, the corresponding Fort Abode resolver MUST be updated in the same coordinated release. This CLAUDE.md previously hardcoded "Weekly Flow is canonical" — that statement was already stale at v2.1.0 ship time but no one noticed because Fort Abode's resolver agreed with the (now wrong) doc. Source of truth for canonical name is the Weekly Rhythm engine's CHANGELOG, not the Fort Abode CLAUDE.md.
 
 **[2026-04-13] Cowork used a stale bundled dashboard template**
 - **Symptom**: Cowork-generated dashboard was missing Project Pulse, Weekly Triage, carousel — all Phase 3/5/6 features that were already in the iCloud template.

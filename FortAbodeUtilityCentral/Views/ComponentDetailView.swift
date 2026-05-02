@@ -1,4 +1,5 @@
 import SwiftUI
+import AlignedDesignSystem
 
 // MARK: - Component Detail View
 
@@ -19,6 +20,13 @@ struct ComponentDetailView: View {
 
     private var status: UpdateStatus {
         viewModel.statuses[componentId] ?? .unknown
+    }
+
+    private var updateButtonLabel: String {
+        if case .updateAvailable(_, let latest) = status {
+            return "Install update to \(VersionFormatter.format(latest))"
+        }
+        return "Install update"
     }
 
     var body: some View {
@@ -56,7 +64,7 @@ struct ComponentDetailView: View {
                                 HStack(alignment: .top, spacing: 10) {
                                     Image(systemName: "server.rack")
                                         .font(.caption)
-                                        .foregroundStyle(.green)
+                                        .foregroundStyle(Color.statusScheduled)
                                         .frame(width: 16)
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(server.name)
@@ -69,8 +77,10 @@ struct ComponentDetailView: View {
                             }
                         }
 
-                        // Connected Accounts (multi-instance)
-                        if component.multiInstance == true, !instances.isEmpty {
+                        // Connected Accounts — between description block and action row
+                        // per UPDATE-2026-04-25.md. Renders for any multi-account MCP;
+                        // empty state surfaces a primary "Connect account" CTA.
+                        if component.multiInstance == true {
                             Divider().opacity(0.3)
                             instancesSection(component)
                         }
@@ -93,7 +103,7 @@ struct ComponentDetailView: View {
             }
         }
         .background {
-            VisualEffectBackground().ignoresSafeArea()
+            Color.surface.ignoresSafeArea()
         }
         .navigationTitle(component?.displayName ?? "Detail")
         .task {
@@ -127,24 +137,15 @@ struct ComponentDetailView: View {
             // Large icon
             ZStack {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(.ultraThinMaterial)
+                    .fill(Color.surfaceContainerHigh)
                     .overlay {
                         RoundedRectangle(cornerRadius: 28, style: .continuous)
-                            .fill(
-                                LinearGradient(
-                                    colors: [.green.opacity(0.08), .green.opacity(0.02)],
-                                    startPoint: .topLeading, endPoint: .bottomTrailing
-                                )
-                            )
-                    }
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 28, style: .continuous)
-                            .strokeBorder(.white.opacity(0.15), lineWidth: 0.5)
+                            .strokeBorder(Color.outlineVariant.opacity(0.4), lineWidth: 1)
                     }
 
                 Image(systemName: component.iconName)
                     .font(.system(size: 48, weight: .light))
-                    .foregroundStyle(.white.opacity(0.9))
+                    .foregroundStyle(Color.onSurfaceVariant)
             }
             .frame(width: 100, height: 100)
 
@@ -155,7 +156,7 @@ struct ComponentDetailView: View {
                 if let version = status.installedVersion {
                     Text(VersionFormatter.format(version))
                         .font(.system(.subheadline, design: .monospaced))
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.statusScheduled)
                 }
 
                 Text(component.userDescription ?? component.description)
@@ -168,28 +169,43 @@ struct ComponentDetailView: View {
 
     // MARK: - Actions
 
+    // Action row order per UPDATE-2026-04-25.md (Gmail reference layout):
+    //   [primary "Install update to vX"] [secondary "Check for Updates"]
+    //   [...spacer...] [secondary destructive "Uninstall"]
+    // — Primary appears only when status === .update.
+    // — Update button uses standard primary (near-black) — NOT amber.
+    //   The amber statusDraft dot still represents "update available" upstream;
+    //   the button itself is monochrome by design rule.
     @ViewBuilder
     private func actionsSection(_ component: Component) -> some View {
         HStack(spacing: 12) {
-            Button {
-                Task { await viewModel.checkSingleComponent(componentId) }
-            } label: {
-                Label("Check for Updates", systemImage: "arrow.clockwise")
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.regular)
-            .disabled(status == .checking)
-
             if status.isUpdateAvailable {
                 Button {
                     Task { await viewModel.updateComponent(componentId) }
                 } label: {
-                    Label("Update", systemImage: "arrow.down.circle")
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.down.circle")
+                            .font(.system(size: 11, weight: .medium))
+                        Text(updateButtonLabel)
+                    }
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.regular)
-                .tint(.orange)
+                .buttonStyle(.alignedPrimary)
+                .disabled(status == .updating)
+                .opacity(status == .updating ? 0.7 : 1)
             }
+
+            Button {
+                Task { await viewModel.checkSingleComponent(componentId) }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 11, weight: .medium))
+                    Text("Check for Updates")
+                }
+            }
+            .buttonStyle(.alignedSecondary)
+            .disabled(status == .checking)
+            .opacity(status == .checking ? 0.7 : 1)
 
             if status == .updating {
                 ProgressView()
@@ -199,7 +215,7 @@ struct ComponentDetailView: View {
             if case .error(let message) = status {
                 Text(message)
                     .font(.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.statusError)
                     .lineLimit(2)
             }
 
@@ -215,25 +231,28 @@ struct ComponentDetailView: View {
                     viewModel.copyWeeklyRhythmSetupInstructions()
                     copiedToClipboard = true
                 } label: {
-                    Label(
-                        copiedToClipboard ? "Copied!" : "Copy Setup Instructions",
-                        systemImage: copiedToClipboard ? "checkmark" : "doc.on.clipboard"
-                    )
+                    HStack(spacing: 6) {
+                        Image(systemName: copiedToClipboard ? "checkmark" : "doc.on.clipboard")
+                            .font(.system(size: 11, weight: .medium))
+                        Text(copiedToClipboard ? "Copied!" : "Copy Setup Instructions")
+                    }
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
+                .buttonStyle(.alignedSecondary)
                 .help("Copy skill setup instructions to clipboard. Paste into a Claude session to register the Weekly Rhythm skill.")
             }
 
-            // Uninstall button — only for marketplace components that are installed
+            // Uninstall — destructive secondary. Only for installed marketplace components.
             if component.showInMarketplace, status.installedVersion != nil {
-                Button(role: .destructive) {
+                Button {
                     Task { await viewModel.uninstallComponent(componentId) }
                 } label: {
-                    Label("Uninstall", systemImage: "trash")
+                    HStack(spacing: 6) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 11, weight: .medium))
+                        Text("Uninstall")
+                    }
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
+                .buttonStyle(.alignedSecondaryDestructive)
             }
         }
 
@@ -241,7 +260,7 @@ struct ComponentDetailView: View {
         if component.id == "weekly-rhythm", copiedToClipboard {
             HStack(alignment: .top, spacing: 6) {
                 Image(systemName: "info.circle.fill")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.tertiary)
                 Text("Open Claude, start a new task, and paste with ⌘V. Claude will set up the skill for you.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -254,7 +273,7 @@ struct ComponentDetailView: View {
         if viewModel.showRestartHint {
             HStack(spacing: 6) {
                 Image(systemName: "arrow.clockwise.circle.fill")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.tertiary)
                 Text("Restart Claude Desktop to activate changes.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -307,6 +326,16 @@ struct ComponentDetailView: View {
     }
 
     // MARK: - Connected Accounts
+    //
+    // Spec (UPDATE-2026-04-25.md §2a):
+    //   • 24pt circle avatar in `tertiary` slate, white initial
+    //   • body-md weight 500 name, optionally suffixed with " — workspace name"
+    //   • Ghost × icon button per row (`onSurfaceVariant`, hover reveals
+    //     `surfaceContainerHigh` background)
+    //   • 1pt outlineVariant separator between rows
+    //   • Hover row: `surfaceContainer` bg with 8pt radius
+    //   • Empty state: "No accounts connected" + primary "Connect account" CTA;
+    //     the "+ Add Account" header button is still present.
 
     @ViewBuilder
     private func instancesSection(_ component: Component) -> some View {
@@ -316,49 +345,60 @@ struct ComponentDetailView: View {
             Button {
                 showWizard = true
             } label: {
-                Label("Add Account", systemImage: "plus")
-                    .font(.caption)
+                HStack(spacing: 6) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 11, weight: .medium))
+                    Text("Add Account")
+                }
             }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
+            .buttonStyle(.alignedSecondary)
         }
 
-        VStack(spacing: 0) {
-            ForEach(instances, id: \.self) { name in
-                HStack(spacing: 12) {
-                    Image(systemName: "person.crop.circle.fill")
-                        .font(.title3)
-                        .foregroundStyle(.green)
-
-                    Text(name)
-                        .font(.body)
-
-                    Spacer()
-
-                    Button(role: .destructive) {
-                        Task {
-                            await viewModel.removeInstance(componentId: componentId, instanceName: name)
-                            await loadInstances()
+        if instances.isEmpty {
+            instancesEmptyState
+        } else {
+            VStack(spacing: 0) {
+                ForEach(Array(instances.enumerated()), id: \.element) { index, name in
+                    InstanceRow(
+                        name: name,
+                        onRemove: {
+                            Task {
+                                await viewModel.removeInstance(componentId: componentId, instanceName: name)
+                                await loadInstances()
+                            }
                         }
-                    } label: {
-                        Image(systemName: "minus.circle")
-                            .foregroundStyle(.red.opacity(0.7))
-                    }
-                    .buttonStyle(.plain)
-                    .help("Remove \(name)")
-                }
-                .padding(.vertical, 10)
-                .padding(.horizontal, 12)
+                    )
 
-                if name != instances.last {
-                    Divider().opacity(0.2)
+                    if index < instances.count - 1 {
+                        Rectangle()
+                            .fill(Color.outlineVariant.opacity(0.5))
+                            .frame(height: 1)
+                    }
                 }
             }
         }
-        .background {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(.ultraThinMaterial)
+    }
+
+    @ViewBuilder
+    private var instancesEmptyState: some View {
+        VStack(spacing: 12) {
+            Text("No accounts connected")
+                .font(.bodyMD)
+                .foregroundStyle(Color.onSurfaceVariant)
+
+            Button {
+                showWizard = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 11, weight: .medium))
+                    Text("Connect account")
+                }
+            }
+            .buttonStyle(.alignedPrimary)
         }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 24)
     }
 
     // MARK: - Helpers
@@ -389,6 +429,67 @@ struct ComponentDetailView: View {
             componentId: componentId
         )
         isLoadingChangelog = false
+    }
+}
+
+// MARK: - Connected Account Row
+//
+// Per UPDATE-2026-04-25.md §2a per-row spec — extracted because we need
+// per-row hover state.
+
+private struct InstanceRow: View {
+    let name: String
+    let onRemove: () -> Void
+
+    @State private var isHoveringRow = false
+    @State private var isHoveringRemove = false
+
+    private var initial: String {
+        name.first.map { String($0).uppercased() } ?? "?"
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color.tertiary)
+                Text(initial)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.onTertiary)
+            }
+            .frame(width: 24, height: 24)
+
+            Text(name)
+                .font(.bodyMD.weight(.medium))
+                .foregroundStyle(Color.onSurface)
+
+            Spacer()
+
+            Button(action: onRemove) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(Color.onSurfaceVariant)
+                    .frame(width: 22, height: 22)
+                    .background(
+                        Circle()
+                            .fill(isHoveringRemove ? Color.surfaceContainerHigh : Color.clear)
+                    )
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .onHover { isHoveringRemove = $0 }
+            .help("Disconnect \(name)")
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(isHoveringRow ? Color.surfaceContainer : Color.clear)
+        )
+        .contentShape(Rectangle())
+        .onHover { isHoveringRow = $0 }
+        .animation(.easeOut(duration: 0.15), value: isHoveringRow)
+        .animation(.easeOut(duration: 0.15), value: isHoveringRemove)
     }
 }
 

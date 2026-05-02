@@ -7,44 +7,79 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		00E5BEF9B71230C4677B387F /* WeeklyRhythmSkillInstallSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72018BAC4B42C0C76B18B09 /* WeeklyRhythmSkillInstallSheet.swift */; };
 		047B461FE0B2A7A81E4BC469 /* ActivationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BECADF7B96CB7D3842E642F /* ActivationView.swift */; };
 		05D38A44306FF10EEE0001D9 /* FamilyMemoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF650F1C05A9FE3D738BAA42 /* FamilyMemoryService.swift */; };
 		05E6CAD0B79916E67AD9C87D /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02B29456AE09E75239846438 /* KeychainService.swift */; };
 		06CB33690CC14595E2E99291 /* GitHubService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C827BD5D498E86D1F3BEC2D /* GitHubService.swift */; };
 		07BA11DC7D460A01979E6F21 /* ErrorLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EB57DA95F7124E0519B2C86 /* ErrorLogger.swift */; };
-		0C2AFE378C7F46B021BE15D4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 968811C1D0945F5BE9B6F0A8 /* ContentView.swift */; };
 		0D7F85E45BFAFB9CBA75F829 /* ClaudeCodeConfigService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67CBAA3E68AE042FD8F6FFDF /* ClaudeCodeConfigService.swift */; };
+		107872FAAEF37D55D156492E /* ChatPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AB3D27CB30E231A6EF2EF26 /* ChatPanel.swift */; };
 		112863CDD6F3C554DAF8C3A9 /* UpdateExecutionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E343B9250E53EF5FE8057DAE /* UpdateExecutionService.swift */; };
 		11E72DFAD7010B08CCFA2023 /* dashboard-template.html in Resources */ = {isa = PBXBuildFile; fileRef = 750E9292C50A1D0B0C4EE603 /* dashboard-template.html */; };
 		13B98C724D6580546B4A9F6C /* weekly-rhythm-skill-wrapper.md in Resources */ = {isa = PBXBuildFile; fileRef = CFEBF1AD73F4AD47132E5387 /* weekly-rhythm-skill-wrapper.md */; };
+		149284AD1AF7CC868055E9C7 /* ClaudeCLIDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBFD216C2A59D0C5332408B4 /* ClaudeCLIDetector.swift */; };
 		156C48CEA34E68406BE574C7 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A1B1F334020349AF1BB567F /* AppSettings.swift */; };
 		15ACB224032293DD17F523FA /* SetupValidationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9646955BDB7A4F405EB1FDF0 /* SetupValidationService.swift */; };
+		15DC17F5631A4CF72E02C261 /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = D59852CE50DAEC545C6B0C0E /* ChatMessage.swift */; };
+		18317CE6CA9311E67496A0AA /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FB784FE53060D8FF7EEE72 /* AppState.swift */; };
 		1BE2080AB4AF9C0D5DDF3A05 /* SetupWizardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00E7940EB3A6AD0DB6A38C2F /* SetupWizardViewModel.swift */; };
-		24FDEC144817A4CB5E3EFB24 /* ComponentRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6938E7B668180CBA05772572 /* ComponentRowView.swift */; };
+		25D74F095E9237042C25585C /* MCPProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DF8C7B7AABE2431944A25E9 /* MCPProbe.swift */; };
+		2914B8F6E862FE0B1914BFAE /* WeeklyRhythmEngineStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD284AB922259409852EBE73 /* WeeklyRhythmEngineStore.swift */; };
+		2B07591CF9F2646F8B903101 /* MissingMCPsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 412B13C7BB1BF39888717812 /* MissingMCPsSheet.swift */; };
 		2B92C1E7ECA9DC4D7DC50F0E /* FeedbackService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DACD2838A1C216461103AE6 /* FeedbackService.swift */; };
-		33743BBEA6592F741CB5A22B /* ComponentCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26113857AC506F0780BBEE4C /* ComponentCardView.swift */; };
+		2C512BA73630DE2CCC93F99F /* AlignedSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F6F08569570B37845FC1387 /* AlignedSheet.swift */; };
+		2C7ED0531E56C8235AFCE6BC /* PendingMutationsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F5E929A9A401F87718B0983 /* PendingMutationsStore.swift */; };
+		30EE43C675DEE5B1B99D104C /* SidebarUpdateRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7BCAD83B941C6267D90E5F9 /* SidebarUpdateRow.swift */; };
+		330A710170B2B74902D579D5 /* EditTriageSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 564A22B818E62E0E1921A86F /* EditTriageSheet.swift */; };
+		355F6705C0380EC8CCED0279 /* WeeklyRhythmUIStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80DD857A1CB762AC7991C68C /* WeeklyRhythmUIStateStore.swift */; };
 		377AE9482D6974941E963E1B /* FamilyMemoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14788FA8AC138E58AD03BFC7 /* FamilyMemoryView.swift */; };
+		382CD7A8BD2AB838F0C9BE34 /* FamilyMemoryCompletionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44FD6E3E9BAFAD1F9175B3E1 /* FamilyMemoryCompletionService.swift */; };
 		386B5A369D88921474EC50B4 /* VersionComparisonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0AC8F02FED91F42FC4EB00 /* VersionComparisonTests.swift */; };
 		38D925B340A40492A5DB7FAC /* FeedbackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3757BEFBB847475D0690FF32 /* FeedbackView.swift */; };
 		39ACD4EE2996FF40E684E287 /* FeedbackViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6B493D672539E78B60DC3E8 /* FeedbackViewModel.swift */; };
+		3B1B8E9B129468193257A0A2 /* WeeklyRhythmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0115CDA875DB5D2D4BA7C4AA /* WeeklyRhythmView.swift */; };
 		3B8CF00712BD137247649E22 /* VersionDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52A1E55BD560971A940F171A /* VersionDetectionService.swift */; };
+		3CFDC64737A93718CFE3AE95 /* WeeklyRhythmEngineSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C5D0EF96B4D7D82238B66ED /* WeeklyRhythmEngineSection.swift */; };
+		3DA8DDC6A71588E1CF270BE0 /* ClaudeChatToolsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C83FF7CAE6C8D8123814DAE4 /* ClaudeChatToolsSection.swift */; };
+		3DAC043E1F1CE49D3F91AA79 /* PageScaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC9BDBAE1BA8CDCF7640CE6B /* PageScaffold.swift */; };
+		3F9322104FD17EB1DA4801C8 /* RunHealthPill.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9462C3630F3A00A990888CA2 /* RunHealthPill.swift */; };
 		49AFDBE9BAB4BDF2520332FF /* VersionDetectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE4CB53B5CB04DACA0FDC375 /* VersionDetectionTests.swift */; };
+		4BC30361A3F18D7A991A72EE /* MockWeeklyRhythmDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EF56794AE0F9F09B953BC13 /* MockWeeklyRhythmDataSource.swift */; };
+		4C29C765E197C8C5C27D8BC2 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1341A36E69A185933A6187F4 /* RootView.swift */; };
+		4CB55B39A51109E2D3DAE9F1 /* ChatPanelHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C3580CD173E87DCBCC770F4 /* ChatPanelHeader.swift */; };
+		4FB42B328F8B03A28BCC1962 /* WhyModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8776F4FEAAFE5DD29E8C1730 /* WhyModal.swift */; };
 		527E21E6BC0AA688C00FA4E9 /* GitHubServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ED7ECBE41703B1FC4EB0791 /* GitHubServiceTests.swift */; };
 		52D654FD0BE7A805B4F3F1A3 /* FamilyHealthDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2743470CF6F7A2E42396FAC /* FamilyHealthDashboard.swift */; };
+		53AEA16097825500F8268329 /* FileBackedWeeklyRhythmDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F2F5EA39EAE9558037F9670 /* FileBackedWeeklyRhythmDataSource.swift */; };
+		55FEAC94FECD7513E36D8F87 /* SynthesizedRunReport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 656DB4A4A15347472DE4BF02 /* SynthesizedRunReport.swift */; };
+		5A4C032BD13E7B95BFCABB96 /* RunHealthDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD5F1C96EFA4D647FFDA57BB /* RunHealthDetailSheet.swift */; };
 		5AB3F1610DB5361CAC618ECC /* SecureInputStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88614DCA2B0E6155C755D3C /* SecureInputStorage.swift */; };
 		61D6E60947EC0AEB30BF7D97 /* WhatsNewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16FB3766D3708E744FA90472 /* WhatsNewView.swift */; };
 		639646812B867787DB59AD83 /* FullDiskAccessService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D874D5A2A3528B406492C6B /* FullDiskAccessService.swift */; };
 		63B0BCA2036A45DF148B3C37 /* HealthCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = F67306E0D4DE7A228BD944B8 /* HealthCheck.swift */; };
 		63DF7D1C11E3A188E94C469F /* ComponentRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 782EFED7B8F2AD1265BCF690 /* ComponentRegistry.swift */; };
 		64CA5B5EAAFCDA5C06236011 /* FortAbodeUtilityCentralApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F9DE0077075CA77D29FF77 /* FortAbodeUtilityCentralApp.swift */; };
+		6798F4FD18B8A889FD4C03C4 /* FamilyMessagesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36F4C51F9F1F20EE85F5AD95 /* FamilyMessagesService.swift */; };
+		6CD4E6A5F0EC7CA6EA53E11B /* FamilyChatPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = D71386BF1C667590FCF48FB8 /* FamilyChatPane.swift */; };
+		7186FEEAC3161F93D78ECA50 /* WeeklyRhythmSkillInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C01EEE9A69F8B9DE4572C90 /* WeeklyRhythmSkillInstaller.swift */; };
 		78A108105A88096647C68196 /* ComponentHealthCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EB2DD0D3E1CBC8A343C150 /* ComponentHealthCard.swift */; };
+		7C8FF70F6E7111308CEAA754 /* ClaudeAuthKeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 249CE7BC7FB6CB8C7FA08D10 /* ClaudeAuthKeychainService.swift */; };
+		7CFA90087FA5CC19AFC67353 /* WeeklyRhythmPathResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 418F1A3FCCAA74A9749BDE1E /* WeeklyRhythmPathResolver.swift */; };
+		7F7577B11C2D1F70D5E6F9B7 /* ChatComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B245C0720A4C0BC3EBC09BF2 /* ChatComposer.swift */; };
+		7FCF70E4B640FED1EAD72A90 /* ClaudeAuthSetupSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 801F8855770E536D9FD34420 /* ClaudeAuthSetupSheet.swift */; };
 		84EF3894AB836BBA01A7FB6A /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA1C59FBAA6BF53EE5F93CE0 /* NotificationService.swift */; };
-		850ED6CD3D14A5BD8BE09770 /* UpdateBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9FFF0BD57095AE67A3B4618 /* UpdateBannerView.swift */; };
-		864D70FCF7B97D190269DDFF /* UpdateProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 782D8AD84007D35B5B0DB9CD /* UpdateProgressView.swift */; };
+		8AA1D4FFDC54D9B78DA73942 /* WeeklyRhythmEngineRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCC66F9F30443EC4D0D153F9 /* WeeklyRhythmEngineRunner.swift */; };
 		8C46F547DCED96736E019D49 /* ComponentRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB0B45EFBB7DD5A133107515 /* ComponentRegistryTests.swift */; };
+		8C81AC2276A4B5BA5E86A219 /* WeeklyRhythmRunControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57C7879CB390CE3D57122B8F /* WeeklyRhythmRunControl.swift */; };
 		8FEB14627351680D4959D1BF /* MarketplaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FB63D56853D1FFB0742D448 /* MarketplaceView.swift */; };
+		916EBC0C31B8473B1C50C325 /* FamilyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01FF0FA5D6DBEBF7A139D6FD /* FamilyView.swift */; };
+		91905EBBC828F6BCDF09EF1A /* AlignedDesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 5D70F17E7114E90E5762C0DB /* AlignedDesignSystem */; };
 		91D50E1EB920B8C40D6B33FB /* ClaudeDesktopConfigService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A49ABEA06B33CB1666AD17A0 /* ClaudeDesktopConfigService.swift */; };
+		9C5B1ABB80EFFEF201C62AAB /* WeeklyRhythmDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E417AC3384F05962FA62588 /* WeeklyRhythmDataSource.swift */; };
+		A05720BF393011B270ABE894 /* EditEventSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83171E1A838C0577BABFF23F /* EditEventSheet.swift */; };
 		A1F5C83EBA3836D3FFACAC5D /* WeeklyRhythmService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66C0B457A755E70A4E21D034 /* WeeklyRhythmService.swift */; };
+		A1F93FFFAC5814DE06CC88AF /* WeeklyRhythm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A84C5B5B9F422E0FEA151CF0 /* WeeklyRhythm.swift */; };
 		A2B2C6005EF42A9C341F8826 /* FilePinningService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72B3F9599ED98BC09073C78C /* FilePinningService.swift */; };
 		A57EFCA453010BE0DB621F72 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 48EB2A999B000B9AC11BB0DD /* Assets.xcassets */; };
 		A5D861B2D8E9BA0284E7ECF6 /* UpdateStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754EF798D1DADA467A6A6D84 /* UpdateStatus.swift */; };
@@ -55,20 +90,34 @@
 		B04C24F776D1BB9275500DB0 /* weekly-rhythm-plugin-bundle in Resources */ = {isa = PBXBuildFile; fileRef = 21A8F7C1C7370A480AA42749 /* weekly-rhythm-plugin-bundle */; };
 		B30AFA9528E558568F1FC9C0 /* gws-client-secret.json in Resources */ = {isa = PBXBuildFile; fileRef = B34078A97122C23C4D2D35E0 /* gws-client-secret.json */; };
 		B4F10EEE4625314A880D027D /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC40AFA45E29AF2DBF63CC15 /* SettingsViewModel.swift */; };
+		B7C538A5D2630B86AEF3E048 /* SidebarCollapseButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18F6C3CFC3DE69126D5C70F1 /* SidebarCollapseButton.swift */; };
 		BCC20DC3968DB7047C53917E /* SetupWizardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00E7AF22AE310DA57B354CDA /* SetupWizardView.swift */; };
 		BE31F2E9C53C3C01AF59B9E0 /* AppNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C939E66D6E0DCFD3C6E6B28F /* AppNavigation.swift */; };
+		BE37A5EB2E990AF93D5C09B6 /* ClaudeChatStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05205DF62D5431AA4F2F0EC5 /* ClaudeChatStore.swift */; };
+		BE37FC1AB45639A848242F43 /* EngineAttentionBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A78BB1D7CB738F95B99C24E /* EngineAttentionBanner.swift */; };
 		BFFC39B7F0DEE48815EB2481 /* BackgroundTaskService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE892C2183E7CF82B548E18D /* BackgroundTaskService.swift */; };
+		C0FDF12D701AEAEE4331FF13 /* Destination.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8B7BB0163579ACD834ADBB1 /* Destination.swift */; };
 		C3404068D33521F15C9DAC34 /* whats-new.json in Resources */ = {isa = PBXBuildFile; fileRef = CB4031837BBE075B7CEF1484 /* whats-new.json */; };
+		C5947E446207D4F44C499534 /* FamilyMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67BF3EEB937984A4CAA2B326 /* FamilyMessage.swift */; };
 		CA4CA8134B5255875DB1AF2A /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 8B75BAAFED90C32A32CA2420 /* Sparkle */; };
 		CB346FEB794E23991188381B /* CoworkSkillService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B5DB8AEAB5C2C6F4D2DCE /* CoworkSkillService.swift */; };
+		D0927D0CC5D148C03FD75CB4 /* GhostBorderFieldDropdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A7111D9656E3FA9D7F6F054 /* GhostBorderFieldDropdown.swift */; };
+		D96D31FEA9E9BAD74A5DCFD6 /* ClaudeChatTurnRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 783E1B9E6312BBB3DB53587B /* ClaudeChatTurnRunner.swift */; };
+		DC42DBCAD25AF1F2F3FDFF8D /* ConfigMdEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DB01C9B5FC7912CFB5BBD2A /* ConfigMdEditor.swift */; };
 		DF4E9A21418662B5D610866B /* ChangelogEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91BE7F2F52EFF582932E8B9D /* ChangelogEntry.swift */; };
+		DFEE2E123FFC73F011AA13EB /* ClaudeChatPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 767920B3A5A38AFD4081D133 /* ClaudeChatPane.swift */; };
 		E2A034CE471A68B4E0222C3E /* FamilyMemoryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8599C33B343D91784A3618B0 /* FamilyMemoryModels.swift */; };
+		E2FF7433B9E85A711CB8E305 /* ChatHistoryPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 896394791324A365221B36FB /* ChatHistoryPersistence.swift */; };
 		E39F0B6F301568824A772E71 /* Component.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7E990CE834E05B52EAF553 /* Component.swift */; };
 		EB1961D3A6B1297856EF3C69 /* ComponentDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A394C02034C7CEDA5FA603 /* ComponentDetailView.swift */; };
+		EC2CC8D874906D44ABAA6C72 /* TriageRsvpControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47821DD2E2C90209AADE1131 /* TriageRsvpControl.swift */; };
 		ED44975C50A6C6A64F4954DE /* CheckForUpdatesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E67AB0BE82AA7AE5E6F418 /* CheckForUpdatesView.swift */; };
+		EE0563F9E4C13C649D44F181 /* Sidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = D107F8C5D300A4F18DF49A3F /* Sidebar.swift */; };
 		EF6A84B87BF7C01CF51F88F6 /* StepContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04657FBC8960E17F4E585ECA /* StepContentView.swift */; };
+		EFE47B08A1D5ED98303213CE /* ChatTurn.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6C2861366CF6D5812912539 /* ChatTurn.swift */; };
 		F2EA15F87DAAF9BDF02FDFAE /* component-registry.json in Resources */ = {isa = PBXBuildFile; fileRef = CB45A8A63D1E4873C3D739AA /* component-registry.json */; };
 		F37E0647A0A8D347473AA752 /* ComponentListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC09EC9C57BA66F1650B44A0 /* ComponentListViewModel.swift */; };
+		F4855FF4FA0E88D59716A23B /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03AD9F9995E212DEDA199051 /* HomeView.swift */; };
 		F89C6DB5F46AA0E2B5C06700 /* engine-spec.md in Resources */ = {isa = PBXBuildFile; fileRef = 50C8FB18F4E77DC49B18BFA9 /* engine-spec.md */; };
 		FE125FC93FD596804B8211EE /* claude-md-template.md in Resources */ = {isa = PBXBuildFile; fileRef = 910E96CDC9E2B2E4595DEFA8 /* claude-md-template.md */; };
 /* End PBXBuildFile section */
@@ -86,68 +135,116 @@
 /* Begin PBXFileReference section */
 		00E7940EB3A6AD0DB6A38C2F /* SetupWizardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupWizardViewModel.swift; sourceTree = "<group>"; };
 		00E7AF22AE310DA57B354CDA /* SetupWizardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupWizardView.swift; sourceTree = "<group>"; };
+		0115CDA875DB5D2D4BA7C4AA /* WeeklyRhythmView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmView.swift; sourceTree = "<group>"; };
+		01FF0FA5D6DBEBF7A139D6FD /* FamilyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyView.swift; sourceTree = "<group>"; };
 		02B29456AE09E75239846438 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
 		032C293DBDA62F6DEA4FCB24 /* AppUpdaterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdaterService.swift; sourceTree = "<group>"; };
+		03AD9F9995E212DEDA199051 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		04657FBC8960E17F4E585ECA /* StepContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StepContentView.swift; sourceTree = "<group>"; };
+		05205DF62D5431AA4F2F0EC5 /* ClaudeChatStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeChatStore.swift; sourceTree = "<group>"; };
+		0A7111D9656E3FA9D7F6F054 /* GhostBorderFieldDropdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GhostBorderFieldDropdown.swift; sourceTree = "<group>"; };
+		0A78BB1D7CB738F95B99C24E /* EngineAttentionBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineAttentionBanner.swift; sourceTree = "<group>"; };
 		0C827BD5D498E86D1F3BEC2D /* GitHubService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubService.swift; sourceTree = "<group>"; };
+		1341A36E69A185933A6187F4 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		14788FA8AC138E58AD03BFC7 /* FamilyMemoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyMemoryView.swift; sourceTree = "<group>"; };
 		16FB3766D3708E744FA90472 /* WhatsNewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewView.swift; sourceTree = "<group>"; };
+		18F6C3CFC3DE69126D5C70F1 /* SidebarCollapseButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarCollapseButton.swift; sourceTree = "<group>"; };
+		1C5D0EF96B4D7D82238B66ED /* WeeklyRhythmEngineSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmEngineSection.swift; sourceTree = "<group>"; };
 		1EB57DA95F7124E0519B2C86 /* ErrorLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorLogger.swift; sourceTree = "<group>"; };
 		21A8F7C1C7370A480AA42749 /* weekly-rhythm-plugin-bundle */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "weekly-rhythm-plugin-bundle"; path = "Resources/weekly-rhythm-plugin-bundle"; sourceTree = SOURCE_ROOT; };
-		26113857AC506F0780BBEE4C /* ComponentCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentCardView.swift; sourceTree = "<group>"; };
+		249CE7BC7FB6CB8C7FA08D10 /* ClaudeAuthKeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeAuthKeychainService.swift; sourceTree = "<group>"; };
+		2E417AC3384F05962FA62588 /* WeeklyRhythmDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmDataSource.swift; sourceTree = "<group>"; };
 		354B5DB8AEAB5C2C6F4D2DCE /* CoworkSkillService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoworkSkillService.swift; sourceTree = "<group>"; };
+		36F4C51F9F1F20EE85F5AD95 /* FamilyMessagesService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyMessagesService.swift; sourceTree = "<group>"; };
 		3757BEFBB847475D0690FF32 /* FeedbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackView.swift; sourceTree = "<group>"; };
 		37EB2DD0D3E1CBC8A343C150 /* ComponentHealthCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentHealthCard.swift; sourceTree = "<group>"; };
+		3AB3D27CB30E231A6EF2EF26 /* ChatPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPanel.swift; sourceTree = "<group>"; };
+		3C3580CD173E87DCBCC770F4 /* ChatPanelHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPanelHeader.swift; sourceTree = "<group>"; };
 		3DACD2838A1C216461103AE6 /* FeedbackService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackService.swift; sourceTree = "<group>"; };
+		3F6F08569570B37845FC1387 /* AlignedSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignedSheet.swift; sourceTree = "<group>"; };
+		412B13C7BB1BF39888717812 /* MissingMCPsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissingMCPsSheet.swift; sourceTree = "<group>"; };
+		418F1A3FCCAA74A9749BDE1E /* WeeklyRhythmPathResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmPathResolver.swift; sourceTree = "<group>"; };
+		44FD6E3E9BAFAD1F9175B3E1 /* FamilyMemoryCompletionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyMemoryCompletionService.swift; sourceTree = "<group>"; };
+		47821DD2E2C90209AADE1131 /* TriageRsvpControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TriageRsvpControl.swift; sourceTree = "<group>"; };
 		48EB2A999B000B9AC11BB0DD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		4DB01C9B5FC7912CFB5BBD2A /* ConfigMdEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigMdEditor.swift; sourceTree = "<group>"; };
 		50C8FB18F4E77DC49B18BFA9 /* engine-spec.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "engine-spec.md"; sourceTree = "<group>"; };
 		52A1E55BD560971A940F171A /* VersionDetectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionDetectionService.swift; sourceTree = "<group>"; };
+		564A22B818E62E0E1921A86F /* EditTriageSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditTriageSheet.swift; sourceTree = "<group>"; };
+		57C7879CB390CE3D57122B8F /* WeeklyRhythmRunControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmRunControl.swift; sourceTree = "<group>"; };
 		5914439D10E470294A91A039 /* FortAbodeUtilityCentral.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FortAbodeUtilityCentral.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5C01EEE9A69F8B9DE4572C90 /* WeeklyRhythmSkillInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmSkillInstaller.swift; sourceTree = "<group>"; };
+		5EF56794AE0F9F09B953BC13 /* MockWeeklyRhythmDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockWeeklyRhythmDataSource.swift; sourceTree = "<group>"; };
+		656DB4A4A15347472DE4BF02 /* SynthesizedRunReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SynthesizedRunReport.swift; sourceTree = "<group>"; };
 		66C0B457A755E70A4E21D034 /* WeeklyRhythmService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmService.swift; sourceTree = "<group>"; };
+		67BF3EEB937984A4CAA2B326 /* FamilyMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyMessage.swift; sourceTree = "<group>"; };
 		67CBAA3E68AE042FD8F6FFDF /* ClaudeCodeConfigService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeCodeConfigService.swift; sourceTree = "<group>"; };
-		6938E7B668180CBA05772572 /* ComponentRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentRowView.swift; sourceTree = "<group>"; };
 		69E67AB0BE82AA7AE5E6F418 /* CheckForUpdatesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckForUpdatesView.swift; sourceTree = "<group>"; };
 		6F7E990CE834E05B52EAF553 /* Component.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Component.swift; sourceTree = "<group>"; };
 		72B3F9599ED98BC09073C78C /* FilePinningService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilePinningService.swift; sourceTree = "<group>"; };
 		750E9292C50A1D0B0C4EE603 /* dashboard-template.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = "dashboard-template.html"; sourceTree = "<group>"; };
 		754EF798D1DADA467A6A6D84 /* UpdateStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateStatus.swift; sourceTree = "<group>"; };
-		782D8AD84007D35B5B0DB9CD /* UpdateProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateProgressView.swift; sourceTree = "<group>"; };
+		767920B3A5A38AFD4081D133 /* ClaudeChatPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeChatPane.swift; sourceTree = "<group>"; };
 		782EFED7B8F2AD1265BCF690 /* ComponentRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentRegistry.swift; sourceTree = "<group>"; };
+		783E1B9E6312BBB3DB53587B /* ClaudeChatTurnRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeChatTurnRunner.swift; sourceTree = "<group>"; };
 		7D874D5A2A3528B406492C6B /* FullDiskAccessService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullDiskAccessService.swift; sourceTree = "<group>"; };
+		7DF8C7B7AABE2431944A25E9 /* MCPProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPProbe.swift; sourceTree = "<group>"; };
 		7FB63D56853D1FFB0742D448 /* MarketplaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketplaceView.swift; sourceTree = "<group>"; };
+		801F8855770E536D9FD34420 /* ClaudeAuthSetupSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeAuthSetupSheet.swift; sourceTree = "<group>"; };
+		80DD857A1CB762AC7991C68C /* WeeklyRhythmUIStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmUIStateStore.swift; sourceTree = "<group>"; };
+		83171E1A838C0577BABFF23F /* EditEventSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditEventSheet.swift; sourceTree = "<group>"; };
 		8599C33B343D91784A3618B0 /* FamilyMemoryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyMemoryModels.swift; sourceTree = "<group>"; };
+		8776F4FEAAFE5DD29E8C1730 /* WhyModal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhyModal.swift; sourceTree = "<group>"; };
+		896394791324A365221B36FB /* ChatHistoryPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHistoryPersistence.swift; sourceTree = "<group>"; };
 		8BECADF7B96CB7D3842E642F /* ActivationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivationView.swift; sourceTree = "<group>"; };
 		8ED7ECBE41703B1FC4EB0791 /* GitHubServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubServiceTests.swift; sourceTree = "<group>"; };
+		8F5E929A9A401F87718B0983 /* PendingMutationsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingMutationsStore.swift; sourceTree = "<group>"; };
 		910E96CDC9E2B2E4595DEFA8 /* claude-md-template.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "claude-md-template.md"; sourceTree = "<group>"; };
 		91BE7F2F52EFF582932E8B9D /* ChangelogEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangelogEntry.swift; sourceTree = "<group>"; };
+		9462C3630F3A00A990888CA2 /* RunHealthPill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunHealthPill.swift; sourceTree = "<group>"; };
 		9646955BDB7A4F405EB1FDF0 /* SetupValidationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupValidationService.swift; sourceTree = "<group>"; };
-		968811C1D0945F5BE9B6F0A8 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		9A1B1F334020349AF1BB567F /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
+		9F2F5EA39EAE9558037F9670 /* FileBackedWeeklyRhythmDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBackedWeeklyRhythmDataSource.swift; sourceTree = "<group>"; };
 		A100840E6248DECFE28C4DBF /* FortAbodeUtilityCentralTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FortAbodeUtilityCentralTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A49ABEA06B33CB1666AD17A0 /* ClaudeDesktopConfigService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeDesktopConfigService.swift; sourceTree = "<group>"; };
+		A72018BAC4B42C0C76B18B09 /* WeeklyRhythmSkillInstallSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmSkillInstallSheet.swift; sourceTree = "<group>"; };
+		A84C5B5B9F422E0FEA151CF0 /* WeeklyRhythm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythm.swift; sourceTree = "<group>"; };
 		A88614DCA2B0E6155C755D3C /* SecureInputStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureInputStorage.swift; sourceTree = "<group>"; };
+		AC9BDBAE1BA8CDCF7640CE6B /* PageScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageScaffold.swift; sourceTree = "<group>"; };
+		B245C0720A4C0BC3EBC09BF2 /* ChatComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatComposer.swift; sourceTree = "<group>"; };
 		B34078A97122C23C4D2D35E0 /* gws-client-secret.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "gws-client-secret.json"; sourceTree = "<group>"; };
 		BA1C59FBAA6BF53EE5F93CE0 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		BC40AFA45E29AF2DBF63CC15 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
+		BD5F1C96EFA4D647FFDA57BB /* RunHealthDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunHealthDetailSheet.swift; sourceTree = "<group>"; };
 		C2743470CF6F7A2E42396FAC /* FamilyHealthDashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyHealthDashboard.swift; sourceTree = "<group>"; };
 		C32B9115221657AAE3B2B132 /* BadgeTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgeTracker.swift; sourceTree = "<group>"; };
+		C83FF7CAE6C8D8123814DAE4 /* ClaudeChatToolsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeChatToolsSection.swift; sourceTree = "<group>"; };
 		C8F9DE0077075CA77D29FF77 /* FortAbodeUtilityCentralApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FortAbodeUtilityCentralApp.swift; sourceTree = "<group>"; };
 		C939E66D6E0DCFD3C6E6B28F /* AppNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNavigation.swift; sourceTree = "<group>"; };
 		CB0B45EFBB7DD5A133107515 /* ComponentRegistryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentRegistryTests.swift; sourceTree = "<group>"; };
 		CB4031837BBE075B7CEF1484 /* whats-new.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "whats-new.json"; sourceTree = "<group>"; };
 		CB45A8A63D1E4873C3D739AA /* component-registry.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "component-registry.json"; sourceTree = "<group>"; };
+		CD284AB922259409852EBE73 /* WeeklyRhythmEngineStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmEngineStore.swift; sourceTree = "<group>"; };
 		CF650F1C05A9FE3D738BAA42 /* FamilyMemoryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyMemoryService.swift; sourceTree = "<group>"; };
 		CFEBF1AD73F4AD47132E5387 /* weekly-rhythm-skill-wrapper.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "weekly-rhythm-skill-wrapper.md"; sourceTree = "<group>"; };
+		D107F8C5D300A4F18DF49A3F /* Sidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sidebar.swift; sourceTree = "<group>"; };
 		D1A394C02034C7CEDA5FA603 /* ComponentDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentDetailView.swift; sourceTree = "<group>"; };
 		D31AA9A8E09678D0693ACE38 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		D59852CE50DAEC545C6B0C0E /* ChatMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessage.swift; sourceTree = "<group>"; };
+		D71386BF1C667590FCF48FB8 /* FamilyChatPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyChatPane.swift; sourceTree = "<group>"; };
+		DBFD216C2A59D0C5332408B4 /* ClaudeCLIDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeCLIDetector.swift; sourceTree = "<group>"; };
+		DCC66F9F30443EC4D0D153F9 /* WeeklyRhythmEngineRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRhythmEngineRunner.swift; sourceTree = "<group>"; };
 		DE0AC8F02FED91F42FC4EB00 /* VersionComparisonTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionComparisonTests.swift; sourceTree = "<group>"; };
 		E343B9250E53EF5FE8057DAE /* UpdateExecutionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateExecutionService.swift; sourceTree = "<group>"; };
 		E6B493D672539E78B60DC3E8 /* FeedbackViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackViewModel.swift; sourceTree = "<group>"; };
 		EC09EC9C57BA66F1650B44A0 /* ComponentListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentListViewModel.swift; sourceTree = "<group>"; };
 		ED50D447877CF3DECD42F54F /* StepIllustrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StepIllustrationView.swift; sourceTree = "<group>"; };
 		EE892C2183E7CF82B548E18D /* BackgroundTaskService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundTaskService.swift; sourceTree = "<group>"; };
+		F4FB784FE53060D8FF7EEE72 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		F67306E0D4DE7A228BD944B8 /* HealthCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthCheck.swift; sourceTree = "<group>"; };
-		F9FFF0BD57095AE67A3B4618 /* UpdateBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateBannerView.swift; sourceTree = "<group>"; };
+		F6C2861366CF6D5812912539 /* ChatTurn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatTurn.swift; sourceTree = "<group>"; };
+		F7BCAD83B941C6267D90E5F9 /* SidebarUpdateRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarUpdateRow.swift; sourceTree = "<group>"; };
+		F8B7BB0163579ACD834ADBB1 /* Destination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Destination.swift; sourceTree = "<group>"; };
 		FE4CB53B5CB04DACA0FDC375 /* VersionDetectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionDetectionTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -157,22 +254,42 @@
 			buildActionMask = 2147483647;
 			files = (
 				CA4CA8134B5255875DB1AF2A /* Sparkle in Frameworks */,
+				91905EBBC828F6BCDF09EF1A /* AlignedDesignSystem in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0195949D7590925F8B1AF29E /* WeeklyRhythmEngine */ = {
+			isa = PBXGroup;
+			children = (
+				DBFD216C2A59D0C5332408B4 /* ClaudeCLIDetector.swift */,
+				7DF8C7B7AABE2431944A25E9 /* MCPProbe.swift */,
+				656DB4A4A15347472DE4BF02 /* SynthesizedRunReport.swift */,
+				DCC66F9F30443EC4D0D153F9 /* WeeklyRhythmEngineRunner.swift */,
+				CD284AB922259409852EBE73 /* WeeklyRhythmEngineStore.swift */,
+				5C01EEE9A69F8B9DE4572C90 /* WeeklyRhythmSkillInstaller.swift */,
+			);
+			path = WeeklyRhythmEngine;
+			sourceTree = "<group>";
+		};
 		15E77D64ABA66073AF28090E /* Services */ = {
 			isa = PBXGroup;
 			children = (
 				032C293DBDA62F6DEA4FCB24 /* AppUpdaterService.swift */,
 				EE892C2183E7CF82B548E18D /* BackgroundTaskService.swift */,
+				896394791324A365221B36FB /* ChatHistoryPersistence.swift */,
+				249CE7BC7FB6CB8C7FA08D10 /* ClaudeAuthKeychainService.swift */,
+				05205DF62D5431AA4F2F0EC5 /* ClaudeChatStore.swift */,
+				783E1B9E6312BBB3DB53587B /* ClaudeChatTurnRunner.swift */,
 				67CBAA3E68AE042FD8F6FFDF /* ClaudeCodeConfigService.swift */,
 				A49ABEA06B33CB1666AD17A0 /* ClaudeDesktopConfigService.swift */,
 				354B5DB8AEAB5C2C6F4D2DCE /* CoworkSkillService.swift */,
 				1EB57DA95F7124E0519B2C86 /* ErrorLogger.swift */,
+				44FD6E3E9BAFAD1F9175B3E1 /* FamilyMemoryCompletionService.swift */,
 				CF650F1C05A9FE3D738BAA42 /* FamilyMemoryService.swift */,
+				36F4C51F9F1F20EE85F5AD95 /* FamilyMessagesService.swift */,
 				3DACD2838A1C216461103AE6 /* FeedbackService.swift */,
 				72B3F9599ED98BC09073C78C /* FilePinningService.swift */,
 				7D874D5A2A3528B406492C6B /* FullDiskAccessService.swift */,
@@ -184,6 +301,8 @@
 				E343B9250E53EF5FE8057DAE /* UpdateExecutionService.swift */,
 				52A1E55BD560971A940F171A /* VersionDetectionService.swift */,
 				66C0B457A755E70A4E21D034 /* WeeklyRhythmService.swift */,
+				82E51D3240B7F28EAF8D7089 /* WeeklyRhythm */,
+				0195949D7590925F8B1AF29E /* WeeklyRhythmEngine */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -222,24 +341,38 @@
 			path = Resources;
 			sourceTree = "<group>";
 		};
+		4A947DC71E3A5912AEA9D3A5 /* Chat */ = {
+			isa = PBXGroup;
+			children = (
+				B245C0720A4C0BC3EBC09BF2 /* ChatComposer.swift */,
+				D59852CE50DAEC545C6B0C0E /* ChatMessage.swift */,
+				3AB3D27CB30E231A6EF2EF26 /* ChatPanel.swift */,
+				3C3580CD173E87DCBCC770F4 /* ChatPanelHeader.swift */,
+				767920B3A5A38AFD4081D133 /* ClaudeChatPane.swift */,
+				D71386BF1C667590FCF48FB8 /* FamilyChatPane.swift */,
+			);
+			path = Chat;
+			sourceTree = "<group>";
+		};
 		5334E12F30C8D8C06E31F58F /* Views */ = {
 			isa = PBXGroup;
 			children = (
 				8BECADF7B96CB7D3842E642F /* ActivationView.swift */,
 				69E67AB0BE82AA7AE5E6F418 /* CheckForUpdatesView.swift */,
-				26113857AC506F0780BBEE4C /* ComponentCardView.swift */,
+				C83FF7CAE6C8D8123814DAE4 /* ClaudeChatToolsSection.swift */,
 				D1A394C02034C7CEDA5FA603 /* ComponentDetailView.swift */,
 				37EB2DD0D3E1CBC8A343C150 /* ComponentHealthCard.swift */,
-				6938E7B668180CBA05772572 /* ComponentRowView.swift */,
-				968811C1D0945F5BE9B6F0A8 /* ContentView.swift */,
 				C2743470CF6F7A2E42396FAC /* FamilyHealthDashboard.swift */,
 				14788FA8AC138E58AD03BFC7 /* FamilyMemoryView.swift */,
 				3757BEFBB847475D0690FF32 /* FeedbackView.swift */,
 				7FB63D56853D1FFB0742D448 /* MarketplaceView.swift */,
 				D31AA9A8E09678D0693ACE38 /* SettingsView.swift */,
-				F9FFF0BD57095AE67A3B4618 /* UpdateBannerView.swift */,
-				782D8AD84007D35B5B0DB9CD /* UpdateProgressView.swift */,
 				16FB3766D3708E744FA90472 /* WhatsNewView.swift */,
+				4A947DC71E3A5912AEA9D3A5 /* Chat */,
+				73EEB8A86B0CDC66AD4DCD75 /* Components */,
+				A3AD0155CC1F255978DB64F7 /* Navigation */,
+				7A3D9489BB29CB2E8BC2A634 /* Pages */,
+				AA4FE0EDF80BE4E3C198AB36 /* Settings */,
 				2A30269D269741003D221D42 /* SetupWizard */,
 			);
 			path = Views;
@@ -252,11 +385,65 @@
 				A1581729D85D6A0D2DD33C27 /* Models */,
 				4949B0D91CB6B21D4272EC08 /* Resources */,
 				15E77D64ABA66073AF28090E /* Services */,
+				9D7AAC079B3E5A312C8D72E2 /* State */,
 				AC76D68796CD55ABBC7527DD /* Tests */,
 				FCCA5454EB829458B8F5B7EA /* ViewModels */,
 				5334E12F30C8D8C06E31F58F /* Views */,
 				E9A2CE9F8D9A16777B2182EF /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		73EEB8A86B0CDC66AD4DCD75 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				3F6F08569570B37845FC1387 /* AlignedSheet.swift */,
+				801F8855770E536D9FD34420 /* ClaudeAuthSetupSheet.swift */,
+				83171E1A838C0577BABFF23F /* EditEventSheet.swift */,
+				564A22B818E62E0E1921A86F /* EditTriageSheet.swift */,
+				0A78BB1D7CB738F95B99C24E /* EngineAttentionBanner.swift */,
+				0A7111D9656E3FA9D7F6F054 /* GhostBorderFieldDropdown.swift */,
+				412B13C7BB1BF39888717812 /* MissingMCPsSheet.swift */,
+				AC9BDBAE1BA8CDCF7640CE6B /* PageScaffold.swift */,
+				BD5F1C96EFA4D647FFDA57BB /* RunHealthDetailSheet.swift */,
+				9462C3630F3A00A990888CA2 /* RunHealthPill.swift */,
+				47821DD2E2C90209AADE1131 /* TriageRsvpControl.swift */,
+				57C7879CB390CE3D57122B8F /* WeeklyRhythmRunControl.swift */,
+				A72018BAC4B42C0C76B18B09 /* WeeklyRhythmSkillInstallSheet.swift */,
+				8776F4FEAAFE5DD29E8C1730 /* WhyModal.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		7A3D9489BB29CB2E8BC2A634 /* Pages */ = {
+			isa = PBXGroup;
+			children = (
+				01FF0FA5D6DBEBF7A139D6FD /* FamilyView.swift */,
+				03AD9F9995E212DEDA199051 /* HomeView.swift */,
+				0115CDA875DB5D2D4BA7C4AA /* WeeklyRhythmView.swift */,
+			);
+			path = Pages;
+			sourceTree = "<group>";
+		};
+		82E51D3240B7F28EAF8D7089 /* WeeklyRhythm */ = {
+			isa = PBXGroup;
+			children = (
+				4DB01C9B5FC7912CFB5BBD2A /* ConfigMdEditor.swift */,
+				9F2F5EA39EAE9558037F9670 /* FileBackedWeeklyRhythmDataSource.swift */,
+				5EF56794AE0F9F09B953BC13 /* MockWeeklyRhythmDataSource.swift */,
+				8F5E929A9A401F87718B0983 /* PendingMutationsStore.swift */,
+				2E417AC3384F05962FA62588 /* WeeklyRhythmDataSource.swift */,
+				418F1A3FCCAA74A9749BDE1E /* WeeklyRhythmPathResolver.swift */,
+				80DD857A1CB762AC7991C68C /* WeeklyRhythmUIStateStore.swift */,
+			);
+			path = WeeklyRhythm;
+			sourceTree = "<group>";
+		};
+		9D7AAC079B3E5A312C8D72E2 /* State */ = {
+			isa = PBXGroup;
+			children = (
+				F4FB784FE53060D8FF7EEE72 /* AppState.swift */,
+			);
+			path = State;
 			sourceTree = "<group>";
 		};
 		A1581729D85D6A0D2DD33C27 /* Models */ = {
@@ -266,13 +453,36 @@
 				9A1B1F334020349AF1BB567F /* AppSettings.swift */,
 				C32B9115221657AAE3B2B132 /* BadgeTracker.swift */,
 				91BE7F2F52EFF582932E8B9D /* ChangelogEntry.swift */,
+				F6C2861366CF6D5812912539 /* ChatTurn.swift */,
 				6F7E990CE834E05B52EAF553 /* Component.swift */,
 				782EFED7B8F2AD1265BCF690 /* ComponentRegistry.swift */,
 				8599C33B343D91784A3618B0 /* FamilyMemoryModels.swift */,
+				67BF3EEB937984A4CAA2B326 /* FamilyMessage.swift */,
 				F67306E0D4DE7A228BD944B8 /* HealthCheck.swift */,
 				754EF798D1DADA467A6A6D84 /* UpdateStatus.swift */,
+				A84C5B5B9F422E0FEA151CF0 /* WeeklyRhythm.swift */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		A3AD0155CC1F255978DB64F7 /* Navigation */ = {
+			isa = PBXGroup;
+			children = (
+				F8B7BB0163579ACD834ADBB1 /* Destination.swift */,
+				1341A36E69A185933A6187F4 /* RootView.swift */,
+				D107F8C5D300A4F18DF49A3F /* Sidebar.swift */,
+				18F6C3CFC3DE69126D5C70F1 /* SidebarCollapseButton.swift */,
+				F7BCAD83B941C6267D90E5F9 /* SidebarUpdateRow.swift */,
+			);
+			path = Navigation;
+			sourceTree = "<group>";
+		};
+		AA4FE0EDF80BE4E3C198AB36 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				1C5D0EF96B4D7D82238B66ED /* WeeklyRhythmEngineSection.swift */,
+			);
+			path = Settings;
 			sourceTree = "<group>";
 		};
 		AC76D68796CD55ABBC7527DD /* Tests */ = {
@@ -343,6 +553,7 @@
 			name = FortAbodeUtilityCentral;
 			packageProductDependencies = (
 				8B75BAAFED90C32A32CA2420 /* Sparkle */,
+				5D70F17E7114E90E5762C0DB /* AlignedDesignSystem */,
 			);
 			productName = FortAbodeUtilityCentral;
 			productReference = 5914439D10E470294A91A039 /* FortAbodeUtilityCentral.app */;
@@ -373,6 +584,7 @@
 			mainGroup = 5D479E04ACFEEEA687B5462E;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				3037796EF51F52235F6E655F /* XCRemoteSwiftPackageReference "AlignedDesignSystem" */,
 				C8572B4E1F6FCAC099FE243E /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -444,55 +656,103 @@
 			buildActionMask = 2147483647;
 			files = (
 				047B461FE0B2A7A81E4BC469 /* ActivationView.swift in Sources */,
+				2C512BA73630DE2CCC93F99F /* AlignedSheet.swift in Sources */,
 				BE31F2E9C53C3C01AF59B9E0 /* AppNavigation.swift in Sources */,
 				156C48CEA34E68406BE574C7 /* AppSettings.swift in Sources */,
+				18317CE6CA9311E67496A0AA /* AppState.swift in Sources */,
 				AC16ED65C6F3F4D772013284 /* AppUpdaterService.swift in Sources */,
 				BFFC39B7F0DEE48815EB2481 /* BackgroundTaskService.swift in Sources */,
 				A7D447D032884F15F3EA762E /* BadgeTracker.swift in Sources */,
 				DF4E9A21418662B5D610866B /* ChangelogEntry.swift in Sources */,
+				7F7577B11C2D1F70D5E6F9B7 /* ChatComposer.swift in Sources */,
+				E2FF7433B9E85A711CB8E305 /* ChatHistoryPersistence.swift in Sources */,
+				15DC17F5631A4CF72E02C261 /* ChatMessage.swift in Sources */,
+				107872FAAEF37D55D156492E /* ChatPanel.swift in Sources */,
+				4CB55B39A51109E2D3DAE9F1 /* ChatPanelHeader.swift in Sources */,
+				EFE47B08A1D5ED98303213CE /* ChatTurn.swift in Sources */,
 				ED44975C50A6C6A64F4954DE /* CheckForUpdatesView.swift in Sources */,
+				7C8FF70F6E7111308CEAA754 /* ClaudeAuthKeychainService.swift in Sources */,
+				7FCF70E4B640FED1EAD72A90 /* ClaudeAuthSetupSheet.swift in Sources */,
+				149284AD1AF7CC868055E9C7 /* ClaudeCLIDetector.swift in Sources */,
+				DFEE2E123FFC73F011AA13EB /* ClaudeChatPane.swift in Sources */,
+				BE37A5EB2E990AF93D5C09B6 /* ClaudeChatStore.swift in Sources */,
+				3DA8DDC6A71588E1CF270BE0 /* ClaudeChatToolsSection.swift in Sources */,
+				D96D31FEA9E9BAD74A5DCFD6 /* ClaudeChatTurnRunner.swift in Sources */,
 				0D7F85E45BFAFB9CBA75F829 /* ClaudeCodeConfigService.swift in Sources */,
 				91D50E1EB920B8C40D6B33FB /* ClaudeDesktopConfigService.swift in Sources */,
 				E39F0B6F301568824A772E71 /* Component.swift in Sources */,
-				33743BBEA6592F741CB5A22B /* ComponentCardView.swift in Sources */,
 				EB1961D3A6B1297856EF3C69 /* ComponentDetailView.swift in Sources */,
 				78A108105A88096647C68196 /* ComponentHealthCard.swift in Sources */,
 				F37E0647A0A8D347473AA752 /* ComponentListViewModel.swift in Sources */,
 				63DF7D1C11E3A188E94C469F /* ComponentRegistry.swift in Sources */,
-				24FDEC144817A4CB5E3EFB24 /* ComponentRowView.swift in Sources */,
-				0C2AFE378C7F46B021BE15D4 /* ContentView.swift in Sources */,
+				DC42DBCAD25AF1F2F3FDFF8D /* ConfigMdEditor.swift in Sources */,
 				CB346FEB794E23991188381B /* CoworkSkillService.swift in Sources */,
+				C0FDF12D701AEAEE4331FF13 /* Destination.swift in Sources */,
+				A05720BF393011B270ABE894 /* EditEventSheet.swift in Sources */,
+				330A710170B2B74902D579D5 /* EditTriageSheet.swift in Sources */,
+				BE37FC1AB45639A848242F43 /* EngineAttentionBanner.swift in Sources */,
 				07BA11DC7D460A01979E6F21 /* ErrorLogger.swift in Sources */,
+				6CD4E6A5F0EC7CA6EA53E11B /* FamilyChatPane.swift in Sources */,
 				52D654FD0BE7A805B4F3F1A3 /* FamilyHealthDashboard.swift in Sources */,
+				382CD7A8BD2AB838F0C9BE34 /* FamilyMemoryCompletionService.swift in Sources */,
 				E2A034CE471A68B4E0222C3E /* FamilyMemoryModels.swift in Sources */,
 				05D38A44306FF10EEE0001D9 /* FamilyMemoryService.swift in Sources */,
 				377AE9482D6974941E963E1B /* FamilyMemoryView.swift in Sources */,
+				C5947E446207D4F44C499534 /* FamilyMessage.swift in Sources */,
+				6798F4FD18B8A889FD4C03C4 /* FamilyMessagesService.swift in Sources */,
+				916EBC0C31B8473B1C50C325 /* FamilyView.swift in Sources */,
 				2B92C1E7ECA9DC4D7DC50F0E /* FeedbackService.swift in Sources */,
 				38D925B340A40492A5DB7FAC /* FeedbackView.swift in Sources */,
 				39ACD4EE2996FF40E684E287 /* FeedbackViewModel.swift in Sources */,
+				53AEA16097825500F8268329 /* FileBackedWeeklyRhythmDataSource.swift in Sources */,
 				A2B2C6005EF42A9C341F8826 /* FilePinningService.swift in Sources */,
 				64CA5B5EAAFCDA5C06236011 /* FortAbodeUtilityCentralApp.swift in Sources */,
 				639646812B867787DB59AD83 /* FullDiskAccessService.swift in Sources */,
+				D0927D0CC5D148C03FD75CB4 /* GhostBorderFieldDropdown.swift in Sources */,
 				06CB33690CC14595E2E99291 /* GitHubService.swift in Sources */,
 				63B0BCA2036A45DF148B3C37 /* HealthCheck.swift in Sources */,
+				F4855FF4FA0E88D59716A23B /* HomeView.swift in Sources */,
 				05E6CAD0B79916E67AD9C87D /* KeychainService.swift in Sources */,
+				25D74F095E9237042C25585C /* MCPProbe.swift in Sources */,
 				8FEB14627351680D4959D1BF /* MarketplaceView.swift in Sources */,
+				2B07591CF9F2646F8B903101 /* MissingMCPsSheet.swift in Sources */,
+				4BC30361A3F18D7A991A72EE /* MockWeeklyRhythmDataSource.swift in Sources */,
 				84EF3894AB836BBA01A7FB6A /* NotificationService.swift in Sources */,
+				3DAC043E1F1CE49D3F91AA79 /* PageScaffold.swift in Sources */,
+				2C7ED0531E56C8235AFCE6BC /* PendingMutationsStore.swift in Sources */,
+				4C29C765E197C8C5C27D8BC2 /* RootView.swift in Sources */,
+				5A4C032BD13E7B95BFCABB96 /* RunHealthDetailSheet.swift in Sources */,
+				3F9322104FD17EB1DA4801C8 /* RunHealthPill.swift in Sources */,
 				5AB3F1610DB5361CAC618ECC /* SecureInputStorage.swift in Sources */,
 				ADE9797A2E5EE7EB3C461ED6 /* SettingsView.swift in Sources */,
 				B4F10EEE4625314A880D027D /* SettingsViewModel.swift in Sources */,
 				15ACB224032293DD17F523FA /* SetupValidationService.swift in Sources */,
 				BCC20DC3968DB7047C53917E /* SetupWizardView.swift in Sources */,
 				1BE2080AB4AF9C0D5DDF3A05 /* SetupWizardViewModel.swift in Sources */,
+				EE0563F9E4C13C649D44F181 /* Sidebar.swift in Sources */,
+				B7C538A5D2630B86AEF3E048 /* SidebarCollapseButton.swift in Sources */,
+				30EE43C675DEE5B1B99D104C /* SidebarUpdateRow.swift in Sources */,
 				EF6A84B87BF7C01CF51F88F6 /* StepContentView.swift in Sources */,
 				A97EBD40591158370B2039CC /* StepIllustrationView.swift in Sources */,
-				850ED6CD3D14A5BD8BE09770 /* UpdateBannerView.swift in Sources */,
+				55FEAC94FECD7513E36D8F87 /* SynthesizedRunReport.swift in Sources */,
+				EC2CC8D874906D44ABAA6C72 /* TriageRsvpControl.swift in Sources */,
 				112863CDD6F3C554DAF8C3A9 /* UpdateExecutionService.swift in Sources */,
-				864D70FCF7B97D190269DDFF /* UpdateProgressView.swift in Sources */,
 				A5D861B2D8E9BA0284E7ECF6 /* UpdateStatus.swift in Sources */,
 				3B8CF00712BD137247649E22 /* VersionDetectionService.swift in Sources */,
+				A1F93FFFAC5814DE06CC88AF /* WeeklyRhythm.swift in Sources */,
+				9C5B1ABB80EFFEF201C62AAB /* WeeklyRhythmDataSource.swift in Sources */,
+				8AA1D4FFDC54D9B78DA73942 /* WeeklyRhythmEngineRunner.swift in Sources */,
+				3CFDC64737A93718CFE3AE95 /* WeeklyRhythmEngineSection.swift in Sources */,
+				2914B8F6E862FE0B1914BFAE /* WeeklyRhythmEngineStore.swift in Sources */,
+				7CFA90087FA5CC19AFC67353 /* WeeklyRhythmPathResolver.swift in Sources */,
+				8C81AC2276A4B5BA5E86A219 /* WeeklyRhythmRunControl.swift in Sources */,
 				A1F5C83EBA3836D3FFACAC5D /* WeeklyRhythmService.swift in Sources */,
+				00E5BEF9B71230C4677B387F /* WeeklyRhythmSkillInstallSheet.swift in Sources */,
+				7186FEEAC3161F93D78ECA50 /* WeeklyRhythmSkillInstaller.swift in Sources */,
+				355F6705C0380EC8CCED0279 /* WeeklyRhythmUIStateStore.swift in Sources */,
+				3B1B8E9B129468193257A0A2 /* WeeklyRhythmView.swift in Sources */,
 				61D6E60947EC0AEB30BF7D97 /* WhatsNewView.swift in Sources */,
+				4FB42B328F8B03A28BCC1962 /* WhyModal.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -515,7 +775,7 @@
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 39;
+				CURRENT_PROJECT_VERSION = 40;
 				DEVELOPMENT_TEAM = X6LBF9H7M5;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -525,7 +785,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 3.11.1;
+				MARKETING_VERSION = 3.12.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kamstudios.fortabodeutilitycentral;
 				PRODUCT_NAME = "Fort Abode Utility Central";
 				SDKROOT = macosx;
@@ -605,7 +865,7 @@
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 39;
+				CURRENT_PROJECT_VERSION = 40;
 				DEVELOPMENT_TEAM = X6LBF9H7M5;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -615,7 +875,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 3.11.1;
+				MARKETING_VERSION = 3.12.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kamstudios.fortabodeutilitycentral;
 				PRODUCT_NAME = "Fort Abode Utility Central";
 				SDKROOT = macosx;
@@ -755,6 +1015,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		3037796EF51F52235F6E655F /* XCRemoteSwiftPackageReference "AlignedDesignSystem" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kamrenkennedy/AlignedDesignSystem.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.0;
+			};
+		};
 		C8572B4E1F6FCAC099FE243E /* XCRemoteSwiftPackageReference "Sparkle" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sparkle-project/Sparkle.git";
@@ -766,6 +1034,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		5D70F17E7114E90E5762C0DB /* AlignedDesignSystem */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3037796EF51F52235F6E655F /* XCRemoteSwiftPackageReference "AlignedDesignSystem" */;
+			productName = AlignedDesignSystem;
+		};
 		8B75BAAFED90C32A32CA2420 /* Sparkle */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = C8572B4E1F6FCAC099FE243E /* XCRemoteSwiftPackageReference "Sparkle" */;

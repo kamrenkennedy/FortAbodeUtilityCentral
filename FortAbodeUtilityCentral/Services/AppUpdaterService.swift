@@ -205,3 +205,15 @@ final class AppUpdaterService: NSObject, SPUUpdaterDelegate {
         return true
     }
 }
+
+// MARK: - SPUStandardUserDriverDelegate
+//
+// Suppresses Sparkle's modal "update available" / progress dialogs in favor of
+// the inline sidebar update row (`SidebarUpdateRow`). `supportsGentleScheduledUpdateReminders`
+// tells the standard driver to skip its UI when scheduled checks find an update,
+// so Sparkle silently downloads + extracts in the background and the user only
+// sees the sidebar row once `willInstallUpdateOnQuit` fires (handled above).
+
+extension AppUpdaterService: SPUStandardUserDriverDelegate {
+    nonisolated var supportsGentleScheduledUpdateReminders: Bool { true }
+}

@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import AlignedDesignSystem
 
 // MARK: - Family Memory View (sidebar hub)
 //
@@ -195,7 +196,7 @@ struct FamilyMemoryView: View {
                 } label: {
                     Label("Open Family Memory folder in Finder", systemImage: "folder")
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.alignedSecondary)
             }
             .padding(28)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -224,7 +225,7 @@ struct FamilyMemoryView: View {
             } label: {
                 Label("Open folder in Finder", systemImage: "folder")
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(.alignedSecondary)
             .padding(.top, 6)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

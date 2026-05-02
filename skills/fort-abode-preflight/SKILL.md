@@ -90,6 +90,34 @@ Never skip a check because "it's a tiny change." The v3.7.1 auto-opt-in bug was 
 3. **Test on a clean machine mentally** — walk the setup_flow as if you're Tiera seeing it for the first time. Every step's title and body must make sense without context. No jargon ("OAuth scope", "npx cache") unless you explain it inline.
 4. **If the MCP requires a key that must sync across machines, flag it** — add a note to the APP TO-DO LIST in the memory entity. Cross-machine key sync is an open architectural problem (see Travel Itinerary Google Maps API key) — do not assume it's solved.
 
+### If the diff touches `Resources/whats-new.json`
+
+Tiera will read the resulting bullets in the in-app WHAT'S NEW pane. They are her PRIMARY signal for what changed in this update. An entry that's too long, too technical, or padded with engineering detail will be skipped, and she'll keep using the app without knowing what's new. The volume creep on bigger releases (Y6 Claude Chat alone touched 5 phases + Settings + Plan Card UX) makes it easy to ship a 12-bullet wall of text. Use this section to draft small.
+
+**Authoring rules — every bullet must pass all seven:**
+
+1. **Lead with the user-visible behavior change. Never the implementation.** "Family Chat now sends file attachments" is right; "Y5b ships FamilyMessageDraft.attachments protocol" is wrong.
+2. **Plain English, no jargon.** Banned vocabulary in committed bullets: `MCP`, `stream-json`, phase codes (`Y6`, `Phase 5c`, etc.), `engine spec`, `session-id`, `actor`, `runner`, `parser`, `delegate`, `appcast`, `Sparkle`, `xcodegen`, `ditto`, internal class/file names. If a bullet feels technical, rewrite it from "what changed in the user's app" perspective.
+3. **One sentence per bullet.** If a feature truly needs more, the second sentence is a "how to use it" line for Tiera, not a "how it works" line.
+4. **Maximum 5–7 bullets per release.** Consolidate aggressively. A 12-bullet draft becomes a 5-bullet final by collapsing related work into one bullet ("Family Chat: send messages, attach files, see unread count" beats three separate bullets) and dropping anything that's invisible to the user.
+5. **Reference where the user finds the change** — "in the Family tab", "on the Weekly Rhythm dashboard", "in Settings → Account". Helps Tiera locate the change without hunting.
+6. **Bug-fix-only changes that aren't user-visible aggregate to ONE bullet at the bottom** — "Various fixes and stability improvements." Don't list every silent fix.
+7. **Bundled-component bumps still get a bullet** — when a release ships a new Weekly Rhythm engine, Travel Itinerary, setup-claude-memory, etc., the user-visible component change DOES get its own bullet (e.g. "Weekly Rhythm dashboard now shows real engine data"). The bullet describes the user-facing improvement, not the version bump.
+
+**The Kam-approval gate (hard stop — do NOT skip):**
+
+Before staging the WHAT'S NEW commit, Claude must:
+
+1. Draft the proposed entry as plain text in chat (NOT silently into the JSON file)
+2. For releases with a lot of accumulated work, draft TWO versions side-by-side: a "long version" (the full engineering changelog the agent worked off) and a "Tiera version" (≤5 bullets, principles 1–7 applied). Default-ship the Tiera version.
+3. Explicitly ask Kam: **"Is this Tiera-ready, or want me to consolidate further?"**
+4. Wait for an affirmative response in chat (`yes`, `looks good`, `ship it`, etc.). Anything ambiguous or directing further edits → re-draft and re-ask.
+5. Only after explicit approval, write to `whats-new.json` and stage the commit.
+
+If Kam pushes back ("too many bullets", "still too technical", "show me a shorter version"), draft a tighter variant and re-ask. The gate fires every time the file changes — including when adding bullets to an entry that was previously approved.
+
+This gate exists because the existing always-check ("notes describe user-visible behavior") was correct in spirit but not enforced — the volume problem slipped through anyway. The fix is the explicit Kam-in-the-loop ask, not just a static rule.
+
 ## Always-check section (runs regardless of diff)
 
 Every preflight run ends with these:
@@ -97,8 +125,9 @@ Every preflight run ends with these:
 1. **`project.yml` version bump if shipping a release** — if this commit is going to be tagged, `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` are both bumped. Infrastructure-only commits (docs, skills, CI) don't need a bump.
 2. **`xcodegen generate` has been re-run** — if `project.yml` changed, `xcodegen` was run afterward. The `.xcodeproj/` changes must be in the same commit.
 2a. **`weekly-rhythm-plugin-bundle` PBXFileReference keeps its `Resources/` prefix** — xcodegen 2.x has a regression where `type: folder` entries emit `path = "weekly-rhythm-plugin-bundle"` instead of `path = "Resources/weekly-rhythm-plugin-bundle"`, and the Archive step fails with exit 65 because `lstat` can't find the folder at SOURCE_ROOT. After any `xcodegen generate` run, grep the generated `.xcodeproj/project.pbxproj` for `weekly-rhythm-plugin-bundle */ = {isa = PBXFileReference`. If the `path` field does NOT start with `Resources/`, edit it back. Reference fix: commit `668d3a4`.
+2b. **`AlignedDesignSystem` package uses the GitHub URL form, NEVER a local `path:`** — `project.yml` must declare `AlignedDesignSystem` with `url: https://github.com/kamrenkennedy/AlignedDesignSystem.git` + a `from:` version, NOT `path: ../../../../...`. The relative-path form breaks in worktrees (which add `.claude/worktrees/<name>/` depth) and is fragile across machines because the resolution is anchored to `project.yml`'s location. The 2026-04-27 build failure on the `nice-sinoussi-944980` worktree was a direct hit. If the diff includes a `project.yml` change, grep for `^  AlignedDesignSystem:` and confirm the next non-comment line is `url:` not `path:`. When AlignedDesignSystem ships a new tag, bump the `from:` version here in the same commit — never pin to a branch. Reference fix: this checklist entry was added in the same changeset as the swap.
 3. **BOTH `appcast.xml` files have matching entries** — if shipping a release, the root `appcast.xml` and the subdirectory `FortAbodeUtilityCentral/appcast.xml` both have a `<item>` for this version with matching `sparkle:edSignature` and length. Root-appcast drift is historical failure mode #1 (CLAUDE.md:50).
-4. **`whats-new.json` has a new entry for this version** — if shipping a release, there's a new top-of-array object with this version's notes. Notes describe user-visible behavior, not implementation details.
+4. **`whats-new.json` has a new entry for this version, reviewed for Tiera-readability** — if shipping a release, the conditional section "If the diff touches `Resources/whats-new.json`" was run in full, including the Kam-approval gate. The committed entry is ≤5–7 bullets, plain English, no jargon (no `MCP`, phase codes, internal file names, etc.), and Kam explicitly approved it in chat before the file was staged.
 5. **No API keys, tokens, or secrets in the diff** — `git diff` does NOT contain any `sk-`, `ghp_`, `pat-`, `AIza`, Bearer tokens, or `.env`-style KEY=VALUE pairs. If the diff touches `Resources/*.json` files, those files are either intentionally public config or explicitly excluded from git via `.gitignore`.
 6. **No files from `Resources/` were deleted unintentionally** — `project.yml`'s `sources` list still matches what's on disk. Deleting a bundled resource without removing it from `project.yml` causes a build failure on CI.
 7. **Commit message follows Kam's conventions** — imperative mood, explains the "why" not the "what", ends with `Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>`.

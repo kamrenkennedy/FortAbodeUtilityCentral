@@ -1,4 +1,4 @@
-<!-- Engine Spec v2.2.0 — Managed by Fort Abode — Updates to this file are picked up on next skill run -->
+<!-- Engine Spec v2.5.0 — Managed by Fort Abode — Updates to this file are picked up on next skill run -->
 
 # Weekly Rhythm Engine
 
@@ -318,6 +318,31 @@ The dashboard supports a structured day-type editor with replace-or-add semantic
 **Exclusive flag:** When `exclusive: true` (e.g., Off), selecting that type for a day removes all other types. Other types can stack additively (a day can be both Creative and Personal).
 
 **Replace vs Add:** The dashboard dropdown defaults to "replace" semantics — picking a new type replaces whatever was there. A modifier key (or a checkbox) toggles "add" mode for stacking. Engine doesn't enforce this — it just persists whatever the user selected.
+
+### Day-Types seed format (v2.5.0+)
+
+The `## Day Types` section in `config.md` accepts **one or more comma-separated labels per weekday**:
+
+```
+## Day Types
+Monday: Make, Recover
+Tuesday: Move
+Wednesday: Creative
+Thursday: Admin
+Friday: Business Dev
+Saturday: Personal
+Sunday: Off
+```
+
+Single-label lines remain valid — fully back-compatible with v2.4.0 and earlier configs. Parser rules:
+
+1. Split each weekday's value on commas, then `.strip()` per token.
+2. Resolve each token against the structured `day_types:` array (case-insensitive, match `id` first, then `label`).
+3. Tokens that don't resolve are emitted as-is (lowercased, whitespace replaced with `_`) and surfaced in `runReport.warnings` as `"Unknown day-type 'foo' in Monday's config"`. Do not crash on unknown tokens — the engine continues and writes the dashboard so the user can see the warning in `runHealth` and fix the config.
+
+**Multi-type stacking + exclusive validation.** Multi-type lines stack additively (a day can be Make + Recover). Types whose `exclusive: true` flag is set in `day_types:` (e.g. the built-in `Off`) MUST be emitted as a single-element array — the parser rejects any multi-token line that combines an exclusive type with anything else. Rejection appends an error to `runReport.errors` (`"Monday combines exclusive type 'off' with others — pick one"`) and emits `weekDays[i].dayTypes = []` for that day. Validation runs before emission.
+
+**Cross-coordination note.** Fort Abode v3.13.0 plans to restore the multi-type chip stack UI in the Week Grid (`DayHeader` / `DayTypeEditor` `+` button). Its `ConfigMdEditor` should write comma-separated lines when `newTypes.count > 1`. Engine ignores token order — Fort Abode can stable-sort by `day_types:` array order for consistent display.
 
 ---
 
@@ -2093,6 +2118,220 @@ This is mandatory — never skip it. Kam (or the detected user) expects the dash
 
 ---
 
+## Step 10b-iii — Write dashboard JSON (Fort Abode contract)
+
+**When:** Same trigger as Step 10b-ii — runs for every dashboard generation, alongside the HTML write. Produces a structured JSON file Fort Abode's macOS app reads to render its native Weekly Rhythm tab. Without this file, Fort Abode falls back to mock data and the user sees stale content even after a successful engine run.
+
+**Why this exists:** The HTML is for cross-platform preview (anywhere a browser can open it). The JSON is for Fort Abode's native SwiftUI consumer (`FileBackedWeeklyRhythmDataSource`). Both render the same data; only the format differs.
+
+> **No skip path — this step is non-optional.** The engine MUST emit a fresh `dashboard-{Monday}.json` on every successful run, including when MCPs are unavailable, when partial data was pulled, or when intermediate steps logged non-fatal errors. Missing-data surfacing belongs in the `runHealth` field and the `runReport.warnings` / `runReport.errors` arrays — never in a missing file. **A run that does not write the JSON file is a failed run, regardless of what status code the calling process reports.** This rule exists because v2.4.0 had a silent-skip regression where partial-data MCPs caused the engine to bail on the JSON write and return success — Fort Abode then displayed week-old stale data with no signal that anything went wrong. See the Common Failure Mode entry dated 2026-05-02 in this repo's `CLAUDE.md`.
+
+### File path
+
+```
+{user_path}/dashboards/dashboard-{ISODate}.json
+```
+
+where `ISODate` is the **Monday** of the target week (`yyyy-MM-dd`). Example: `dashboard-2026-04-21.json` for the week of Apr 21–27.
+
+### Atomic write protocol
+
+```python
+import json, os
+from datetime import date, timedelta
+
+# Monday-of-week computation — date_str MUST be the Monday of the target week
+# regardless of which weekday the engine actually runs on. The same week's run
+# on Tuesday, Wednesday, or Sunday all write to the same Monday-named file.
+today = date.today()
+monday = today - timedelta(days=today.weekday())  # weekday(): Mon=0, Sun=6
+date_str = monday.isoformat()  # always YYYY-MM-DD of Monday
+
+dashboard_data = {
+    "weekMetadata": {...},
+    "todaysBrief": {...},   # or None
+    "pulseProjects": [...],
+    "alerts": [...],
+    "weekDays": [...],
+    "triage": [...],
+    "proposals": [...],
+    "errands": [...],
+    "dayBreakdown": [...],
+    "runHealth": "allGood",  # or {"warning": "..."} or {"error": "..."}
+    "generatedAt": iso_now,  # ISO-8601 timestamp
+}
+
+out_path = os.path.join(user_path, "dashboards", f"dashboard-{date_str}.json")
+tmp_path = out_path + ".tmp"
+with open(tmp_path, "w") as f:
+    json.dump(dashboard_data, f, indent=2)
+os.rename(tmp_path, out_path)
+```
+
+The `.tmp` + `os.rename` pattern guarantees Fort Abode never reads a half-written file.
+
+**Idempotent overwrite** — if the engine runs twice in the same week (Tuesday, then Friday), the Friday run MUST overwrite the Monday-named file with the latest data. NEVER write a new file using a non-Monday date. Fort Abode's contract-correct reader looks for the exact Monday filename; emitting `dashboard-2026-04-29.json` on a Wednesday creates a stale Monday file that masks the new data.
+
+### Schema reference
+
+The full schema lives at `dashboard-json-shape.md` in the Fort Abode repo (`FortAbodeUtilityCentral/Resources/dashboard-json-shape.md`). **Read it before implementing this step.** It documents every field with examples.
+
+Top-level keys (all required unless noted):
+
+| Key | Shape |
+|-----|-------|
+| `weekMetadata` | `{eyebrow: "Week 17", title: "April 21 — 27"}` |
+| `todaysBrief` | `{dayType, label, narrative, weekGoalsComplete, weekGoalsTotal}` or `null` |
+| `pulseProjects[]` | `{id, status, statusLabel, title, touched, action}` — `status` ∈ `scheduled|draft|review|error|neutral` |
+| `alerts[]` | `{id, kind, day, title, detail, actionLabel?, eventID?}` — `kind` ∈ `travel|commuteConflict|errandBatch|lunch` |
+| `weekDays[]` | 7 entries Mon→Sun, each `{id, name, num, dayTypes[], isToday, events[], nowLineHour?}` — `num` is a **String** (e.g. `"24"`, not `24`); `dayTypes[]` are lowercase strings from the user's `day_types:` config (see normalization rule below) |
+| `weekDays[].events[]` | `{id, startHour, endHour, time?, title, kind, projectId?}` — `kind` ∈ `regular|accent|errand` |
+| `triage[]` | `{id, status, title, meta}` — `status` ∈ `scheduled|draft|review|error|neutral` (REQUIRED — same enum as `pulseProjects[].status`) |
+| `proposals[]` | `{id, title, reasoning}` |
+| `errands[]` | `{id, title, location, daysPending, routedTo, isDone}` |
+| `dayBreakdown[]` | 7 entries with `{id, weekday, dateLabel, dayType, headline, summary, blocks[], isToday, isPast}` |
+| `dayBreakdown[].blocks[]` | `{id, title, kind, startHour?, endHour?, durationLabel?, timeLabel?, tag?, dim}` — `dim` is **REQUIRED** (boolean, default `false`); see "Block dim semantics" below |
+| `runHealth` | `"allGood"` literal, or `{"warning": "..."}`, or `{"error": "..."}` — the value inside `warning`/`error` MUST be a plain string, NOT a nested object like `{"_0": "..."}` |
+| `generatedAt` | ISO-8601 timestamp |
+
+### Optional fields the engine should emit when available
+
+These optional fields unlock specific Fort Abode UX. Emit them when the engine has the data; omit (or `null`) otherwise:
+
+- **`weekDays[].events[].projectId`** — same identifier as `pulseProjects[].id`. When the engine knows an event belongs to a specific project (title-match against an active project, GCal calendar tag, or Notion linkage), include this. Drives Fort Abode's cross-component highlight: tap a Project Pulse card → all events on the week grid with the matching `projectId` get an accent border.
+
+- **`alerts[].eventID`** — for `commuteConflict` alerts, the `id` of the event being warned about. Drives Fort Abode's "Reschedule" button — opens the EditEventSheet for that exact event instead of guessing first-of-day.
+
+- **`dayBreakdown[].blocks[].kind`** — `"focus" | "errand" | "sync" | "admin" | "recover" | "note"`. Drives the focus-bar segment style.
+
+- **`dayBreakdown[].blocks[].tag`** — `"admin" | "make" | "move" | "errand" | "sync"` or `null`. Drives the small uppercase chip label.
+
+- **`dayBreakdown[].headline`** — short verb-phrase summarizing the day (e.g. "Ship day", "Catch up", "Recover"). Optional but strongly encouraged.
+
+- **`dayBreakdown[].summary`** — short string for the focus-bar's right gutter (e.g. `"3h · 1 sync"`, `"light · 1 err"`, `"—"` for empty).
+
+Heuristics for the `block.kind`/`block.tag`/`headline`/`summary` fields are documented in the contract spec; use them as starting points and iterate.
+
+### Block `dim` semantics
+
+`dim` is a REQUIRED boolean on every `dayBreakdown[].blocks[]` entry. Emit `dim: false` for normal time blocks (focus, errands, syncs, etc.). Emit `dim: true` only for soft-note rows where the title is a placeholder rather than a real block — examples: `"No errands routed"`, `"Open"`, `"—"`. The boolean drives Fort Abode's UI: dim rows render in `onSurfaceVariant` color so the eye skips them.
+
+Never omit `dim`. Earlier engine versions (≤ v2.3.0) omitted `dim` when false, which Fort Abode handled defensively but the contract requires it explicit.
+
+### Same data as the HTML — with normalization
+
+Most of what dashboard.json needs is already computed for the placeholders in Step 10b-ii — but several fields require **normalization** before emission to satisfy Fort Abode's typed Codable models. The HTML side is permissive (any string renders); the JSON side is strict.
+
+- **`PROPOSED_BLOCKS_JSON`** placeholder → engine internally has a Python list of dicts → re-serialize that list as the `weekDays[].events[]` substructure (after grouping by day).
+
+- **`WEEKLY_TRIAGE_JSON`** placeholder → maps to the JSON's `triage[]` array, BUT `status` MUST be normalized to the contract enum. The internal `type` field (`overdue_task` / `pending_invite` / `needs_time_block`) and any internal `riskLevel` (`critical` / `warning` / `low`) MUST be compressed:
+
+    | Internal source | `triage[].status` |
+    |---|---|
+    | `type: overdue_task` | `error` |
+    | `type: pending_invite` | `review` |
+    | `type: needs_time_block` | `draft` |
+    | Anything else | `neutral` |
+
+    Never emit `"status": "overdue"`, `"low"`, `"warning"`, `"critical"`, `"blocked"`, or any other free-form value. The Fort Abode decoder is defensive but the contract is closed.
+
+- **`weekDays[].num`** → coerce to String before emission (`str(day.num)` or `"%d" % day.num`). Never emit a raw Int — the FA Codable expects String. The same goes for any user-visible day-of-month rendering.
+
+- **`weekDays[].dayTypes[]`** → emit as a JSON **array** of lowercase strings, drawn from the user's `day_types:` config (Step 2e). Even when the user defined a single type for that day, emit a single-element array (`["creative"]`, never the bare scalar `"creative"`). The Fort Abode contract (`dashboard-json-shape.md`) declares this field as a `Set<WRDayType>` and decodes from arrays only. Empty `[]` is valid for unmapped days. Multi-type seed lines emit multiple entries: `Monday: Make, Recover` → `["make", "recover"]`. Resolution per token: structured `day_types:` `id` match (case-insensitive) → `label` match (case-insensitive) → fallthrough to lowercased raw string + warning in `runReport.warnings`. Do NOT Title-case (`"Creative"` → `"creative"`) and do NOT emit aliases unprompted. Fort Abode's `WRDayType` decoder maps user-defined types to its closed enum (`creative→make`, `bizdev→move`, `personal→recover`) defensively; that mapping stays on the FA side until the contract expands.
+
+- **`dayBreakdown[].dayType`** → scalar lowercase string. When a day has multiple `dayTypes`, pick the first **non-exclusive** token from the array as the breakdown's representative. Single-type days behave unchanged. Empty days emit `"open"`.
+
+- **`RUN_REPORT_JSON`** placeholder → maps to `runHealth` after compressing into the contract's enum. Use the literal string `"allGood"` (not `{"allGood": true}`) when no MCP source is degraded. When degraded, emit `{"warning": "<plain string>"}` or `{"error": "<plain string>"}` — the inner value is always a string.
+
+- **`dayBreakdown[].blocks[].dim`** → ALWAYS emit. Default to `false`. See "Block `dim` semantics" above.
+
+Do NOT read the placeholders.json file from disk to build dashboard.json — Step 10b-ii deletes it. Build dashboard.json from the same in-memory engine data that fed the placeholders.
+
+### When Fort Abode is not on this Mac
+
+The write is harmless. Fort Abode's contract treats the file as a passive read — nothing reads it if Fort Abode is absent. No other consumer reads it. So always write it; never skip based on host detection.
+
+### Reduced-mode emission (v2.5.0+)
+
+When upstream data sources fail (MCP probes in Step 2a report `missing` / `error`, or any step's optional pull degrades mid-run), the engine MUST still emit the JSON. Concrete rules:
+
+- For arrays whose source failed entirely (e.g. `triage[]` because Apple Reminders MCP was unreachable): emit `[]` — empty array, **not omitted, not `null`**.
+- For nullable scalars whose source is missing (e.g. `todaysBrief` when Notion is 404): emit explicit `null`.
+- For each degraded source, append one descriptive string to `runReport.warnings` (e.g. `"Apple Reminders MCP unreachable — triage[] is empty for this run"`, `"Work Gmail token missing — inbox triage skipped"`).
+- For each unrecoverable failure that prevented a required field, append to `runReport.errors`.
+- Compose `runHealth`:
+  - `runReport.errors` non-empty → `{"error": "<comma-joined first 2 error messages>"}`
+  - `runReport.errors` empty AND `runReport.warnings` non-empty → `{"warning": "<comma-joined first 2 warning messages>"}`
+  - Both empty → literal string `"allGood"`.
+
+Filename + overwrite semantics are unchanged: Monday-of-week filename, `.tmp` + `os.rename` atomic write, idempotent in-week reruns. Fort Abode's `EngineAttentionBanner` renders the warnings list above the dashboard so the user sees exactly which sources degraded — that UX only works if the engine emits the file.
+
+### Verification
+
+After writing, validate the file conforms to the contract. The structural check confirms shape; the conformance check confirms the v2.4.0 normalization rules above:
+
+```bash
+# Structural check
+python3 -c "import json; d=json.load(open('$OUT_PATH')); assert 'weekDays' in d and len(d['weekDays'])==7, 'bad shape'; print('shape OK')"
+
+# Filename check (must be Monday of the current week)
+python3 -c "
+from datetime import date, timedelta
+import os
+fname = os.path.basename('$OUT_PATH')
+expected = (date.today() - timedelta(days=date.today().weekday())).isoformat()
+assert fname == f'dashboard-{expected}.json', f'filename {fname} is not the expected Monday {expected}'
+print('filename OK')
+"
+
+# Contract conformance check (items 2, 3, 5, 6 from the v2.4.0 release)
+python3 <<EOF
+import json
+d = json.load(open('$OUT_PATH'))
+# Item 2: triage statuses are in the contract enum
+allowed = {'scheduled', 'draft', 'review', 'error', 'neutral'}
+for t in d.get('triage', []):
+    assert t.get('status') in allowed, f"triage status {t.get('status')!r} not in {allowed}"
+# Item 3: dim is always present on every block
+for day in d.get('dayBreakdown', []):
+    for b in day.get('blocks', []):
+        assert 'dim' in b, f"block missing dim: {b}"
+        assert isinstance(b['dim'], bool), f"block dim is not bool: {b}"
+# Item 5: weekDays[].num is a String
+for w in d.get('weekDays', []):
+    assert isinstance(w.get('num'), str), f"weekDays num is not str: {w}"
+# Item 6: runHealth is unwrapped
+rh = d.get('runHealth')
+assert rh == 'allGood' or (
+    isinstance(rh, dict) and ('warning' in rh or 'error' in rh)
+    and isinstance(list(rh.values())[0], str)
+), f"runHealth shape wrong: {rh!r}"
+# Item 10: weekDays[].dayTypes is always an array of lowercase strings (v2.5.0+)
+for w in d.get('weekDays', []):
+    dts = w.get('dayTypes')
+    assert isinstance(dts, list), f"weekDays dayTypes is not array: {w}"
+    for tok in dts:
+        assert isinstance(tok, str) and tok == tok.lower(), f"dayTypes token must be lowercase string: {tok!r}"
+print('contract OK')
+EOF
+```
+
+**Step 10b-iii completion gate (v2.5.0+):** After the contract conformance check passes, the engine MUST run this final gate:
+
+```python
+# Step 10b-iii completion gate — failing this gate fails the entire run
+import os, time
+assert os.path.exists(out_path), f"FATAL: {out_path} was not written"
+mtime_age = time.time() - os.path.getmtime(out_path)
+assert mtime_age < 600, f"FATAL: {out_path} mtime is {mtime_age:.0f}s old — looks stale, not overwritten by this run"
+```
+
+If this gate fails, the engine MUST exit with a **non-zero status code** and append `'Step 10b-iii dashboard JSON write failed: <reason>'` to `runReport.errors` before exiting. **Do not return success when the contract output is absent or stale** — that is the v2.4.0 silent-skip regression this gate exists to prevent. Fort Abode's runner derives `engineReportedError` from this exit code, so a clean non-zero is the only way the user finds out the dashboard didn't update.
+
+If Fort Abode is installed and running on this Mac, opening its Weekly Rhythm tab within ~2 seconds of the write should display the new data. The `ErrorLogger` log at `~/Library/Application Support/FortAbodeUtilityCentral/error-log.json` will record `falling back to mock` if it can't read or decode the file — check there if data doesn't appear.
+
+---
+
 ## Step 11 — Update Memory and Timestamp
 
 After every run, perform both updates:
@@ -2286,7 +2525,10 @@ Throughout the pipeline, collect telemetry into a `runReport` accumulator. After
   - `skillWrapper` — from skill wrapper file header (or `"unknown"` if not embedded)
   - `configTemplate` — from `template_version:` in config.md
   - `fortAbodeApp` — from `Fort_Abode_App_Version` in Memory MCP if available, else `"unknown"`
-- `status` — `"ok" | "warning" | "error"`
+- `status` — `"ok" | "warning" | "error"`. **Derived after Step 10b-iii completes (v2.5.0+):**
+  - `"ok"` if `dashboard-{Monday}.json` exists with current-run mtime AND `errors` is empty.
+  - `"warning"` if the file exists with current mtime but `warnings` is non-empty AND `errors` is still empty.
+  - `"error"` if `errors` is non-empty OR the dashboard JSON file is absent / stale (older than 10 min). The engine MUST exit non-zero in this case so the runner's `engineReportedError` reflects reality. Never derive this purely from in-memory state without checking the file on disk — that's the v2.4.0 silent-skip vector.
 - `durationSeconds` — wall-clock time from Step 1 start to Step 12 end
 - `weekPlanned` — Sunday of the planned week, e.g. `"2026-04-12"`
 - `mcpHealth` — array from Step 2a probes:

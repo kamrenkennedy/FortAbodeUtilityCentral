@@ -1,5 +1,6 @@
 import SwiftUI
 import Sparkle
+import AlignedDesignSystem
 
 // MARK: - App Delegate
 
@@ -20,11 +21,93 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Reset per-session UI state that should not survive a launch — e.g.
+        // the EngineAttentionBanner's dismissed-message hash. Window close +
+        // reopen preserves dismissal; a true relaunch surfaces the warning
+        // again so degraded engine health stays visible across boots.
+        EngineAttentionBanner.clearDismissalOnLaunch()
+
         // If launched by LaunchAgent for a background check, start as .accessory so
         // the Dock icon doesn't flash while we run through the component check loop.
         // Normal launches stay .regular (default) so the Dock icon appears as expected.
         if BackgroundTaskService.isBackgroundCheck {
             NSApp.setActivationPolicy(.accessory)
+        }
+        // Phase 6: scheduled Weekly Rhythm Engine run. Same headless pattern —
+        // .accessory policy so no Dock flash, run the engine, post a notification
+        // (if surfacing is enabled), and exit cleanly.
+        if BackgroundTaskService.isRunEngine {
+            NSApp.setActivationPolicy(.accessory)
+            Task { @MainActor in
+                await Self.runEngineHeadless()
+                exit(0)
+            }
+        }
+    }
+
+    /// Headless engine run for the `--run-engine` LaunchAgent entry point.
+    /// Mirrors `WeeklyRhythmEngineStore.runNow()` but skips the @Observable
+    /// state plumbing — there's no UI to update, just a notification to post
+    /// (if `surfaceOnCompletion` is true) before `exit(0)`. Phase 6.1: also
+    /// auto-installs the skill if missing (the user already opted in by
+    /// installing the LaunchAgent), so a fresh-machine first scheduled run
+    /// doesn't fail with "skill not found."
+    static func runEngineHeadless() async {
+        let detector = ClaudeCLIDetector()
+        let detection = await detector.detect()
+        guard case .found(let path, _) = detection else {
+            await ErrorLogger.shared.log(
+                area: "WeeklyRhythmEngine.HeadlessRun.cliMissing",
+                message: "Scheduled run aborted — Claude CLI not detected"
+            )
+            let surface = UserDefaults.standard.object(forKey: AppSettingsKey.weeklyRhythmEngineSurfaceOnCompletion) as? Bool ?? true
+            if surface {
+                await NotificationService.shared.postEngineRunNotification(
+                    succeeded: false,
+                    summary: "Claude CLI not found — open Fort Abode to install."
+                )
+            }
+            return
+        }
+
+        let installer = WeeklyRhythmSkillInstaller()
+        if await installer.detectInstalled(cliPath: path) == false {
+            await ErrorLogger.shared.log(
+                area: "WeeklyRhythmEngine.HeadlessRun.skillMissing",
+                message: "Scheduled run — skill not installed, attempting auto-install"
+            )
+            let outcome = await installer.install(cliPath: path)
+            if case .failed(let step, let output) = outcome {
+                let surface = UserDefaults.standard.object(forKey: AppSettingsKey.weeklyRhythmEngineSurfaceOnCompletion) as? Bool ?? true
+                if surface {
+                    await NotificationService.shared.postEngineRunNotification(
+                        succeeded: false,
+                        summary: "Skill install failed at step \(step). Open Fort Abode for details."
+                    )
+                }
+                await ErrorLogger.shared.log(
+                    area: "WeeklyRhythmEngine.HeadlessRun.skillInstallFailed",
+                    message: "Skill install failed",
+                    context: ["step": step, "output": String(output.suffix(800))]
+                )
+                return
+            }
+        }
+
+        let runner = WeeklyRhythmEngineRunner()
+        let result = await runner.run(cliPath: path)
+
+        let defaults = UserDefaults.standard
+        defaults.set(result.finishedAt.timeIntervalSince1970, forKey: AppSettingsKey.weeklyRhythmEngineLastRunAt)
+        defaults.set(result.succeeded, forKey: AppSettingsKey.weeklyRhythmEngineLastRunSucceeded)
+        defaults.set(result.summary, forKey: AppSettingsKey.weeklyRhythmEngineLastRunSummary)
+
+        let surface = defaults.object(forKey: AppSettingsKey.weeklyRhythmEngineSurfaceOnCompletion) as? Bool ?? true
+        if surface {
+            await NotificationService.shared.postEngineRunNotification(
+                succeeded: result.succeeded,
+                summary: result.summary
+            )
         }
     }
 
@@ -102,9 +185,10 @@ private final class WindowConfigView: NSView {
     }
 
     private func applyStyle() {
-        guard let window else { return }
-        window.titlebarAppearsTransparent = true
-        window.titlebarSeparatorStyle = .none
+        // Title bar is hidden entirely via .windowStyle(.hiddenTitleBar) on the
+        // Window scene. WindowAppearanceModifier exists only to attach the close
+        // observer below (drops the Dock icon when the main window closes so the
+        // process keeps running for background Sparkle checks).
     }
 
     deinit {
@@ -123,11 +207,31 @@ struct FortAbodeUtilityCentralApp: App {
     @State private var isActivated = KeychainService.isActivated
     @State private var whatsNewReleases: [WhatsNewRelease]?
     @State private var updaterService: AppUpdaterService
+    @State private var appState = AppState()
+
+    // Weekly Rhythm data source — Phase 5a wire. Default impl is FileBacked
+    // with a mock fallback, so the moment the engine starts emitting JSON to
+    // `~/.../Weekly Flow/{user}/dashboards/dashboard-{date}.json` the app picks
+    // it up automatically. Until then, mock data keeps the UI populated.
+    @State private var weeklyRhythmStore = WeeklyRhythmStore(impl: FileBackedWeeklyRhythmDataSource())
+
+    // Phase 6: embedded Weekly Rhythm Engine runner. Spawns the user's `claude`
+    // CLI to run the engine without leaving the app. UI surfaces — the run
+    // pill on the Weekly Rhythm tab and the engine section in Settings —
+    // observe this store directly via `@Environment`.
+    @State private var weeklyRhythmEngineStore = WeeklyRhythmEngineStore()
+
+    // Y6: Claude Chat. Per-turn `claude --print` runner with stream-json
+    // parsing + atomic on-disk thread persistence. Composer's `onSend`
+    // dispatches into this store; the chat pane observes `messages` for live
+    // streaming updates.
+    @State private var claudeChatStore = ClaudeChatStore()
 
     // Sparkle updater controller — starts checking for updates automatically
     private let updaterController: SPUStandardUpdaterController
 
     init() {
+        FontRegistration.registerBundledFonts()
         // Defensive: clear any Sparkle-staged installers whose build is at or below
         // ours BEFORE starting the updater. Otherwise a stale queue (observed on Kam's
         // Mac after the 3.10.0 → 3.11.0 update) makes Sparkle re-prompt forever.
@@ -138,7 +242,7 @@ struct FortAbodeUtilityCentralApp: App {
         updaterController = SPUStandardUpdaterController(
             startingUpdater: true,
             updaterDelegate: service,
-            userDriverDelegate: nil
+            userDriverDelegate: service
         )
         // Hand the service a reference to the live updater so its bring-to-front
         // observer can ask Sparkle to poll the appcast on demand. Combined with
@@ -149,36 +253,26 @@ struct FortAbodeUtilityCentralApp: App {
     }
 
     var body: some Scene {
-        Window("Fort Abode Utility Central", id: "main") {
+        Window("Fort Abode", id: "main") {
             Group {
                 if !isActivated {
                     ActivationView {
                         isActivated = true
                     }
                 } else if let viewModel {
-                    NavigationStack {
-                        ContentView()
-                            .navigationDestination(for: AppDestination.self) { destination in
-                                switch destination {
-                                case .componentDetail(let id):
-                                    ComponentDetailView(componentId: id)
-                                case .marketplace:
-                                    MarketplaceView()
-                                case .feedback:
-                                    FeedbackView()
-                                case .familyMemory:
-                                    FamilyMemoryView()
-                                }
-                            }
-                    }
-                    .environment(viewModel)
-                    .environment(updaterService)
+                    RootView(updater: updaterController.updater)
+                        .environment(viewModel)
+                        .environment(updaterService)
+                        .environment(appState)
+                        .environment(weeklyRhythmStore)
+                        .environment(weeklyRhythmEngineStore)
+                        .environment(claudeChatStore)
                 } else {
                     ProgressView("Loading...")
-                        .frame(minWidth: 500, minHeight: 400)
+                        .frame(minWidth: 1080, minHeight: 720)
                 }
             }
-            .frame(minWidth: 500, minHeight: 400)
+            .frame(minWidth: 1080, minHeight: 720)
             .background(WindowAppearanceModifier())
             .sheet(isPresented: Binding(
                 get: { whatsNewReleases != nil },
@@ -191,6 +285,13 @@ struct FortAbodeUtilityCentralApp: App {
                 }
             }
             .onAppear {
+                // Phase 6: when launched with --run-engine, the AppDelegate
+                // owns the lifecycle (run engine, post notification, exit). The
+                // window is rendered .accessory so it never appears, but
+                // .onAppear still fires — short-circuit before any user-facing
+                // work runs.
+                if BackgroundTaskService.isRunEngine { return }
+
                 guard isActivated else { return }
                 if viewModel == nil {
                     viewModel = ComponentListViewModel(registry: registry)
@@ -199,6 +300,13 @@ struct FortAbodeUtilityCentralApp: App {
                 checkWhatsNew()
                 logLauncherHeartbeat()
                 pinICloudFoldersInBackground()
+                detectEngineCLI()
+                loadChatHistory()
+                refreshUnreadFamilyCount()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .engineRunNotificationTapped)) { _ in
+                // System notification tap — bring user to the Weekly Rhythm tab.
+                appState.selectedDestination = .weeklyRhythm
             }
             .onChange(of: isActivated) { _, activated in
                 guard activated else { return }
@@ -207,13 +315,30 @@ struct FortAbodeUtilityCentralApp: App {
                 }
                 handleLaunchMode()
                 pinICloudFoldersInBackground()
+                detectEngineCLI()
+                loadChatHistory()
+                refreshUnreadFamilyCount()
             }
         }
-        .defaultSize(width: 600, height: 500)
+        .defaultSize(width: 1280, height: 820)
         .windowResizability(.contentMinSize)
+        .windowStyle(.hiddenTitleBar)
         .commands {
             CommandGroup(after: .appInfo) {
                 CheckForUpdatesView(updater: updaterController.updater)
+                #if DEBUG
+                Button("Preview Update Row (DEBUG)") {
+                    if updaterService.updateIsReady {
+                        updaterService.updateIsReady = false
+                        updaterService.pendingVersion = nil
+                    } else {
+                        updaterService.pendingVersion = "3.12.0"
+                        updaterService.updateIsReady = true
+                        updaterService.dismissedForSession = false
+                    }
+                }
+                .keyboardShortcut("u", modifiers: [.command, .shift, .option])
+                #endif
             }
         }
 
@@ -293,6 +418,50 @@ struct FortAbodeUtilityCentralApp: App {
                 // Prompt for launch at login on first launch
                 promptLaunchAtLoginIfNeeded()
             }
+        }
+    }
+
+    /// Phase 6: detect the Claude CLI on launch so the Weekly Rhythm Engine
+    /// section in Settings + the run pill on the Weekly Rhythm tab can label
+    /// themselves correctly without waiting for the user to open Settings.
+    /// Cached on the store; views can force-refresh from Settings.
+    ///
+    /// Phase 8.2: also kicks off an MCP probe right after CLI detection so the
+    /// Engine Status modal shows real per-MCP connectivity from the moment the
+    /// user opens it — without this, the synthesized report defaults to all
+    /// rows neutral until the next manual engine run (which on Tiera's first
+    /// launch is whenever, hours or days later).
+    ///
+    /// Live Mode v0.1 (v3.12.0): also wires the foreground auto-run observer
+    /// and applies the background timer setting. Both calls are idempotent —
+    /// the observer guards against double-registration, and the timer cancels
+    /// any prior task before starting a fresh one.
+    private func detectEngineCLI() {
+        Task { @MainActor in
+            await weeklyRhythmEngineStore.detectCLI()
+            await weeklyRhythmEngineStore.probeMCPsIfPossible()
+            weeklyRhythmEngineStore.startObservingActivation()
+            weeklyRhythmEngineStore.applyBackgroundTimerSettings()
+        }
+    }
+
+    /// Y6: hydrate Claude Chat thread from disk on launch. Idempotent —
+    /// reading the same file twice in a row is harmless. The store also
+    /// kicks off CLI detection in the background so the first send doesn't
+    /// have to wait on a `which claude` shell-out.
+    private func loadChatHistory() {
+        Task { @MainActor in
+            await claudeChatStore.loadHistory()
+        }
+    }
+
+    /// Y5/Y5b polish: read the family inbox and count unread messages so
+    /// the Family chat tab shows the correct dot. Without this the badge
+    /// either stays stuck at the v4.0.0 mock value (2) or never appears
+    /// when a real message lands while the app was closed.
+    private func refreshUnreadFamilyCount() {
+        Task { @MainActor in
+            await appState.refreshUnreadFamilyCount()
         }
     }
 

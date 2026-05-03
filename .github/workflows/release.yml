@@ -118,6 +118,29 @@ jobs:
             -exportPath "${{ github.workspace }}/build/export" \
             -exportOptionsPlist ExportOptions.plist
 
+      - name: Strip AppleDouble metadata
+        run: |
+          # v3.12.0 shipped with 160 AppleDouble files inside the signed bundle —
+          # likely from AlignedDesignSystem (private SPM dep) being pulled through
+          # a Dropbox-origin path that wrote macOS extended attributes.
+          # Strip them BEFORE notarize so Gatekeeper's seal check passes.
+          APP="${{ github.workspace }}/build/export/$PRODUCT_NAME.app"
+          find "$APP" -name "._*" -delete
+          find "$APP" -name ".__CodeSignature" -exec rm -rf {} +
+          dot_clean -m "$APP"
+          xattr -cr "$APP"
+
+      - name: Re-sign exported bundle (post-strip)
+        run: |
+          # Strip invalidated the previous signature — re-sign with --force --deep
+          # so every nested bundle (Sparkle.framework, AlignedDesignSystem.bundle, etc)
+          # has a fresh, valid seal that includes ONLY the real code/resources.
+          APP="${{ github.workspace }}/build/export/$PRODUCT_NAME.app"
+          /usr/bin/codesign --force --deep --options runtime --timestamp \
+            --sign "Developer ID Application: Kamren Kennedy (X6LBF9H7M5)" \
+            --keychain "$KEYCHAIN_PATH" \
+            "$APP"
+
       - name: Notarize
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -141,6 +164,23 @@ jobs:
       - name: Staple
         run: |
           xcrun stapler staple "${{ github.workspace }}/build/export/$PRODUCT_NAME.app"
+
+      - name: Verify Gatekeeper acceptance
+        run: |
+          # KILL SWITCH. Without this, v3.12.0 shipped a bundle that passed
+          # `xcrun stapler validate` but failed `spctl --assess` with
+          # "a sealed resource is missing or invalid" — Gatekeeper sees the
+          # bundle as modified after signing. Refuse to publish if spctl rejects.
+          APP="${{ github.workspace }}/build/export/$PRODUCT_NAME.app"
+          xcrun stapler validate "$APP"
+          spctl --assess --type execute -vv "$APP" 2>&1 | tee /tmp/spctl.log
+          grep -q "accepted" /tmp/spctl.log || (echo "::error::Gatekeeper rejected the bundle — refusing to publish" && exit 1)
+          codesign --verify --deep --strict --verbose=4 "$APP"
+          # Paranoia: assert the strip step actually held
+          if [ "$(find "$APP" -name '._*' | wc -l | tr -d ' ')" != "0" ]; then
+            echo "::error::AppleDouble files reappeared after re-sign"
+            exit 1
+          fi
 
       - name: Create distribution zip
         run: |

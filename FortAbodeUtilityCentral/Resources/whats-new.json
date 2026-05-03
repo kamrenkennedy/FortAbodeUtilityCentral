@@ -1,5 +1,13 @@
 [
   {
+    "version": "3.12.1",
+    "notes": [
+      "Fix: v3.12.0 wouldn't open on any Mac — Gatekeeper rejected the bundle because of stray macOS metadata files baked in during the build. v3.12.1 ships a clean bundle.",
+      "CI now strips that metadata before signing and refuses to publish if Gatekeeper would reject the bundle, so a broken release can't ship undetected again.",
+      "Cleaned up the appcast: v3.11.1's entry pointed at a deleted GitHub release, which could have caused a Sparkle update to fail — it's now gone."
+    ]
+  },
+  {
     "version": "3.12.0",
     "notes": [
       "Weekly Rhythm runs now show fresh data every time, with clear errors if anything breaks. The engine no longer silently skips writing the dashboard, so you'll either see this week's data or a specific error in the attention banner — never stale data with no signal.",

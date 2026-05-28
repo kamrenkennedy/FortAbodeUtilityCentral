@@ -15,9 +15,9 @@ permissions:
 jobs:
   release:
     runs-on: macos-15
-    # Backstop: never let a hung step burn GitHub's 6h job cap again. The Archive
-    # step also has its own tighter `timeout 1500` so it fails fast and the
-    # diagnostics-upload step still runs.
+    # Backstop: never let a hung step burn GitHub's 6h job cap again. Resolve and
+    # Archive also carry their own tighter step-level timeout-minutes so they fail
+    # fast and the always() diagnostics-upload step still runs.
     timeout-minutes: 45
     env:
       SCHEME: FortAbodeUtilityCentral
@@ -91,15 +91,41 @@ jobs:
           # Without this the runner has no auth for non-FortAbodeUtilityCentral repos.
           git config --global url."https://x-access-token:${SPM_PAT}@github.com/".insteadOf "https://github.com/"
 
+      - name: Start diagnostics heartbeat
+        run: |
+          # Background breadcrumb logger covering Resolve + Archive — the real private-SPM
+          # clone now happens in Resolve (the old broken `timeout` made it fall through to
+          # Archive). Every 30s it records which build/git processes are alive and their
+          # CPU% (a 0% process = blocked on I/O or a credential prompt); when a git network
+          # helper is found it captures a stack `sample`. Uploaded on always() so a killed
+          # step still leaves evidence.
+          nohup bash -c '
+            while true; do
+              echo "--- $(date -u +%H:%M:%SZ) ---" >> /tmp/ci-diag.log
+              ps -axww -o pid,etime,%cpu,comm | grep -E "xcodebuild|swift|clang| git|git-remote" | grep -v grep >> /tmp/ci-diag.log 2>&1
+              for P in $(pgrep -f "git-remote-https" 2>/dev/null); do
+                echo "== sample git helper $P ==" >> /tmp/ci-diag.log
+                sample "$P" 1 -mayDie >> /tmp/ci-diag.log 2>&1 || true
+              done
+              sleep 30
+            done
+          ' >/dev/null 2>&1 &
+          echo $! > /tmp/hb.pid
+          echo "heartbeat started (pid $(cat /tmp/hb.pid)) → /tmp/ci-diag.log"
+
       - name: Resolve packages
         working-directory: FortAbodeUtilityCentral
+        timeout-minutes: 6
         run: |
           set -x
-          # Resolve into the same default DerivedData that Archive uses. 4-min ceiling:
-          # a healthy private-dep resolve completes in <60s. With GIT_TERMINAL_PROMPT=0
-          # set job-wide, an auth failure now errors fast instead of hanging indefinitely.
+          # The macOS runner has NO `timeout` binary — the old `timeout 240 xcodebuild`
+          # exited 127 instantly, so the resolve never ran and the old gate trusted the
+          # committed Package.resolved. That left the REAL private-SPM clone to happen
+          # (unbounded) inside Archive — the 6h hang. Fix: bound the step with
+          # timeout-minutes and let xcodebuild actually resolve. GIT_TERMINAL_PROMPT=0
+          # turns an auth failure into a fast error instead of an infinite prompt wait.
           set +e
-          timeout 240 xcodebuild -project FortAbodeUtilityCentral.xcodeproj \
+          xcodebuild -project FortAbodeUtilityCentral.xcodeproj \
             -scheme "$SCHEME" \
             -resolvePackageDependencies
           RC=$?
@@ -122,37 +148,17 @@ jobs:
           echo "::error::AlignedDesignSystem was NOT cloned (xcodebuild exit $RC). Resolve hung or auth failed — see git rewrites above."
           exit 1
 
-      - name: Start diagnostics heartbeat
-        run: |
-          # Background breadcrumb logger so a hung Archive leaves evidence even if the
-          # step is killed. Every 30s it records which build/git processes are alive and
-          # their CPU% (a 0% process = blocked on I/O or a credential prompt). When a git
-          # network helper is found it captures a stack `sample`. Uploaded on always().
-          nohup bash -c '
-            while true; do
-              echo "--- $(date -u +%H:%M:%SZ) ---" >> /tmp/ci-diag.log
-              ps -axww -o pid,etime,%cpu,comm | grep -E "xcodebuild|swift|clang| git|git-remote" | grep -v grep >> /tmp/ci-diag.log 2>&1
-              for P in $(pgrep -f "git-remote-https" 2>/dev/null); do
-                echo "== sample git helper $P ==" >> /tmp/ci-diag.log
-                sample "$P" 1 -mayDie >> /tmp/ci-diag.log 2>&1 || true
-              done
-              sleep 30
-            done
-          ' >/dev/null 2>&1 &
-          echo $! > /tmp/hb.pid
-          echo "heartbeat started (pid $(cat /tmp/hb.pid)) → /tmp/ci-diag.log"
-
       - name: Archive
         working-directory: FortAbodeUtilityCentral
+        timeout-minutes: 25
         run: |
           set -x
-          # -onlyUsePackageVersionsFromResolvedFile pins versions; -disableAutomaticPackageResolution
-          # forbids Archive from fetching at all — it must use what the Resolve step already
-          # cloned into DerivedData. A missing source then becomes an instant failure instead
-          # of the 6h private-clone hang. `timeout 1500` (25min) is the hard fail-fast ceiling
-          # so the diagnostics-upload step below still runs.
-          set +e
-          timeout 1500 xcodebuild archive \
+          # -disableAutomaticPackageResolution forbids Archive from fetching SPM deps — it
+          # must use what the Resolve step already cloned into the shared DerivedData. A
+          # missing source then fails instantly instead of the historical 6h private-clone
+          # hang. timeout-minutes is the hard ceiling (the macOS runner has no `timeout`
+          # binary); on a kill, the always() diagnostics steps below still upload the log.
+          xcodebuild archive \
             -project FortAbodeUtilityCentral.xcodeproj \
             -scheme "$SCHEME" \
             -configuration Release \
@@ -163,12 +169,6 @@ jobs:
             DEVELOPMENT_TEAM="X6LBF9H7M5" \
             CODE_SIGN_STYLE=Manual \
             OTHER_CODE_SIGN_FLAGS="--keychain $KEYCHAIN_PATH"
-          RC=$?
-          set -e
-          if [ $RC -eq 124 ]; then
-            echo "::error::Archive timed out after 25min — the 6h hang reproduced. Read the ci-diag artifact for the stuck process."
-          fi
-          exit $RC
 
       - name: Stop heartbeat + show diagnostics
         if: always()

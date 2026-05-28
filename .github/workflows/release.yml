@@ -143,14 +143,18 @@ jobs:
           # timeout-minutes and let xcodebuild actually resolve. GIT_TERMINAL_PROMPT=0
           # turns an auth failure into a fast error instead of an infinite prompt wait.
           #
-          # Resolve at the PROJECT level (no -scheme). A verification run proved -destination
-          # does NOT prevent the CoreSimulator hang — the iPhone Simulator locator starts on
-          # *scheme load*, regardless of destination. -resolvePackageDependencies does not need
-          # a scheme, so omitting it skips the scheme-driven destination/simulator resolution
-          # entirely. (The scheme-based Archive step is kept safe by the Kickstart CoreSimulator
-          # step above.)
+          # Resolve WITH -scheme + -destination, relying on the Kickstart CoreSimulator step
+          # above. Why not project-level (no -scheme)? A no-scheme run avoided the simulator
+          # locator but hit a WORSE hang: SwiftPM's RepositoryManager.fetchAndPopulateCache
+          # deadlocks in AsyncProcess.waitUntilExit() while populating the shared repo cache
+          # (the git child is already gone, but the dispatch_group never signals). The
+          # WITH-scheme path instead clones + checks out both packages cleanly in <1s (proven
+          # by the captured logs) — its only blocker was the post-checkout iPhone Simulator
+          # locator XPC, which the kickstart step exists to un-wedge.
           set +e
           xcodebuild -project FortAbodeUtilityCentral.xcodeproj \
+            -scheme "$SCHEME" \
+            -destination 'generic/platform=macOS' \
             -resolvePackageDependencies
           RC=$?
           set -e

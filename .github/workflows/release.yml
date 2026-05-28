@@ -127,9 +127,19 @@ jobs:
           # (unbounded) inside Archive — the 6h hang. Fix: bound the step with
           # timeout-minutes and let xcodebuild actually resolve. GIT_TERMINAL_PROMPT=0
           # turns an auth failure into a fast error instead of an infinite prompt wait.
+          #
+          # -destination 'generic/platform=macOS' is THE fix for the real hang: without an
+          # explicit destination, a scheme-based xcodebuild enumerates run destinations,
+          # which starts the iPhone Simulator locator and makes a synchronous XPC call to
+          # the CoreSimulator service. That service is wedged on the macos-15 runner, so the
+          # call blocks forever (captured stack: SimDiskImageManager kickstartServiceWithError
+          # → xpc_connection_send_message_with_reply_sync). Pinning a generic macOS
+          # destination keeps xcodebuild out of the iOS Simulator subsystem entirely. Fort
+          # Abode is macOS-only, so this is correct, not a workaround.
           set +e
           xcodebuild -project FortAbodeUtilityCentral.xcodeproj \
             -scheme "$SCHEME" \
+            -destination 'generic/platform=macOS' \
             -resolvePackageDependencies
           RC=$?
           set -e
@@ -164,6 +174,7 @@ jobs:
           xcodebuild archive \
             -project FortAbodeUtilityCentral.xcodeproj \
             -scheme "$SCHEME" \
+            -destination 'generic/platform=macOS' \
             -configuration Release \
             -archivePath "${{ github.workspace }}/build/FortAbodeUtilityCentral.xcarchive" \
             -onlyUsePackageVersionsFromResolvedFile \

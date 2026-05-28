@@ -4,6 +4,10 @@ on:
   push:
     tags:
       - 'v*'
+  # Manual trigger for diagnosing the build without minting a release. A
+  # workflow_dispatch run (no version tag) builds + notarizes + Gatekeeper-verifies
+  # but the publish steps below are guarded on a tag ref, so it never publishes.
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -11,9 +15,18 @@ permissions:
 jobs:
   release:
     runs-on: macos-15
+    # Backstop: never let a hung step burn GitHub's 6h job cap again. The Archive
+    # step also has its own tighter `timeout 1500` so it fails fast and the
+    # diagnostics-upload step still runs.
+    timeout-minutes: 45
     env:
       SCHEME: FortAbodeUtilityCentral
       PRODUCT_NAME: "Fort Abode Utility Central"
+      # Any git credential prompt fails immediately instead of blocking forever on a
+      # TTY that never answers. This is the lever that converts the v3.12.1 6h Archive
+      # hang (private SPM clone waiting on auth) into a fast, legible error.
+      GIT_TERMINAL_PROMPT: "0"
+      GIT_ASKPASS: /usr/bin/echo
 
     steps:
       - name: Checkout
@@ -23,16 +36,23 @@ jobs:
 
       - name: Validate version
         run: |
-          TAG="${GITHUB_REF#refs/tags/v}"
           YML_VERSION=$(grep 'MARKETING_VERSION:' FortAbodeUtilityCentral/project.yml | sed 's/.*"\(.*\)"/\1/')
           BUILD_NUMBER=$(grep 'CURRENT_PROJECT_VERSION:' FortAbodeUtilityCentral/project.yml | sed 's/.*"\(.*\)"/\1/')
-          if [ "$TAG" != "$YML_VERSION" ]; then
-            echo "::error::Tag v${TAG} does not match project.yml version ${YML_VERSION}"
-            exit 1
+          if [ "${GITHUB_REF}" = "${GITHUB_REF#refs/tags/v}" ]; then
+            # No version tag (workflow_dispatch / branch run) — diagnostics mode, no publish.
+            echo "No version tag (ref=${GITHUB_REF}) — diagnostics run using project.yml v${YML_VERSION}"
+            VERSION="${YML_VERSION}"
+          else
+            TAG="${GITHUB_REF#refs/tags/v}"
+            if [ "$TAG" != "$YML_VERSION" ]; then
+              echo "::error::Tag v${TAG} does not match project.yml version ${YML_VERSION}"
+              exit 1
+            fi
+            VERSION="${TAG}"
           fi
-          echo "VERSION=${TAG}" >> $GITHUB_ENV
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "BUILD_NUMBER=${BUILD_NUMBER}" >> $GITHUB_ENV
-          echo "Validated: v${TAG} (build ${BUILD_NUMBER})"
+          echo "Validated: v${VERSION} (build ${BUILD_NUMBER})"
 
       - name: Set up code signing
         env:
@@ -74,41 +94,96 @@ jobs:
       - name: Resolve packages
         working-directory: FortAbodeUtilityCentral
         run: |
-          # xcodebuild -resolvePackageDependencies can hang indefinitely after
-          # successfully resolving packages when private SPM deps are involved
-          # (observed 40+ min hangs on macos-15 with the AlignedDesignSystem PAT).
-          # Run with a 4-minute ceiling — packages typically resolve in <60s; if
-          # Package.resolved is on disk we trust the resolve and proceed.
+          set -x
+          # Resolve into the same default DerivedData that Archive uses. 4-min ceiling:
+          # a healthy private-dep resolve completes in <60s. With GIT_TERMINAL_PROMPT=0
+          # set job-wide, an auth failure now errors fast instead of hanging indefinitely.
           set +e
           timeout 240 xcodebuild -project FortAbodeUtilityCentral.xcodeproj \
             -scheme "$SCHEME" \
             -resolvePackageDependencies
           RC=$?
           set -e
-          RESOLVED_PATH="FortAbodeUtilityCentral.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
-          if [ -f "$RESOLVED_PATH" ]; then
-            echo "Package.resolved present — proceeding"
+
+          echo "=== git URL rewrites in effect (PAT auto-redacted by Actions) ==="
+          git config --global --get-regexp '^url\.' || true
+          CHECKOUTS=$(find "$HOME/Library/Developer/Xcode/DerivedData" -type d -path '*/SourcePackages/checkouts' 2>/dev/null | head -1)
+          echo "=== SourcePackages/checkouts after resolve (${CHECKOUTS:-none}) ==="
+          ls -la "$CHECKOUTS" 2>/dev/null || echo "(no checkouts dir)"
+
+          # REAL success gate. Package.resolved is committed to the repo, so it is ALWAYS
+          # on disk after checkout — the old gate (test -f Package.resolved) reported false
+          # success even when the clone was killed at the 240s timeout, which is exactly
+          # what fed the 6h Archive hang. Require the AlignedDesignSystem source to exist.
+          if [ -n "$CHECKOUTS" ] && find "$CHECKOUTS" -maxdepth 1 -iname 'aligneddesignsystem*' | grep -q .; then
+            echo "AlignedDesignSystem checkout present — resolve genuinely succeeded"
             exit 0
           fi
-          echo "::error::Package resolve failed and Package.resolved missing (xcodebuild exit $RC)"
+          echo "::error::AlignedDesignSystem was NOT cloned (xcodebuild exit $RC). Resolve hung or auth failed — see git rewrites above."
           exit 1
+
+      - name: Start diagnostics heartbeat
+        run: |
+          # Background breadcrumb logger so a hung Archive leaves evidence even if the
+          # step is killed. Every 30s it records which build/git processes are alive and
+          # their CPU% (a 0% process = blocked on I/O or a credential prompt). When a git
+          # network helper is found it captures a stack `sample`. Uploaded on always().
+          nohup bash -c '
+            while true; do
+              echo "--- $(date -u +%H:%M:%SZ) ---" >> /tmp/ci-diag.log
+              ps -axww -o pid,etime,%cpu,comm | grep -E "xcodebuild|swift|clang| git|git-remote" | grep -v grep >> /tmp/ci-diag.log 2>&1
+              for P in $(pgrep -f "git-remote-https" 2>/dev/null); do
+                echo "== sample git helper $P ==" >> /tmp/ci-diag.log
+                sample "$P" 1 -mayDie >> /tmp/ci-diag.log 2>&1 || true
+              done
+              sleep 30
+            done
+          ' >/dev/null 2>&1 &
+          echo $! > /tmp/hb.pid
+          echo "heartbeat started (pid $(cat /tmp/hb.pid)) → /tmp/ci-diag.log"
 
       - name: Archive
         working-directory: FortAbodeUtilityCentral
         run: |
-          # -onlyUsePackageVersionsFromResolvedFile prevents Archive from re-resolving
-          # SPM packages, dodging the same hang the explicit resolve step hits with
-          # private deps. Trust Package.resolved from the prior step.
-          xcodebuild archive \
+          set -x
+          # -onlyUsePackageVersionsFromResolvedFile pins versions; -disableAutomaticPackageResolution
+          # forbids Archive from fetching at all — it must use what the Resolve step already
+          # cloned into DerivedData. A missing source then becomes an instant failure instead
+          # of the 6h private-clone hang. `timeout 1500` (25min) is the hard fail-fast ceiling
+          # so the diagnostics-upload step below still runs.
+          set +e
+          timeout 1500 xcodebuild archive \
             -project FortAbodeUtilityCentral.xcodeproj \
             -scheme "$SCHEME" \
             -configuration Release \
             -archivePath "${{ github.workspace }}/build/FortAbodeUtilityCentral.xcarchive" \
             -onlyUsePackageVersionsFromResolvedFile \
+            -disableAutomaticPackageResolution \
             CODE_SIGN_IDENTITY="Developer ID Application" \
             DEVELOPMENT_TEAM="X6LBF9H7M5" \
             CODE_SIGN_STYLE=Manual \
             OTHER_CODE_SIGN_FLAGS="--keychain $KEYCHAIN_PATH"
+          RC=$?
+          set -e
+          if [ $RC -eq 124 ]; then
+            echo "::error::Archive timed out after 25min — the 6h hang reproduced. Read the ci-diag artifact for the stuck process."
+          fi
+          exit $RC
+
+      - name: Stop heartbeat + show diagnostics
+        if: always()
+        run: |
+          [ -f /tmp/hb.pid ] && kill "$(cat /tmp/hb.pid)" 2>/dev/null || true
+          echo "=== /tmp/ci-diag.log ==="
+          cat /tmp/ci-diag.log 2>/dev/null || echo "(no heartbeat log)"
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-diag
+          path: /tmp/ci-diag.log
+          if-no-files-found: warn
 
       - name: Export archive
         working-directory: FortAbodeUtilityCentral
@@ -223,6 +298,8 @@ jobs:
           echo "ZIP_LENGTH=${LENGTH}" >> $GITHUB_ENV
 
       - name: Update appcasts
+        # Publish step — only on a version tag. workflow_dispatch (diagnostics) skips it.
+        if: startsWith(github.ref, 'refs/tags/v')
         run: |
           python3 << 'PYEOF'
           import os
@@ -268,6 +345,8 @@ jobs:
           PYEOF
 
       - name: Commit appcast updates
+        # Publish step — only on a version tag. workflow_dispatch (diagnostics) skips it.
+        if: startsWith(github.ref, 'refs/tags/v')
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -280,6 +359,8 @@ jobs:
           git push origin main
 
       - name: Create GitHub Release
+        # Publish step — only on a version tag. workflow_dispatch (diagnostics) skips it.
+        if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

@@ -91,6 +91,21 @@ jobs:
           # Without this the runner has no auth for non-FortAbodeUtilityCentral repos.
           git config --global url."https://x-access-token:${SPM_PAT}@github.com/".insteadOf "https://github.com/"
 
+      - name: Kickstart CoreSimulator
+        timeout-minutes: 5
+        run: |
+          # The captured hang stack: xcodebuild's scheme load initializes iOS support →
+          # DVTiPhoneSimulatorLocator → synchronous XPC to the CoreSimulator service, which is
+          # cold/wedged on the macos-15 runner and never replies, stalling
+          # waitForRemoteSourcePackagesToFinishLoading forever. -destination did NOT prevent it
+          # (the locator starts on scheme load regardless of destination). Force a clean
+          # CoreSimulator service so those XPC calls return promptly. Releases before
+          # AlignedDesignSystem archived fine because the service responded then — this restores
+          # that. Bounded by timeout-minutes in case simctl itself stalls.
+          sudo killall -9 com.apple.CoreSimulator.CoreSimulatorService 2>/dev/null || true
+          xcrun simctl list devices >/dev/null 2>&1 || true
+          echo "CoreSimulator pre-warmed"
+
       - name: Start diagnostics heartbeat
         run: |
           # Background breadcrumb logger covering Resolve + Archive — the real private-SPM
@@ -128,18 +143,14 @@ jobs:
           # timeout-minutes and let xcodebuild actually resolve. GIT_TERMINAL_PROMPT=0
           # turns an auth failure into a fast error instead of an infinite prompt wait.
           #
-          # -destination 'generic/platform=macOS' is THE fix for the real hang: without an
-          # explicit destination, a scheme-based xcodebuild enumerates run destinations,
-          # which starts the iPhone Simulator locator and makes a synchronous XPC call to
-          # the CoreSimulator service. That service is wedged on the macos-15 runner, so the
-          # call blocks forever (captured stack: SimDiskImageManager kickstartServiceWithError
-          # → xpc_connection_send_message_with_reply_sync). Pinning a generic macOS
-          # destination keeps xcodebuild out of the iOS Simulator subsystem entirely. Fort
-          # Abode is macOS-only, so this is correct, not a workaround.
+          # Resolve at the PROJECT level (no -scheme). A verification run proved -destination
+          # does NOT prevent the CoreSimulator hang — the iPhone Simulator locator starts on
+          # *scheme load*, regardless of destination. -resolvePackageDependencies does not need
+          # a scheme, so omitting it skips the scheme-driven destination/simulator resolution
+          # entirely. (The scheme-based Archive step is kept safe by the Kickstart CoreSimulator
+          # step above.)
           set +e
           xcodebuild -project FortAbodeUtilityCentral.xcodeproj \
-            -scheme "$SCHEME" \
-            -destination 'generic/platform=macOS' \
             -resolvePackageDependencies
           RC=$?
           set -e

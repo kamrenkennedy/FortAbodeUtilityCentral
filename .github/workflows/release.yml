@@ -102,10 +102,13 @@ jobs:
           nohup bash -c '
             while true; do
               echo "--- $(date -u +%H:%M:%SZ) ---" >> /tmp/ci-diag.log
-              ps -axww -o pid,etime,%cpu,comm | grep -E "xcodebuild|swift|clang| git|git-remote" | grep -v grep >> /tmp/ci-diag.log 2>&1
-              for P in $(pgrep -f "git-remote-https" 2>/dev/null); do
-                echo "== sample git helper $P ==" >> /tmp/ci-diag.log
-                sample "$P" 1 -mayDie >> /tmp/ci-diag.log 2>&1 || true
+              ps -axww -o pid,ppid,etime,%cpu,stat,comm | grep -E "xcodebuild|swift|clang|git" | grep -v grep >> /tmp/ci-diag.log 2>&1
+              # Sample the actual blocked process stack. The clone succeeds in <1s, then
+              # xcodebuild hangs at 0% CPU during Resolve Package Graph — sample it (and any
+              # git helper) to capture WHERE it is blocked (keychain/XPC/network/lock).
+              for P in $(pgrep -x xcodebuild 2>/dev/null) $(pgrep -f "git-remote-https" 2>/dev/null) $(pgrep -x swift-package 2>/dev/null); do
+                echo "== sample $P ==" >> /tmp/ci-diag.log
+                sample "$P" 2 -mayDie >> /tmp/ci-diag.log 2>&1 || true
               done
               sleep 30
             done

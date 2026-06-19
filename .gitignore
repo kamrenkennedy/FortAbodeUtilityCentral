@@ -27,3 +27,6 @@ Reference/
 
 # Claude Code per-machine state (worktrees, design refs, plans)
 .claude/
+
+# Internal audit/analysis docs — public repo, keep these out (contain family + internal details)
+docs/

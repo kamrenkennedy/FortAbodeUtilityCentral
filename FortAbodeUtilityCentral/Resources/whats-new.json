@@ -2,9 +2,9 @@
   {
     "version": "3.12.1",
     "notes": [
-      "Fix: v3.12.0 wouldn't open on any Mac — Gatekeeper rejected the bundle because of stray macOS metadata files baked in during the build. v3.12.1 ships a clean bundle.",
-      "CI now strips that metadata before signing and refuses to publish if Gatekeeper would reject the bundle, so a broken release can't ship undetected again.",
-      "Cleaned up the appcast: v3.11.1's entry pointed at a deleted GitHub release, which could have caused a Sparkle update to fail — it's now gone."
+      "Fixed a problem where Fort Abode could be blocked from opening on a fresh install — it now installs and opens cleanly on both our Macs.",
+      "Made updates more reliable so a future update can't fail partway through.",
+      "Various behind-the-scenes fixes and stability improvements."
     ]
   },
   {

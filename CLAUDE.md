@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Native macOS SwiftUI app that manages Kam's Claude infrastructure — MCP servers, skills, and auto-updates. Built for the Kennedy family (Kam + Tiera). Currently v2.2.0 (build 9).
+Native macOS SwiftUI app that manages Kam's Claude infrastructure — MCP servers, skills, and auto-updates. Built for the Kennedy family (Kam + Tiera). Currently v3.12.1 (build 41).
 
 - **Bundle ID**: `com.kamstudios.fortabodeutilitycentral`
 - **GitHub**: `kamrenkennedy/FortAbodeUtilityCentral` (public)
@@ -118,8 +118,8 @@ Tiera is the primary reader of every WHAT'S NEW entry. If an entry is too long o
 
 ### Tool Locations
 - **xcodegen**: `/opt/homebrew/bin/xcodegen`
-- **sign_update**: `~/Library/Developer/Xcode/DerivedData/FortAbodeUtilityCentral-eofptxlehvthkkfvdivcdfxbejpc/SourcePackages/artifacts/sparkle/Sparkle/bin/sign_update`
-- **generate_keys**: same directory as sign_update
+- **sign_update**: locate with `find ~/Library/Developer/Xcode/DerivedData -type f -name sign_update -path '*Sparkle*'` — the DerivedData hash changes per package resolve, so never hardcode the path
+- **generate_keys**: same directory as `sign_update` (locate the same way)
 
 ## Architecture
 
@@ -282,6 +282,12 @@ When a new Weekly Rhythm version is ready to ship, ALWAYS do all of these steps.
 ### Common failure modes (fix log)
 
 Update this list any time a new bug surfaces. The goal: never repeat the same mistake.
+
+**[2026-06-18] Weekly Rhythm dashboards went silently stale for 22 days — the engine was never triggered**
+- **Symptom**: Weekly Rhythm showed hardcoded April sample data ("doesn't even show today's date"). Newest dashboard on disk was `dashboard-2026-05-25.json` (generated 2026-05-27); no run had happened since.
+- **Root cause**: Two compounding gaps, neither a CLI/auth failure (CLI healthy, OAuth token present). (1) The weekly Schedule was never turned on, so the `com.kamstudios.fortabodeutilitycentral.weekly-rhythm-engine` LaunchAgent was never installed — the only auto-trigger left was the foreground auto-run. (2) `WeeklyRhythmEngineStore.startObservingActivation()` deliberately skips the FIRST `didBecomeActive`, so a cold launch / Sparkle update relaunch never fires a stale-data run unless the user alt-tabs away and back. The app was opened ~once in 22 days (one of those was a Sparkle update relaunch, which logged two "falling back to mock" reads and zero `Runner.start`).
+- **Fix**: Operational — turn the weekly Schedule ON (installs the LaunchAgent so runs fire even when the app is closed) + click Run for an immediate brief; refresh the OAuth token (unrotated since 2026-04-28). App-side (backlog P0-2/P1-3): call `runIfStaleOnForeground()` once on launch so a cold/Sparkle relaunch fires, and kick a silent `runNow()` when `FileBacked` hits mock-fallback while auto-run is enabled and `lastRunAt` is past threshold.
+- **Prevention**: Dashboards must never depend solely on the user re-activating the app. Any auto-run path that gates on window activation needs a launch-time + data-staleness trigger as a backstop, and the weekly Schedule should be installed by default (or the user prompted to enable it). Also note: the engine run does not refresh the in-app view (stores are decoupled — backlog P1-1), so a fresh dashboard isn't visible until a tab/week switch or relaunch. Full audit: `docs/data-architecture-audit-2026-06-18.md`.
 
 **[2026-04-28] Fort Abode resolver preferred legacy `Weekly Flow/` over canonical `Weekly Rhythm/`**
 - **Symptom**: After a successful engine run, Fort Abode kept showing mock data with `WeeklyRhythm.FileBacked` logging "falling back to mock". Tiera's most recent engine output landed at `Weekly Rhythm/Tiera/dashboards/weekly-brief-2026-04-13.html` but the data source was scanning `Weekly Flow/Tiera/dashboards/`.
